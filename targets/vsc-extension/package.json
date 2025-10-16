@@ -1,0 +1,118 @@
+{
+  "name": "mcpower",
+  "displayName": "MCPower Security",
+  "description": "Automatically wraps MCP servers with security policies for enhanced protection",
+  "version": "0.0.36",
+  "publisher": "mcpower",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-mcpower/mcpower-proxy"
+  },
+  "bugs": {
+    "url": "https://github.com/ai-mcpower/mcpower-proxy/issues"
+  },
+  "homepage": "https://mcpower.tech",
+  "categories": [
+    "Others",
+    "Machine Learning",
+    "Testing"
+  ],
+  "keywords": [
+    "mcp",
+    "security",
+    "model-context-protocol",
+    "ai-safety",
+    "ai",
+    "agents",
+    "coding-agents",
+    "llm"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mcpower",
+          "title": "MCPower",
+          "icon": "resources/mcpower-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mcpower": [
+        {
+          "id": "mcpower.auditTrail",
+          "name": "Audit Trail"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mcpower.copyAuditEntry",
+        "title": "Copy Entry to Clipboard",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "mcpower.copyAuditField",
+        "title": "Copy Field to Clipboard",
+        "icon": "$(copy)"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "mcpower.copyAuditEntry",
+          "when": "view == mcpower.auditTrail && viewItem == root",
+          "group": "inline"
+        },
+        {
+          "command": "mcpower.copyAuditField",
+          "when": "view == mcpower.auditTrail && (viewItem == field || viewItem == field_expandable)",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile:vsc-extension",
+    "vscode:uninstall": "node ./out/uninstall_hook.js",
+    "compile:vsc-extension": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package:vsc-extension": "vsce package --allow-star-activation",
+    "bundle-executables:macos": "npm run clean:build && node scripts/bundle-executables.js --platform=darwin",
+    "bundle-executables:windows": "npm run clean:build && node scripts/bundle-executables.js --platform=win32",
+    "bundle-executables:linux": "npm run clean:build && node scripts/bundle-executables.js --platform=linux",
+    "setup-build-env:macos": "./scripts/setup-build-env-macos.sh",
+    "setup-build-env:windows": "call scripts\\setup-build-env-windows.bat",
+    "setup-build-env:linux": "./scripts/setup-build-env-linux.sh",
+    "build:macos": "npm run setup-build-env:macos && npm run bundle-executables:macos && npm run build:vsc-extension",
+    "build:windows": "npm run setup-build-env:windows && npm run bundle-executables:windows && npm run build:vsc-extension",
+    "build:linux": "npm run setup-build-env:linux && npm run bundle-executables:linux && npm run build:vsc-extension",
+    "build:vsc-extension": "npm run compile:vsc-extension && npm run package:vsc-extension",
+    "clean:build": "node scripts/clean-build.js"
+  },
+  "devDependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@types/node": "^18.19.0",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.74.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vscode/vsce": "^3.6.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "jsonc-parser": "^3.3.1",
+    "uuid": "^9.0.1"
+  }
+}

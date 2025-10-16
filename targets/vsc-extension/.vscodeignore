@@ -1,0 +1,19 @@
+# Development files
+.vscode/**
+.vscode-test/**
+out/test/**
+src/**
+**/*.map
+.gitignore
+tsconfig.json
+.eslintrc.json
+
+# Exclude entire executables folder, then include only what we need
+executables/**
+!executables/mcpower-*
+
+# Common excludes
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+.idea/**
