@@ -30,22 +30,22 @@ class TestE2ERedaction:
                 "credit_card": "4111-1111-1111-1111"
             },
             "api_credentials": {
-                "aws_key": "AKIA234567ABCDEFGHIJ",  # gitleaks:allow - test fixture
-                "github_token": "ghp_1234567890abcdef1234567890abcdef123456",  # gitleaks:allow - test fixture
-                "github_oauth": "gho_9876543210fedcba9876543210fedcba987654",  # gitleaks:allow - test fixture
-                "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",  # gitleaks:allow - test fixture
-                "stripe_key": "sk_live_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kOT",  # gitleaks:allow - test fixture
-                "aws_secret": "1vjoNz2g3LnUh/MDEbX8/lA7TBnCInA2+ymTBm1I",  # gitleaks:allow - test fixture
-                "firebase_key": "AIzaSyDOCAbC123dEf456GhI789jKl012-MnO",  # gitleaks:allow - test fixture
-                "sendgrid_key": "SG.ngevfqfyqlku0ufo8x5d1a.twl2igabf9dhotf-3ghlmzlf3qqfnr-eqryvp2qjytw",  # gitleaks:allow - test fixture
-                "digitalocean": "dop_v1_b7186056f5a4634871d0c50a5b8f5a8aa9f8c4d5e6f7a8b9c0d1e2f3a4b5c6d7",  # gitleaks:allow - test fixture
-                "twilio_key": "SK1234567890abcdef1234567890abcdef",  # gitleaks:allow - test fixture
-                "mailgun_api_key": "mailgun_key=key-abcdef0123456789abcdef0123456789",  # gitleaks:allow - test fixture
-                "slack_token": "xoxb-12345678901-23456789012-ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # gitleaks:allow - test fixture
+                "aws_key": "AKIA234567ABCDEFGHIJ",
+                "github_token": "ghp_1234567890abcdef1234567890abcdef123456",
+                "github_oauth": "gho_9876543210fedcba9876543210fedcba987654",
+                "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                "stripe_key": "sk_live_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kOT",
+                "aws_secret": "1vjoNz2g3LnUh/MDEbX8/lA7TBnCInA2+ymTBm1I",
+                "firebase_key": "AIzaSyDOCAbC123dEf456GhI789jKl012-MnO",
+                "sendgrid_key": "SG.ngevfqfyqlku0ufo8x5d1a.twl2igabf9dhotf-3ghlmzlf3qqfnr-eqryvp2qjytw",
+                "digitalocean": "dop_v1_b7186056f5a4634871d0c50a5b8f5a8aa9f8c4d5e6f7a8b9c0d1e2f3a4b5c6d7",
+                "twilio_key": "SK1234567890abcdef1234567890abcdef",
+                "mailgun_api_key": "mailgun_key=key-abcdef0123456789abcdef0123456789",
+                "slack_token": "xoxb-12345678901-23456789012-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             },
             "messages": [
                 "Please contact support at support@company.com",
-                "Use API key ghp_abcdef1234567890abcdef1234567890abcdef for authentication",  # gitleaks:allow - test fixture
+                "Use API key ghp_abcdef1234567890abcdef1234567890abcdef for authentication",
                 "My IP address is 192.168.1.100"
             ],
             "config": {
@@ -108,7 +108,7 @@ class TestE2ERedaction:
 
         test_json = json.dumps({
             "email": "test@example.com",
-            "api_key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",  # gitleaks:allow - test fixture
+            "api_key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",
             "message": "Contact john@company.com for support"
         })
 
@@ -132,7 +132,7 @@ class TestE2ERedaction:
 
         test_payload = {
             "user": "test@example.com",
-            "key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",  # gitleaks:allow - test fixture
+            "key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",
             "existing_redacted": "[REDACTED-EMAIL]"
         }
 
@@ -163,17 +163,17 @@ class TestE2ERedaction:
                     "level3": {
                         "emails": ["admin@test.com", "user@example.org"],
                         "secrets": {
-                            "aws": "AKIAIOSFODNN7EXAMPLE",  # gitleaks:allow - test fixture
+                            "aws": "AKIAIOSFODNN7EXAMPLE",
                             "tokens": [
-                                "ghp_1234567890abcdef1234567890abcdef123456",  # gitleaks:allow - test fixture
-                                "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO1234567890abcdef"  # gitleaks:allow - test fixture
+                                "ghp_1234567890abcdef1234567890abcdef123456",
+                                "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO1234567890abcdef"
                             ]
                         }
                     }
                 },
                 "array_of_objects": [
-                    {"email": "first@test.com", "api_key": "sk_test_first1234567890abcdef"},  # gitleaks:allow - test fixture
-                    {"email": "second@test.com", "api_key": "sk_test_second7890abcdef1234"}  # gitleaks:allow - test fixture
+                    {"email": "first@test.com", "api_key": "sk_test_first1234567890abcdef"},
+                    {"email": "second@test.com", "api_key": "sk_test_second7890abcdef1234"}
                 ]
             }
         }
@@ -377,7 +377,7 @@ class TestE2ERedaction:
                 {
                     "id": i,
                     "email": f"user{i}@example.com",
-                    "api_key": f"sk_test_{i:032d}a",  # gitleaks:allow - test fixture
+                    "api_key": f"sk_test_{i:032d}a",
                     "phone": f"({i%1000:03d}) {i%1000:03d}-{i%10000:04d}",
                     "metadata": {
                         "created": "2024-01-01",
@@ -669,11 +669,11 @@ class TestE2ERedaction:
         """Test major cloud provider token detection"""
         
         payload = {
-            "aws_access": "AKIA234567ABCDEFGHIJ",  # gitleaks:allow - test fixture
-            "aws_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",  # gitleaks:allow - test fixture
-            "azure_secret": "abc1dQ~1234567890abcdefghijklmnopqrstuvwxyz12345",  # gitleaks:allow - test fixture
-            "gcp_key": "AIzaSyDOCAbC123dEf456GhI789jKl012-MnO",  # gitleaks:allow - test fixture
-            "in_env": "AWS_ACCESS_KEY_ID=AKIA234567ABCDEFGHIJ"  # gitleaks:allow - test fixture
+            "aws_access": "AKIA234567ABCDEFGHIJ",
+            "aws_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+            "azure_secret": "abc1dQ~1234567890abcdefghijklmnopqrstuvwxyz12345",
+            "gcp_key": "AIzaSyDOCAbC123dEf456GhI789jKl012-MnO",
+            "in_env": "AWS_ACCESS_KEY_ID=AKIA234567ABCDEFGHIJ"
         }
         
         redacted_payload = redact(payload)
@@ -819,8 +819,8 @@ class TestE2ERedaction:
         
         payload = {
             "url_with_email": "https://user@example.com/path",
-            "url_with_key": "https://api.com?key=sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",  # gitleaks:allow - test fixture
-            "bearer_jwt": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # gitleaks:allow - test fixture
+            "url_with_key": "https://api.com?key=sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",
+            "bearer_jwt": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         }
         
         json_string = json.dumps(payload)
@@ -858,7 +858,7 @@ class TestE2ERedaction:
         """Test patterns starting at same position with different lengths"""
         
         payload = {
-            "stripe_key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",  # gitleaks:allow - test fixture
+            "stripe_key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc9JkLm8kO",
             "phone_with_country": "+1 (555) 123-4567",
             "phone_without_country": "(555) 123-4567"
         }
@@ -880,7 +880,7 @@ class TestE2ERedaction:
         payload = {
             "could_be_both": "sk-test_user@example.com_key",
             "number_or_key": "123-45-6789",
-            "mixed_pattern": "AKIA234567ABCDEFGHIJ and admin@test.com"  # gitleaks:allow - test fixture
+            "mixed_pattern": "AKIA234567ABCDEFGHIJ and admin@test.com"
         }
         
         redacted_payload = redact(payload)
@@ -922,7 +922,7 @@ class TestE2ERedaction:
         
         payload = {
             "overlapping": "Contact admin@example.com or visit https://admin@example.com/api with key sk-test_123",
-            "multiple_secrets": "Keys: sk-test_1, sk-test_2, ghp_abcdef123456789012345678901234567890"  # gitleaks:allow - test fixture
+            "multiple_secrets": "Keys: sk-test_1, sk-test_2, ghp_abcdef123456789012345678901234567890"
         }
         
         json_string = json.dumps(payload)
