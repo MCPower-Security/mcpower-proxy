@@ -632,7 +632,7 @@ class SecurityMiddleware(Middleware):
                 self.logger.warning(f"User blocking confirmation failed: {e}")
                 await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
                 reasons = "; ".join(policy_reasons)
-                raise error_class(f"{base_message}: User blocked the operation - {reasons}")
+                raise error_class("Security Violation. User blocked the operation")
 
         elif decision_type == "required_explicit_user_confirmation":
             policy_reasons = decision.get("reasons", ["Security policy requires confirmation"])
@@ -673,7 +673,7 @@ class SecurityMiddleware(Middleware):
                 # User denied confirmation or dialog failed
                 self.logger.warning(f"User confirmation failed: {e}")
                 await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
-                raise error_class(f"{base_message}: {e.message}")
+                raise error_class("Security Violation. User blocked the operation")
 
         elif decision_type == "need_more_info":
             stage_title = 'CLIENT REQUEST' if is_request else 'TOOL RESPONSE'
