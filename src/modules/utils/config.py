@@ -5,7 +5,7 @@ Reads from ~/.mcpower/config file
 from pathlib import Path
 from typing import Dict, Optional
 
-from src.modules.logs.logger import MCPLogger
+from modules.logs.logger import MCPLogger
 
 
 def load_default_config() -> Dict[str, str]:

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Optional, TextIO
 
-from src.modules.utils.ids import get_session_id
+from modules.utils.ids import get_session_id
 
 
 class SessionFormatter(logging.Formatter):

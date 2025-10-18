@@ -18,11 +18,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.modules.logs.logger import MCPLogger
-from src.modules.redaction.redactor import redact
-from src.modules.utils.config import get_audit_trail_path
-from src.modules.utils.ids import get_session_id
-from src.modules.utils.json import safe_json_dumps, to_dict
+from modules.logs.logger import MCPLogger
+from modules.redaction.redactor import redact
+from modules.utils.config import get_audit_trail_path
+from modules.utils.ids import get_session_id
+from modules.utils.json import safe_json_dumps, to_dict
 
 
 class AuditTrailLogger:

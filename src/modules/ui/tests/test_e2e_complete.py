@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastmcp.exceptions import ToolError
 
-from src.modules.logs.audit_trail import AuditTrailLogger
-from src.modules.logs.logger import MCPLogger
-from src.modules.ui.confirmation import UserConfirmationError
-from src.wrapper.middleware import SecurityMiddleware
+from modules.logs.audit_trail import AuditTrailLogger
+from modules.logs.logger import MCPLogger
+from modules.ui.confirmation import UserConfirmationError
+from wrapper.middleware import SecurityMiddleware
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

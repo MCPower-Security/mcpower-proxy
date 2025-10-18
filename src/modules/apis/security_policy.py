@@ -7,11 +7,11 @@ from typing import Dict, Any, Optional, List
 import httpx
 
 from mcpower_shared.mcp_types import PolicyRequest, PolicyResponse, InitRequest, UserConfirmation, InspectDecision
-from src.modules.logs.audit_trail import AuditTrailLogger
-from src.modules.logs.logger import MCPLogger
-from src.modules.redaction import redact
-from src.modules.utils.config import get_api_url, get_user_id
-from src.modules.utils.json import safe_json_dumps, to_dict
+from modules.logs.audit_trail import AuditTrailLogger
+from modules.logs.logger import MCPLogger
+from modules.redaction import redact
+from modules.utils.config import get_api_url, get_user_id
+from modules.utils.json import safe_json_dumps, to_dict
 
 
 class SecurityAPIError(Exception):

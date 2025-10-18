@@ -8,8 +8,8 @@ import logging
 from fastmcp.server.middleware.logging import StructuredLoggingMiddleware
 from fastmcp.server.proxy import ProxyClient, default_proxy_roots_handler, FastMCPProxy
 
-from src.modules.logs.audit_trail import AuditTrailLogger
-from src.modules.logs.logger import MCPLogger
+from modules.logs.audit_trail import AuditTrailLogger
+from modules.logs.logger import MCPLogger
 from .__version__ import __version__
 from .middleware import SecurityMiddleware
 

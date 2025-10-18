@@ -10,8 +10,8 @@ from typing import Optional
 
 from mcpower_shared.mcp_types import UserDecision
 
-from src.modules.logs.audit_trail import AuditTrailLogger
-from src.modules.logs.logger import MCPLogger
+from modules.logs.audit_trail import AuditTrailLogger
+from modules.logs.logger import MCPLogger
 from . import xdialog
 from .classes import ConfirmationRequest, ConfirmationResponse, UserConfirmationError, DialogOptions
 from .simple_dialog import show_explicit_user_confirmation_dialog, show_blocking_dialog

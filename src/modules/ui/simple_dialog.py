@@ -4,7 +4,7 @@ Simple, lightweight confirmation dialog using native OS dialogs
 This provides cross-platform native dialogs
 """
 
-from src.modules.logs.logger import MCPLogger
+from modules.logs.logger import MCPLogger
 
 from . import xdialog
 from .classes import ConfirmationRequest, DialogOptions

@@ -12,7 +12,7 @@ Verifies that:
 
 import json
 
-from src.modules.redaction import redact
+from modules.redaction import redact
 
 
 class TestE2ERedaction:
