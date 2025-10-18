@@ -22,34 +22,51 @@ if ! command -v brew &> /dev/null; then
     fi
 fi
 
-# Install or ensure Homebrew Python (required for Nuitka)
-if [[ ! -f "/opt/homebrew/bin/python3" ]] && [[ ! -f "/usr/local/bin/python3" ]]; then
-    echo "🐍 Installing Homebrew Python (required for Nuitka)..."
-    HOMEBREW_NO_AUTO_UPDATE=1 brew install python3
+# Determine which Python to use
+# In CI (GitHub Actions), use the pre-installed Python from setup-python action
+if [[ -n "$GITHUB_ACTIONS" ]]; then
+    PYTHON_CMD=$(command -v python3)
+    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | cut -d' ' -f2)
+    echo "✅ Using GitHub Actions Python $PYTHON_VERSION at $PYTHON_CMD"
 else
+    # Local build: Install or use Homebrew Python (original behavior)
+    if [[ ! -f "/opt/homebrew/bin/python3" ]] && [[ ! -f "/usr/local/bin/python3" ]]; then
+        echo "🐍 Installing Homebrew Python (required for Nuitka)..."
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install python3
+    else
+        if [[ -f "/opt/homebrew/bin/python3" ]]; then
+            PYTHON_VERSION=$(/opt/homebrew/bin/python3 --version 2>&1 | cut -d' ' -f2)
+            echo "✅ Homebrew Python $PYTHON_VERSION already installed"
+        elif [[ -f "/usr/local/bin/python3" ]]; then
+            PYTHON_VERSION=$(/usr/local/bin/python3 --version 2>&1 | cut -d' ' -f2)
+            echo "✅ Homebrew Python $PYTHON_VERSION already installed"
+        fi
+    fi
+    
+    # Set Python command for local builds
     if [[ -f "/opt/homebrew/bin/python3" ]]; then
-        PYTHON_VERSION=$(/opt/homebrew/bin/python3 --version 2>&1 | cut -d' ' -f2)
-        echo "✅ Homebrew Python $PYTHON_VERSION already installed"
+        PYTHON_CMD="/opt/homebrew/bin/python3"
     elif [[ -f "/usr/local/bin/python3" ]]; then
-        PYTHON_VERSION=$(/usr/local/bin/python3 --version 2>&1 | cut -d' ' -f2)
-        echo "✅ Homebrew Python $PYTHON_VERSION already installed"
+        PYTHON_CMD="/usr/local/bin/python3"
+    else
+        echo "❌ Homebrew Python not found. Nuitka requires Homebrew Python."
+        exit 1
     fi
 fi
 
-# Setup Python virtual environment for src using Homebrew Python
+# Setup Python virtual environment for src
 echo "📁 Setting up Python virtual environment..."
 cd ../../src
 rm -rf .venv
 
-# Use Homebrew Python specifically (required for Nuitka)
-if [[ -f "/opt/homebrew/bin/python3" ]]; then
-    /opt/homebrew/bin/python3 -m venv .venv
-elif [[ -f "/usr/local/bin/python3" ]]; then
-    /usr/local/bin/python3 -m venv .venv
-else
-    echo "❌ Homebrew Python not found. Nuitka requires Homebrew Python."
+# Use the determined Python command
+if [[ -z "$PYTHON_CMD" ]]; then
+    echo "❌ No suitable Python found."
     exit 1
 fi
+
+echo "Creating venv with: $PYTHON_CMD"
+$PYTHON_CMD -m venv .venv
 source .venv/bin/activate
 
 # Install Python dependencies
