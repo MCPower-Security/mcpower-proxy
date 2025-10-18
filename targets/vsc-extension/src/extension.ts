@@ -5,6 +5,8 @@ import { UserIdManager } from "./userIdManager";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
+import path from "path";
+import fs from "fs";
 
 let state: ExtensionState | undefined;
 
@@ -39,7 +41,30 @@ export async function activate(context: vscode.ExtensionContext) {
             dispose: () => auditTrailView.dispose(),
         });
 
-        vscode.window.showInformationMessage("✅ MCPower Security activated");
+        // Use extension-specific state file (that gets cleaned up on uninstallation)
+        const extensionStateFile = path.join(context.extensionPath, ".activation-state");
+        const hasShownActivationMessage = fs.existsSync(extensionStateFile);
+
+        if (!hasShownActivationMessage) {
+            // Show activate action on first activation
+            const action = await vscode.window.showInformationMessage(
+                "✅ MCPower Security Installed",
+                "Activate"
+            );
+
+            if (action === "Activate") {
+                fs.writeFileSync(
+                    extensionStateFile,
+                    JSON.stringify({
+                        activated: true,
+                        timestamp: Date.now(),
+                    })
+                );
+                await vscode.commands.executeCommand("workbench.action.reloadWindow");
+            }
+        } else {
+            vscode.window.showInformationMessage(`✅ MCPower Security activated`);
+        }
     } catch (error) {
         log.error("Failed to activate MCPower Security", error);
         vscode.window.showErrorMessage(`Failed to activate MCPower Security: ${error}`);
