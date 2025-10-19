@@ -108,14 +108,7 @@ class ExecutableBundler {
             throw new Error(`Pre-build test failed: ${error.message}`);
         }
         
-        const venvNuitka = path.join(this.srcRoot, '.venv', venvBinDir, 'nuitka');
-        const venvNuitkaWrapper = process.platform === 'win32' ? venvNuitka + '.cmd' : venvNuitka;
-        
-        if (!fs.existsSync(venvNuitkaWrapper)) {
-            throw new Error(`Nuitka wrapper not found: ${venvNuitkaWrapper}. Run setup-build-env script first.`);
-        }
-        
-        const nuitkaCmd = venvNuitkaWrapper.includes(' ') ? `"${venvNuitkaWrapper}"` : venvNuitkaWrapper;
+        const nuitkaCmd = `${pythonCmd} -m nuitka`;
 
         const outputName = path.basename(outputPath, path.extname(outputPath));
         const outputExt = platform === 'win32' ? '.exe' : '';
