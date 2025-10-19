@@ -78,32 +78,42 @@ class ExecutableBundler {
 
     async bundleWithNuitka(platform, config, outputPath) {
         const mainScript = path.join(this.srcRoot, 'main.py');
+        const testsDir = path.join(this.srcRoot, 'tests');
+        const preTestScript = path.join(testsDir, 'test_e2e_echo.py');
+        const postTestScript = path.join(testsDir, 'test_e2e_echo_executable.py');
         
+        // Get venv Python
         const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
-        const venvNuitka = path.join(this.srcRoot, '.venv', venvBinDir, 'nuitka');
-        const venvNuitkaExe = process.platform === 'win32' ? venvNuitka + '.exe' : venvNuitka;
+        const venvPythonExe = process.platform === 'win32' ? 'python.exe' : 'python3';
+        const venvPython = path.join(this.srcRoot, '.venv', venvBinDir, venvPythonExe);
         
-        let nuitkaCmd;
-        if (fs.existsSync(venvNuitkaExe)) {
-            nuitkaCmd = venvNuitkaExe.includes(' ') ? `"${venvNuitkaExe}"` : venvNuitkaExe;
-        } else {
-            if (process.platform === 'win32') {
-                const venvPython = path.join(this.srcRoot, '.venv', 'Scripts', 'python.exe');
-                if (fs.existsSync(venvPython)) {
-                    nuitkaCmd = `"${venvPython}" -m nuitka`;
-                } else {
-                    nuitkaCmd = 'python -m nuitka';
-                }
-            } else {
-                nuitkaCmd = 'nuitka';
-            }
+        if (!fs.existsSync(venvPython)) {
+            throw new Error(`Virtual environment Python not found: ${venvPython}`);
         }
-
-        const outputName = path.basename(outputPath, path.extname(outputPath));
-        const outputExt = platform === 'win32' ? '.exe' : '';
         
         // Quote paths if they contain spaces (common on Windows)
         const quotePath = (p) => p.includes(' ') ? `"${p}"` : p;
+        const pythonCmd = quotePath(venvPython);
+        
+        // Run pre-build test
+        console.log('\nRunning pre-build test...');
+        try {
+            execSync(`${pythonCmd} "${preTestScript}"`, {
+                cwd: this.srcRoot,
+                stdio: 'inherit',
+                timeout: 60000
+            });
+            console.log('✅ Pre-build test passed');
+        } catch (error) {
+            throw new Error(`Pre-build test failed: ${error.message}`);
+        }
+        
+        const venvNuitka = path.join(this.srcRoot, '.venv', venvBinDir, 'nuitka');
+        const venvNuitkaExe = process.platform === 'win32' ? venvNuitka + '.exe' : venvNuitka;
+        const nuitkaCmd = venvNuitkaExe.includes(' ') ? `"${venvNuitkaExe}"` : venvNuitkaExe;
+
+        const outputName = path.basename(outputPath, path.extname(outputPath));
+        const outputExt = platform === 'win32' ? '.exe' : '';
         
         const command = [
             nuitkaCmd,
@@ -154,6 +164,19 @@ class ExecutableBundler {
         }
 
         console.log(`  ✅ Bundled: ${outputPath}`);
+        
+        // Run post-build test
+        console.log('Running post-build test...');
+        try {
+            execSync(`${pythonCmd} "${postTestScript}" ${config.executable}`, {
+                cwd: this.srcRoot,
+                stdio: 'inherit',
+                timeout: 60000
+            });
+            console.log('✅ Post-build test passed');
+        } catch (error) {
+            throw new Error(`Post-build test failed: ${error.message}`);
+        }
     }
 
 
