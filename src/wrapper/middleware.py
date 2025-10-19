@@ -507,6 +507,7 @@ class SecurityMiddleware(Middleware):
                 server_transport=base_dict["server"]["transport"],
                 tool_name=base_dict["tool"]["name"] or base_dict["tool"]["method"],
                 response_content=safe_json_dumps(result),
+                agent_context=base_dict["agent_context"],
                 env_context=base_dict["environment_context"],
             )
             self.logger.debug(f"_inspect_response: {policy_response}")
