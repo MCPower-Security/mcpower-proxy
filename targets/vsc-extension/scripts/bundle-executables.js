@@ -134,6 +134,7 @@ class ExecutableBundler {
             '--enable-plugin=anti-bloat',
             '--assume-yes-for-downloads',
             '--file-reference-choice=runtime',
+            '--python-flag=no_docstrings',
             quotePath(mainScript)
         ].filter(arg => arg !== '');
         
