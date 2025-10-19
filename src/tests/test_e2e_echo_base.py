@@ -110,13 +110,6 @@ async def run_test(command: list[str], test_name: str):
         
         print("Server started")
         
-        # Check stderr for any startup messages
-        import select
-        if select.select([process.stderr], [], [], 0)[0]:
-            stderr_data = process.stderr.read(4096).decode()
-            if stderr_data:
-                print(f"Stderr output: {stderr_data}")
-        
         client = SimpleMCPClient(process)
         
         # Initialize
