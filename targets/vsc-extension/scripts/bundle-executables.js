@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 
 const PLATFORMS = {
     'win32': {
@@ -68,7 +68,7 @@ class ExecutableBundler {
                 await this.bundleWithNuitka(platform, config, outputPath);
                 return;
             }
-            
+
             throw new Error("Nuitka not found! Please install Nuitka: pip install nuitka");
         } catch (error) {
             console.error(`  ❌ Failed to bundle for ${platform}: ${error.message}`);
@@ -81,20 +81,20 @@ class ExecutableBundler {
         const testsDir = path.join(this.srcRoot, 'tests');
         const preTestScript = path.join(testsDir, 'test_e2e_echo.py');
         const postTestScript = path.join(testsDir, 'test_e2e_echo_executable.py');
-        
+
         // Get venv Python
         const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
         const venvPythonExe = process.platform === 'win32' ? 'python.exe' : 'python3';
         const venvPython = path.join(this.srcRoot, '.venv', venvBinDir, venvPythonExe);
-        
+
         if (!fs.existsSync(venvPython)) {
             throw new Error(`Virtual environment Python not found: ${venvPython}`);
         }
-        
+
         // Quote paths if they contain spaces (common on Windows)
         const quotePath = (p) => p.includes(' ') ? `"${p}"` : p;
         const pythonCmd = quotePath(venvPython);
-        
+
         // Run pre-build test
         console.log('\nRunning pre-build test...');
         try {
@@ -107,18 +107,16 @@ class ExecutableBundler {
         } catch (error) {
             throw new Error(`Pre-build test failed: ${error.message}`);
         }
-        
-        const nuitkaCmd = `${pythonCmd} -m nuitka`;
 
         const outputName = path.basename(outputPath, path.extname(outputPath));
         const outputExt = platform === 'win32' ? '.exe' : '';
-        
-        const command = [
-            nuitkaCmd,
+
+        const args = [
+            '-m', 'nuitka',
             '--standalone',
             '--onefile',
-            `--output-filename="${outputName}${outputExt}"`,
-            `--output-dir="${this.outputDir}"`,
+            `--output-filename=${outputName}${outputExt}`,
+            `--output-dir=${this.outputDir}`,
             '--include-module=mcpower_shared',
             '--include-module=_json',
             '--include-module=uuid',
@@ -132,47 +130,46 @@ class ExecutableBundler {
             '--enable-plugin=anti-bloat',
             '--assume-yes-for-downloads',
             '--file-reference-choice=runtime',
-            '--python-flag=no_docstrings',
-            quotePath(mainScript)
-        ].filter(arg => arg !== '');
-        
+            '--python-flag=no_docstrings'
+        ];
+
         if (platform === 'win32') {
-            command.splice(command.length - 1, 0, '--msvc=latest');
-            command.splice(command.length - 1, 0, '--windows-console-mode=force');
-            command.splice(command.length - 1, 0, '--enable-plugin=data-hiding');
-            command.splice(command.length - 1, 0, '--windows-company-name=MCPower');
-            command.splice(command.length - 1, 0, '--windows-product-name=MCPower Security');
-            command.splice(command.length - 1, 0, '--windows-file-description=MCPower Security Proxy');
+            args.push('--msvc=latest');
+            args.push('--windows-console-mode=force');
+            args.push('--enable-plugin=data-hiding');
+            args.push('--windows-company-name=MCPower');
+            args.push('--windows-product-name=MCPower Security');
+            args.push('--windows-file-description=MCPower Security Proxy');
 
             // Load version from package.json
             const packageJson = JSON.parse(fs.readFileSync(path.join(this.extensionRoot, 'package.json'), 'utf-8'));
             const version = packageJson.version;
             const versionParts = version.split('.');
             const fileVersion = `${versionParts[0] || 0}.${versionParts[1] || 0}.${versionParts[2] || 0}.0`;
-            command.splice(command.length - 1, 0, `--windows-file-version=${fileVersion}`);
-            command.splice(command.length - 1, 0, `--windows-product-version=${fileVersion}`);
-            
+            args.push(`--windows-file-version=${fileVersion}`);
+            args.push(`--windows-product-version=${fileVersion}`);
+
             const signingConfigPath = path.join(this.extensionRoot, 'signing-config.json');
             if (fs.existsSync(signingConfigPath)) {
                 const signingConfig = JSON.parse(fs.readFileSync(signingConfigPath, 'utf-8'));
                 const winSigning = signingConfig.windows || {};
-                
+
                 if (winSigning.certificateFile || winSigning.certificateSha1 || winSigning.certificateName) {
-                    command.splice(command.length - 1, 0, '--enable-plugin=signing');
-                    
+                    args.push('--enable-plugin=signing');
+
                     if (winSigning.certificateFile && fs.existsSync(winSigning.certificateFile)) {
-                        command.splice(command.length - 1, 0, `--windows-certificate-filename=${winSigning.certificateFile}`);
+                        args.push(`--windows-certificate-filename=${winSigning.certificateFile}`);
                         if (winSigning.certificatePassword) {
-                            command.splice(command.length - 1, 0, `--windows-certificate-password=${winSigning.certificatePassword}`);
+                            args.push(`--windows-certificate-password=${winSigning.certificatePassword}`);
                         }
                         console.log('  Using certificate file for code signing');
                     }
                     if (winSigning.certificateSha1) {
-                        command.splice(command.length - 1, 0, `--windows-certificate-sha1=${winSigning.certificateSha1}`);
+                        args.push(`--windows-certificate-sha1=${winSigning.certificateSha1}`);
                         console.log('  Using certificate SHA1 for code signing');
                     }
                     if (winSigning.certificateName) {
-                        command.splice(command.length - 1, 0, `--windows-certificate-name=${winSigning.certificateName}`);
+                        args.push(`--windows-certificate-name=${winSigning.certificateName}`);
                         console.log('  Using certificate name for code signing');
                     }
                 } else {
@@ -183,28 +180,34 @@ class ExecutableBundler {
             }
         }
 
-        console.log(`  Using Nuitka: ${nuitkaCmd}`);
+        args.push(mainScript);
+
+        console.log(`  Using Nuitka: ${venvPython} -m nuitka`);
         console.log(`  Platform: ${platform}, process.platform: ${process.platform}`);
-        console.log(`  Command args: ${command.length} arguments`);
-        
+        console.log(`  Command args: ${args.length} arguments`);
+
         // Execute Nuitka compilation
         try {
-            execSync(command.join(' '), {
+            const result = spawnSync(venvPython, args, {
                 cwd: this.srcRoot,
                 stdio: 'inherit',
                 maxBuffer: 10 * 1024 * 1024 // 10MB buffer for Nuitka output
             });
+
+            if (result.status !== 0) {
+                throw new Error(`Nuitka exited with code ${result.status}`);
+            }
         } catch (error) {
             throw new Error(`Nuitka compilation failed: ${error.message}`);
         }
-        
+
         // Verify output exists
         if (!fs.existsSync(outputPath)) {
             throw new Error(`Build failed: ${outputPath} not created`);
         }
 
         console.log(`  ✅ Bundled: ${outputPath}`);
-        
+
         // Run post-build test
         console.log('Running post-build test...');
         try {
@@ -225,12 +228,12 @@ class ExecutableBundler {
             const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
             const venvNuitka = path.join(this.srcRoot, '.venv', venvBinDir, 'nuitka');
             const venvNuitkaExe = process.platform === 'win32' ? venvNuitka + '.exe' : venvNuitka;
-            
+
             if (fs.existsSync(venvNuitkaExe)) {
                 console.log(`  Found Nuitka in virtual environment: ${venvNuitkaExe}`);
                 return true;
             }
-            
+
             if (process.platform === 'win32') {
                 const venvPython = path.join(this.srcRoot, '.venv', 'Scripts', 'python.exe');
                 if (fs.existsSync(venvPython)) {
@@ -243,7 +246,7 @@ class ExecutableBundler {
                     }
                 }
             }
-            
+
             // Fallback: check global Nuitka
             execSync('nuitka --version', { stdio: 'pipe' });
             console.log('  Using global Nuitka');
@@ -266,14 +269,14 @@ class ExecutableBundler {
         if (!fs.existsSync(src)) {
             throw new Error(`Source directory does not exist: ${src}`);
         }
-        
+
         fs.mkdirSync(dest, { recursive: true });
-        
+
         const entries = fs.readdirSync(src, { withFileTypes: true });
         for (const entry of entries) {
             const srcPath = path.join(src, entry.name);
             const destPath = path.join(dest, entry.name);
-            
+
             if (entry.isDirectory()) {
                 this.copyDirectory(srcPath, destPath);
             } else {
@@ -286,18 +289,18 @@ class ExecutableBundler {
         if (!fs.existsSync(dirPath)) {
             return;
         }
-        
+
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dirPath, entry.name);
-            
+
             if (entry.isDirectory()) {
                 this.removeDirectory(fullPath);
             } else {
                 fs.unlinkSync(fullPath);
             }
         }
-        
+
         fs.rmdirSync(dirPath);
     }
 
@@ -327,7 +330,7 @@ if (require.main === module) {
     const args = process.argv.slice(2);
     const platformArg = args.find(arg => arg.startsWith('--platform='));
     const targetPlatform = platformArg ? platformArg.split('=')[1] : null;
-    
+
     if (args.includes('--help') || args.includes('-h')) {
         console.log(`
 Usage: node bundle-executables.js [options]
@@ -346,7 +349,7 @@ Supported platforms: ${Object.keys(PLATFORMS).join(', ')}
         `);
         process.exit(0);
     }
-    
+
     const bundler = new ExecutableBundler(targetPlatform);
     bundler.bundle().catch(error => {
         console.error('Bundling failed:', error);
