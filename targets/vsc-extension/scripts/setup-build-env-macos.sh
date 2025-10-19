@@ -69,6 +69,31 @@ echo "Creating venv with: $PYTHON_CMD"
 $PYTHON_CMD -m venv .venv
 source .venv/bin/activate
 
+# Clone Nuitka-commercial
+if [[ ! -d "../.nuitka-commercial" ]]; then
+    if [[ -z "$NUITKA_COMMERCIAL_TOKEN" ]]; then
+        echo "❌ NUITKA_COMMERCIAL_TOKEN not set. Required to clone Nuitka Commercial."
+        exit 1
+    fi
+    
+    echo "📦 Cloning Nuitka Commercial..."
+    
+    if ! git clone https://${NUITKA_COMMERCIAL_TOKEN}@github.com/Nuitka/Nuitka-commercial.git ../.nuitka-commercial > /dev/null 2>&1; then
+        echo "❌ Failed to clone Nuitka Commercial. Check your token and repository access."
+        exit 1
+    fi
+    
+    cd ../.nuitka-commercial
+    if ! git checkout 2.7.16; then
+        echo "❌ Failed to checkout Nuitka Commercial version 2.7.16"
+        exit 1
+    fi
+    cd ../src
+    echo "✅ Nuitka Commercial cloned and checked out to version 2.7.16"
+else
+    echo "✅ Nuitka Commercial already exists"
+fi
+
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip

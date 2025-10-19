@@ -93,6 +93,8 @@ jobs:
 
       - name: Setup build environment (macOS)
         working-directory: targets/vsc-extension
+        env:
+          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
         run: |
           chmod +x scripts/setup-build-env-macos.sh
           ./scripts/setup-build-env-macos.sh
@@ -149,6 +151,8 @@ jobs:
 
       - name: Setup build environment (Windows)
         working-directory: targets/vsc-extension
+        env:
+          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
         run: call scripts\setup-build-env-windows.bat
         shell: cmd
 

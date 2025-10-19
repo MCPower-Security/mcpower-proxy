@@ -86,6 +86,33 @@ if errorlevel 1 (
 
 echo ✅ Activated Python virtual environment
 
+REM Clone Nuitka-commercial
+if not exist ..\.nuitka-commercial (
+    if not defined NUITKA_COMMERCIAL_TOKEN (
+        echo ❌ NUITKA_COMMERCIAL_TOKEN not set. Required to clone Nuitka Commercial.
+        exit /b 1
+    )
+    
+    echo 📦 Cloning Nuitka Commercial...
+    
+    git clone https://%NUITKA_COMMERCIAL_TOKEN%@github.com/Nuitka/Nuitka-commercial.git ..\.nuitka-commercial >nul 2>&1
+    if errorlevel 1 (
+        echo ❌ Failed to clone Nuitka Commercial. Check your token and repository access.
+        exit /b 1
+    )
+    
+    cd ..\.nuitka-commercial
+    git checkout 2.7.16
+    if errorlevel 1 (
+        echo ❌ Failed to checkout Nuitka Commercial version 2.7.16
+        exit /b 1
+    )
+    cd ..\src
+    echo ✅ Nuitka Commercial cloned and checked out to version 2.7.16
+) else (
+    echo ✅ Nuitka Commercial already exists
+)
+
 REM Upgrade pip
 python -m pip install --upgrade pip
 
