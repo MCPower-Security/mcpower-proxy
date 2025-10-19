@@ -9,6 +9,30 @@ if "%OS%" neq "Windows_NT" (
     exit /b 1
 )
 
+REM Check if git is installed
+where git >nul 2>&1
+if errorlevel 1 (
+    echo 📦 Installing Git...
+    winget install --id Git.Git -e --source winget --silent --accept-package-agreements --accept-source-agreements
+    if errorlevel 1 (
+        echo ❌ Failed to install Git
+        exit /b 1
+    )
+    echo ✅ Git installed
+    
+    REM Refresh PATH
+    call refreshenv >nul 2>&1 || (
+        set "PATH=%PATH%;C:\Program Files\Git\cmd"
+    )
+    
+    REM Verify git is now available
+    where git >nul 2>&1
+    if errorlevel 1 (
+        echo ❌ Git installed but not in PATH. Restart terminal.
+        exit /b 1
+    )
+)
+
 REM Function to check if a command exists
 where python >nul 2>&1
 if errorlevel 1 (
@@ -101,6 +125,10 @@ if not exist ..\.nuitka-commercial (
         exit /b 1
     )
     
+    REM Add safe.directory for network/shared drives
+    for /f "delims=" %%i in ('cd') do set CURRENT_DIR=%%i
+    git config --global --add safe.directory "%CURRENT_DIR%\..\.nuitka-commercial"
+    
     cd ..\.nuitka-commercial
     git checkout 2.7.16
     if errorlevel 1 (
@@ -177,6 +205,80 @@ if exist package.json (
     echo ⚠️  package.json not found, skipping Node.js dependency installation
 )
 
+REM Check for MSVC installation
+echo 🔍 Checking for MSVC installation...
+set MSVC_FOUND=0
+
+REM Try common vswhere locations
+set VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %VSWHERE% (
+    for /f "usebackq tokens=*" %%i in (`%VSWHERE% -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+        set MSVC_PATH=%%i
+        set MSVC_FOUND=1
+    )
+)
+
+if !MSVC_FOUND!==1 (
+    echo ✅ MSVC found: !MSVC_PATH!
+) else (
+    echo ❌ MSVC not found. Installing Visual Studio Build Tools...
+    
+    REM Download VS Build Tools installer
+    set VS_BUILDTOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
+    set VS_INSTALLER=vs_buildtools.exe
+    
+    echo 📦 Downloading Visual Studio Build Tools...
+    powershell -Command "Invoke-WebRequest -Uri '%VS_BUILDTOOLS_URL%' -OutFile '%VS_INSTALLER%'"
+    if errorlevel 1 (
+        echo ❌ Failed to download Visual Studio Build Tools
+        exit /b 1
+    )
+    
+    echo 📦 Installing Visual Studio Build Tools with C++ Desktop Development...
+    echo This may take 10-15 minutes...
+    %VS_INSTALLER% --quiet --wait --norestart --nocache ^
+        --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools" ^
+        --add Microsoft.VisualStudio.Workload.VCTools ^
+        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
+        --add Microsoft.VisualStudio.Component.Windows11SDK.22000
+    
+    if errorlevel 1 (
+        echo ❌ Failed to install Visual Studio Build Tools
+        del %VS_INSTALLER%
+        exit /b 1
+    )
+    
+    echo ✅ Visual Studio Build Tools installed
+    del %VS_INSTALLER%
+    
+    REM Verify installation
+    if exist %VSWHERE% (
+        for /f "usebackq tokens=*" %%i in (`%VSWHERE% -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+            set MSVC_PATH=%%i
+            echo ✅ MSVC verified: !MSVC_PATH!
+        )
+    )
+)
+
+REM Check/create signing configuration
+echo 🔍 Checking code signing configuration...
+if not exist signing-config.json (
+    (
+        echo {
+        echo   "windows": {
+        echo     "certificateFile": "",
+        echo     "certificatePassword": "",
+        echo     "certificateSha1": "",
+        echo     "certificateName": ""
+        echo   }
+        echo }
+    ) > signing-config.json
+    echo ✅ Created signing-config.json template
+) else (
+    echo ✅ signing-config.json exists
+)
+
+echo.
 echo ✅ Build environment setup completed successfully!
 echo 💡 You can now run: npm run bundle-executables -- --platform=win32
 

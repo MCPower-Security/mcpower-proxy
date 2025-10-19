@@ -151,3 +151,9 @@ dmypy.json
 cython_debug/
 nuitka-crash-report.xml
 vsc-extension/executables
+.nuitka-commercial
+
+# Code signing
+signing-config.json
+*.pfx
+*.p12

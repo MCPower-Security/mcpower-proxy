@@ -130,17 +130,59 @@ class ExecutableBundler {
             '--include-package=mcp',
             '--include-package=pydantic',
             '--include-package=watchdog',
-            // Exclude problematic CLI modules we don't need
             '--nofollow-import-to=mcp.cli',
-            // Performance optimizations
             '--enable-plugin=anti-bloat',
             '--assume-yes-for-downloads',
-            // Avoid embedding build paths
             '--file-reference-choice=runtime',
-            // Platform-specific flags
-            platform === 'win32' ? '--windows-console-mode=force' : '',
             quotePath(mainScript)
-        ].filter(arg => arg !== ''); // Remove empty arguments
+        ].filter(arg => arg !== '');
+        
+        if (platform === 'win32') {
+            command.splice(command.length - 1, 0, '--msvc=latest');
+            command.splice(command.length - 1, 0, '--windows-console-mode=force');
+            command.splice(command.length - 1, 0, '--enable-plugin=data-hiding');
+            command.splice(command.length - 1, 0, '--windows-company-name=MCPower');
+            command.splice(command.length - 1, 0, '--windows-product-name=MCPower Security');
+            command.splice(command.length - 1, 0, '--windows-file-description=MCPower Security Proxy');
+
+            // Load version from package.json
+            const packageJson = JSON.parse(fs.readFileSync(path.join(this.extensionRoot, 'package.json'), 'utf-8'));
+            const version = packageJson.version;
+            const versionParts = version.split('.');
+            const fileVersion = `${versionParts[0] || 0}.${versionParts[1] || 0}.${versionParts[2] || 0}.0`;
+            command.splice(command.length - 1, 0, `--windows-file-version=${fileVersion}`);
+            command.splice(command.length - 1, 0, `--windows-product-version=${fileVersion}`);
+            
+            const signingConfigPath = path.join(this.extensionRoot, 'signing-config.json');
+            if (fs.existsSync(signingConfigPath)) {
+                const signingConfig = JSON.parse(fs.readFileSync(signingConfigPath, 'utf-8'));
+                const winSigning = signingConfig.windows || {};
+                
+                if (winSigning.certificateFile || winSigning.certificateSha1 || winSigning.certificateName) {
+                    command.splice(command.length - 1, 0, '--enable-plugin=signing');
+                    
+                    if (winSigning.certificateFile && fs.existsSync(winSigning.certificateFile)) {
+                        command.splice(command.length - 1, 0, `--windows-certificate-filename=${winSigning.certificateFile}`);
+                        if (winSigning.certificatePassword) {
+                            command.splice(command.length - 1, 0, `--windows-certificate-password=${winSigning.certificatePassword}`);
+                        }
+                        console.log('  Using certificate file for code signing');
+                    }
+                    if (winSigning.certificateSha1) {
+                        command.splice(command.length - 1, 0, `--windows-certificate-sha1=${winSigning.certificateSha1}`);
+                        console.log('  Using certificate SHA1 for code signing');
+                    }
+                    if (winSigning.certificateName) {
+                        command.splice(command.length - 1, 0, `--windows-certificate-name=${winSigning.certificateName}`);
+                        console.log('  Using certificate name for code signing');
+                    }
+                } else {
+                    console.log('  ⚠️  No code signing configured.');
+                }
+            } else {
+                console.log('  ⚠️  No signing-config.json found. Code signing disabled.');
+            }
+        }
 
         console.log(`  Using Nuitka: ${nuitkaCmd}`);
         console.log(`  Platform: ${platform}, process.platform: ${process.platform}`);
@@ -157,10 +199,9 @@ class ExecutableBundler {
             throw new Error(`Nuitka compilation failed: ${error.message}`);
         }
         
-        // Nuitka creates the executable with the correct name and extension
-        const nuitkaOutput = path.join(this.outputDir, `${outputName}${outputExt}`);
-        if (fs.existsSync(nuitkaOutput) && nuitkaOutput !== outputPath) {
-            fs.renameSync(nuitkaOutput, outputPath);
+        // Verify output exists
+        if (!fs.existsSync(outputPath)) {
+            throw new Error(`Build failed: ${outputPath} not created`);
         }
 
         console.log(`  ✅ Bundled: ${outputPath}`);
