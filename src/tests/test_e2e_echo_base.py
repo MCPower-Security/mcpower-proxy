@@ -9,8 +9,9 @@ import asyncio
 import json
 import logging
 import os
+import platform
 import subprocess
-from pathlib import Path
+import threading
 
 logging.basicConfig(level=logging.WARNING, format='%(message)s')
 logger = logging.getLogger(__name__)
@@ -35,6 +36,14 @@ class SimpleMCPClient:
     
     def read_json(self, timeout=10):
         """Read one JSON message, handling server requests"""
+        
+        if platform.system() == "Windows":
+            return self._read_json_windows(timeout)
+        else:
+            return self._read_json_unix(timeout)
+    
+    def _read_json_unix(self, timeout):
+        """Unix implementation using select"""
         import select
         
         while True:
@@ -64,6 +73,55 @@ class SimpleMCPClient:
                 return msg
             except json.JSONDecodeError:
                 continue
+    
+    def _read_json_windows(self, timeout):
+        """Windows implementation using threading"""
+        result = []
+        exception = []
+        
+        def read_thread():
+            try:
+                while True:
+                    line = self.process.stdout.readline().decode().strip()
+                    if not line:
+                        continue
+                        
+                    try:
+                        msg = json.loads(line)
+                        
+                        # Handle server-initiated requests
+                        if "method" in msg and "id" in msg:
+                            method = msg["method"]
+                            msg_id = msg["id"]
+                            
+                            # Respond based on method
+                            if method == "roots/list":
+                                self.send_json({"jsonrpc": "2.0", "id": msg_id, "result": {"roots": []}})
+                            else:
+                                self.send_json({"jsonrpc": "2.0", "id": msg_id, "result": {}})
+                            continue
+                        
+                        result.append(msg)
+                        return
+                    except json.JSONDecodeError:
+                        continue
+            except Exception as e:
+                exception.append(e)
+        
+        thread = threading.Thread(target=read_thread, daemon=True)
+        thread.start()
+        thread.join(timeout)
+        
+        if exception:
+            raise exception[0]
+        
+        if thread.is_alive():
+            raise TimeoutError(f"No response within {timeout}s")
+        
+        if not result:
+            raise TimeoutError(f"No response within {timeout}s")
+        
+        return result[0]
 
 
 async def run_test(command: list[str], test_name: str):
