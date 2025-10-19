@@ -2,7 +2,7 @@
   "name": "mcpower",
   "displayName": "MCPower Security",
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "publisher": "mcpower",
   "engines": {
     "vscode": "^1.74.0"
