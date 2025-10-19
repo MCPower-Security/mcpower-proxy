@@ -4,6 +4,8 @@
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
   "version": "0.0.40",
   "publisher": "mcpower",
+  "license": "Apache-2.0",
+  "icon": "resources/ext-icon-dark.png",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -16,7 +18,7 @@
   },
   "homepage": "https://mcpower.tech",
   "categories": [
-    "Others",
+    "Linters",
     "Machine Learning",
     "Testing"
   ],
@@ -40,7 +42,7 @@
         {
           "id": "mcpower",
           "title": "MCPower",
-          "icon": "resources/mcpower-icon.svg"
+          "icon": "resources/activitybar-icon.svg"
         }
       ]
     },

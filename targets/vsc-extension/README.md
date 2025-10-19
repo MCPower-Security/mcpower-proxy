@@ -1,169 +1,45 @@
-# MCPower Security Extension
+# **MCPower**
 
-Automatically wraps MCP (Model Context Protocol) servers with security policies for enhanced protection in AI development environments.
+Real-time semantic monitoring of AI agent\<-\>MCP Server communication to protect from data leaks and malicious prompt injections.
 
-## Features
+**Harness the power of AI agents and MCP (Model Context Protocol) tools in VS Code & Cursor without risking data leaks or malicious prompt injections. MCPower is a semantic policy broker that understands *what* your agents are doing, not just *where* they're sending data.**
 
-- **Automatic Configuration Monitoring**: Continuously monitors MCP configuration files in your workspace and system-wide locations with dynamic workspace change detection
-- **Seamless Security Integration**: Transparently wraps MCP servers with security policies without breaking existing functionality
-- **Cross-Platform Support**: Works on Windows, macOS, and Linux without requiring Python pre-installation
-- **Hot-Swap**: original configurations preserved within wrapped configs
-- **AI Client Detection**: Automatically detects and targets the specific AI client where the extension is installed
+In today's fast-paced development environment, AI agents are essential for boosting productivity. However, they also introduce a new challenge: how do you ensure that these 	powerful tools don't accidentally share sensitive information, private keys, or customer data outside of approved boundaries?
 
-## Installation
+Traditional security tools fall short because they can't understand the *intent* and *content* of an agent's actions. MCPower bridges this gap.
 
-1. Install the extension from the VS Code marketplace
-2. The extension will automatically:
-   - Extract the MCPower Security executable for your platform
-   - Generate a unique user ID for your installation
-   - Start monitoring MCP configuration files
+## **Why MCPower?**
 
-## Configuration
+MCPower acts as an intelligent security layer directly within your IDE. It intercepts every MCP tool call made by your AI agents, analyzes the payload for sensitive information in real-time, and enforces your security policies seamlessly.
 
-The extension is configured through the shared configuration file `~/.mcpower/config`:
+✅ **Enable Productivity, Safely:** Allow your team to use the full power of AI agents without the constant fear of data exfiltration.
 
-This configuration is shared between the VS Code extension and the Python wrapper components.
+✅ **Prevent Data Leaks:** Stop private, proprietary, or other-customer data from being mixed or shared in the wrong channels (like a public Slack channel or the wrong GitHub repo).
 
-## How It Works
+✅ **Maintain Compliance:** Keep a clear, signed audit trail of every agent decision, including who, what, where, why, and the policy that was applied.
 
-1. **Discovery**: The extension discovers MCP configuration files (`mcp.json`) in:
-   - Current workspace directories
-   - System-wide AI client configuration directories
+## **Key Features**
 
-2. **Monitoring**: File system watchers detect changes to configuration files in real-time
+* **🛡️ Semantic Intent Analysis:** MCPower doesn't just block destinations. It analyzes the action itself (e.g., "post Jira summary to Slack") and inspects the content being shared to make intelligent Allow, Redact, or Block decisions.
+* **✂️ Real-Time Inline Redaction:** Secrets, API keys, and PII are automatically redacted on the client-side *before* the data leaves your machine. The agent's workflow continues uninterrupted with the safe, redacted information.
+* **🔍 Open Source for Transparency:** The MCPower client is fully open source. This gives you complete transparency to verify that sensitive data is handled securely and never leaves your machine. [Github link](https://github.com/ai-mcpower/mcpower-proxy).
+* **🚦 Monitors in Your IDE:** See a user-friendly monitoring trail of every agent action directly inside a VS Code window. No context switching needed to see what your agents are up to.
 
-3. **Workspace Awareness**: Automatically re-establishes monitoring when workspace folders change
+## **How It Works**
 
-4. **Wrapping**: When MCP servers are detected, they are automatically wrapped with the MCPower proxy:
-   ```json
-   {
-     "mcpServers": {
-       "example-server": {
-         "command": "/path/to/mcpower",
-         "args": [
-           "--wrapped-config", "{\"command\":\"original-server\",\"args\":[]}",
-           "--name", "example-server"
-         ]
-       }
-     }
-   }
-   ```
+MCPower is designed for simplicity and minimal friction:
 
-4. **Original Data Preserved**: Original configurations are preserved within the wrapped config JSON
+1. **Install the Extension:** Add MCPower to VS Code or Cursor.
+2. **Automatic Interception:** The extension automatically intercepts all communication between your agent and MCP Servers, acting as a secure proxy to monitor every tool call and response.
+3. **Client-Side Redaction:** Secrets and PII are stripped locally.
+4. **Cloud-Powered Analysis:** A redacted, secure payload is sent to the MCPower cloud engine to check against data leak and potential coding agent’s context contamination.
+5. **Instant Decision:** An Allow, Need more info, or Block decision is returned in seconds. The user can always override the MCPower recommendation.    
+6. **Live Monitoring:** View the complete log of all actions and decisions in the MCPower window within your IDE.
 
-## Extension Lifecycle
+## **Getting Started**
 
-The extension automatically manages your MCP configurations:
+1. **Install the Extension:** Add MCPower to your IDE.
+2. **It’s Free:** No account is required. The beta version is Free to use.
+3. **Start monitoring instantly:** Once installed, your agent and MCP communications are automatically protected.
 
-- **When enabled/installed**: Automatically wraps MCP servers with MCPower proxy
-- **When disabled/uninstalled**: Automatically unwraps and restores original configurations
-- **During updates**: Seamlessly preserves configurations and deploys new executable versions
-- **User Identification**: Uses a single machine-wide user ID shared across all AI clients for consistent security tracking
-- **No manual intervention needed**: Your MCP servers will work regardless of extension state
-
-## Supported AI Clients
-
-The extension automatically detects and works with:
-- Kiro
-- Cursor
-- Windsurf
-- Claude Desktop
-- VS Code (including with Autopilot/GitHub Copilot)
-- Cline
-- Other VS Code-based AI clients
-
-## Requirements
-
-- VS Code 1.74.0 or higher
-- MCP Policy Service running (for security enforcement)
-
-## Security Features
-
-- **Pre-Request Validation**: All MCP requests are validated before execution
-- **Post-Response Validation**: All MCP responses are validated before delivery
-- **User Confirmation**: Interactive approval dialogs for risky operations
-- **Audit Logging**: Comprehensive logging of all security decisions
-- **Fail-Secure**: Operations are blocked when security validation fails
-
-## Troubleshooting
-
-### Extension Not Working
-1. Check that the extension is enabled in settings
-2. Verify MCP configuration files exist in expected locations
-3. Check the VS Code output panel for error messages
-
-### Configuration Not Being Wrapped
-1. Ensure the extension is enabled and active
-2. Check that configuration files are in monitored locations
-3. Verify file permissions allow modification
-
-### Configuration Restoration
-- Original configurations are automatically restored when extension is disabled/uninstalled
-- Original configurations are preserved within the `--wrapped-config` argument for seamless restoration
-- Use "Manual Unwrap" command only for troubleshooting if automatic restoration fails
-
-## Machine-Wide User Identification
-
-The extension uses a **single user ID per machine** that is shared across all AI clients:
-
-- **Consistent Tracking**: Same user ID whether you're using Cursor, Windsurf, VS Code, or any other supported AI client
-- **Storage Location**: `~/.mcpower/uid` file in your home directory
-- **Format**: Standard UUID (e.g., `550e8400-e29b-41d4-a716-446655440000`)
-- **Privacy**: User ID is generated locally and never transmitted outside your machine
-
-This ensures security policies and audit logs can properly track and correlate actions from the same user across different AI environments.
-
-## Development & Building
-
-### 🚀 Quick Build (macOS)
-
-```bash
-# One-command build (sets up environment + builds extension)
-npm run build
-```
-
-### 🔧 Manual Build Steps
-
-```bash
-# Step 1: Environment setup (first time only)
-./scripts/setup-build-env-macos.sh
-
-# Step 2: Build extension
-npm run bundle-executables  # Creates Python executable
-npm run compile            # Compiles TypeScript
-npm run package           # Creates .vsix extension
-
-# Step 3: Clean build artifacts (optional)
-npm run clean:build
-```
-
-### 📋 Build Requirements
-
-- **macOS** (for building macOS executables)
-- **Homebrew** (auto-installed if missing)
-
-The setup script automatically:
-1. Installs Homebrew Python: `brew install python3`
-2. Creates virtual environment using `/opt/homebrew/bin/python3`
-3. Installs Python dependencies from `../client/requirements.txt`
-4. Sets up Node.js dependencies
-
-### 🔍 Troubleshooting
-
-**"Nuitka not found":**
-```bash
-cd ../client && source .venv/bin/activate && pip install nuitka
-```
-
-### 📦 Build Artifacts
-
-- **Extension**: `mcpower-*.vsix`
-- **Executable**: `executables/mcpower-macos`
-
-## License
-
-[License information to be added]
-
-## Support
-
-For issues and feature requests, please visit the project repository.
+**MCPower is security that understands the language of AI. Install it today and let your team build, fast and safe.**
