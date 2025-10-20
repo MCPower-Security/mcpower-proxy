@@ -1,0 +1,8 @@
+fastmcp>=2.10.5
+httpx>=0.25.0
+mcp>=1.0.0
+../.nuitka-commercial
+watchdog>=3.0.0
+jsonc-parser>=1.1.5
+jsonpath-ng>=1.7.0
+mcpower_shared @ git+https://github.com/ai-mcpower/mcpower-shared.git

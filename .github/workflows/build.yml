@@ -1,0 +1,282 @@
+name: vsc-extension
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vsc-extension-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'targets/vsc-extension/**'
+      - '.github/workflows/**'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bump version
+        id: bump
+        working-directory: targets/vsc-extension
+        run: |
+          npm version patch --no-git-tag-version
+          v=$(node -p "require('./package.json').version")
+          echo "new_version=$v" >> $GITHUB_OUTPUT
+          sed -i "s/__version__ = \".*\"/__version__ = \"$v\"/" ../../src/wrapper/__version__.py
+          echo "Bumped version to $v"
+
+      - name: Upload version files
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-files
+          path: |
+            targets/vsc-extension/package.json
+            targets/vsc-extension/package-lock.json
+            src/wrapper/__version__.py
+
+  build-macos:
+    needs: [bump-version]
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Download version files
+        uses: actions/download-artifact@v4
+        with:
+          name: version-files
+          path: ./
+
+      - name: Cache Nuitka compilation and tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/Nuitka
+            ~/Library/Caches/Nuitka
+            ~/Library/Caches/Nuitka/downloads
+            targets/vsc-extension/executables/*.build
+            targets/vsc-extension/executables/*.dist
+          key: nuitka-macos-full-${{ hashFiles('src/**/*.py', 'src/requirements.txt') }}
+          restore-keys: |
+            nuitka-macos-full-
+            nuitka-macos-
+
+      - name: Setup build environment (macOS)
+        working-directory: targets/vsc-extension
+        env:
+          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
+        run: |
+          chmod +x scripts/setup-build-env-macos.sh
+          ./scripts/setup-build-env-macos.sh
+
+      # No npm ci here per your note: bundler has no deps
+      - name: Build macOS executable
+        working-directory: targets/vsc-extension
+        run: npm run bundle-executables:macos
+
+      - name: Upload macOS executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: executable-macos
+          path: targets/vsc-extension/executables/mcpower-macos
+
+  build-windows:
+    needs: [bump-version]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.10.3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.3'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Download version files
+        uses: actions/download-artifact@v4
+        with:
+          name: version-files
+          path: ./
+
+      - name: Cache Nuitka compilation and tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\Nuitka
+            targets\vsc-extension\executables\*.build
+            targets\vsc-extension\executables\*.dist
+          key: nuitka-windows-full-${{ hashFiles('src/**/*.py', 'src/requirements.txt') }}
+          restore-keys: |
+            nuitka-windows-full-
+            nuitka-windows-
+
+      - name: Setup build environment (Windows)
+        working-directory: targets/vsc-extension
+        env:
+          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
+        run: call scripts\setup-build-env-windows.bat
+        shell: cmd
+
+      - name: Build Windows executable
+        working-directory: targets/vsc-extension
+        run: npm run bundle-executables:windows
+        shell: cmd
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: executable-windows
+          path: targets/vsc-extension/executables/mcpower-windows.exe
+
+  package-extension:
+    needs: [bump-version, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ needs.bump-version.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Install Node.js dependencies (for compile/package)
+        working-directory: targets/vsc-extension
+        run: npm ci
+
+      - name: Download macOS executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable-macos
+          path: targets/vsc-extension/executables/
+
+      - name: Download Windows executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable-windows
+          path: targets/vsc-extension/executables/
+
+      - name: Download version files
+        uses: actions/download-artifact@v4
+        with:
+          name: version-files
+          path: ./
+
+      - name: Verify executables
+        working-directory: targets/vsc-extension
+        run: |
+          ls -la executables/
+          echo "Executables downloaded successfully"
+
+      - name: Compile TypeScript and package extension
+        working-directory: targets/vsc-extension
+        run: |
+          echo "Running TypeScript compilation..."
+          npm run compile:vsc-extension
+          echo "TypeScript compilation successful, starting packaging..."
+          npm run package:vsc-extension
+          echo "Packaging completed successfully"
+
+      - name: List files after packaging
+        working-directory: targets/vsc-extension
+        run: |
+          echo "Files in vsc-extension directory:"
+          ls -la
+          echo "Looking for VSIX files:"
+          ls -la *.vsix || echo "No VSIX files found"
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpower-extension
+          path: targets/vsc-extension/*.vsix
+
+      - name: Commit version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: targets/vsc-extension
+        run: |
+          v=$(node -p "require('./package.json').version")
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json package-lock.json ../../src/wrapper/__version__.py
+          git commit -m "chore: bump version to $v [skip ci]"
+          git pull --rebase origin main
+          git push
+
+  release:
+    needs: package-extension
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mcpower-extension
+          path: release/
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ needs.package-extension.outputs.new_version }}
+          name: MCPower v${{ needs.package-extension.outputs.new_version }}
+          generateReleaseNotes: true
+          artifacts: "release/*.vsix"
+          token: ${{ secrets.GITHUB_TOKEN }}
