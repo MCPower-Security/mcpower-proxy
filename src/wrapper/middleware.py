@@ -11,10 +11,6 @@ from typing import Any, Dict, List, Optional
 from fastmcp.exceptions import FastMCPError
 from fastmcp.server.middleware.middleware import Middleware, MiddlewareContext, CallNext
 from fastmcp.server.proxy import ProxyClient
-from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
-                                      InitRequest,
-                                      ServerRef, ToolRef, UserConfirmation)
-
 from modules.apis.security_policy import SecurityPolicyClient
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
@@ -26,6 +22,10 @@ from modules.utils.ids import generate_event_id, get_session_id, read_app_uid
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
 from wrapper.schema import merge_input_schema_with_existing
+
+from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
+                                      InitRequest,
+                                      ServerRef, ToolRef, UserConfirmation)
 
 
 class MockContext:
@@ -161,17 +161,23 @@ class SecurityMiddleware(Middleware):
             operation_type="elicitation"
         )
 
-    def secure_progress_handler(self, progress, total=None, message=None):
+    async def secure_progress_handler(self, progress, total=None, message=None):
         self.logger.info(f"secure_progress_handler: progress={progress}, total={total}, message={message}")
 
         # Progress notifications are usually safe to forward
-        ProxyClient.default_progress_handler(progress, total, message)
+        return await ProxyClient.default_progress_handler(progress, total, message)
 
-    def secure_log_handler(self, log_message):
+    async def secure_log_handler(self, log_message):
         # FIXME: log_message should be redacted before logging, 
         self.logger.info(f"secure_log_handler: {str(log_message)[:100]}...")
         # FIXME: log_message should be reviewed with policy before forwarding
-        ProxyClient.default_log_handler(log_message)
+        
+        # Handle case where log_message.data is a string instead of dict
+        # The default_log_handler expects data to be a dict with 'msg' and 'extra' keys
+        if hasattr(log_message, 'data') and isinstance(log_message.data, str):
+            log_message = safe_copy(log_message, {'data': {'msg': log_message.data, 'extra': None}})
+        
+        return await ProxyClient.default_log_handler(log_message)
 
     async def _handle_operation(self, context: MiddlewareContext, call_next, error_class, operation_type: str):
         """Handle MCP operations with security enforcement"""
