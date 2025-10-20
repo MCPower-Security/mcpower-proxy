@@ -70,6 +70,10 @@ class SimpleMCPClient:
                         self.send_json({"jsonrpc": "2.0", "id": msg_id, "result": {}})
                     continue
 
+                # Skip notifications (method but no id)
+                if "method" in msg and "id" not in msg:
+                    continue
+
                 return msg
             except json.JSONDecodeError:
                 continue
@@ -99,6 +103,10 @@ class SimpleMCPClient:
                                 self.send_json({"jsonrpc": "2.0", "id": msg_id, "result": {"roots": []}})
                             else:
                                 self.send_json({"jsonrpc": "2.0", "id": msg_id, "result": {}})
+                            continue
+
+                        # Skip notifications (method but no id)
+                        if "method" in msg and "id" not in msg:
                             continue
 
                         result.append(msg)
