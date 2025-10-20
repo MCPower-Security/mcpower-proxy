@@ -22,7 +22,7 @@ MCPower acts as an intelligent security layer directly within your IDE. It inter
 
 * **🛡️ Semantic Intent Analysis:** MCPower doesn't just block destinations. It analyzes the action itself (e.g., "post Jira summary to Slack") and inspects the content being shared to make intelligent Allow, Redact, or Block decisions.
 * **✂️ Real-Time Inline Redaction:** Secrets, API keys, and PII are automatically redacted on the client-side *before* the data leaves your machine. The agent's workflow continues uninterrupted with the safe, redacted information.
-* **🔍 Open Source for Transparency:** The MCPower client is fully open source. This gives you complete transparency to verify that sensitive data is handled securely and never leaves your machine. [Github link](https://github.com/ai-mcpower/mcpower-proxy).
+* **🔍 Open Source for Transparency:** The MCPower client is fully open source. This gives you complete transparency to verify that sensitive data is handled securely and never leaves your machine. [Github link](https://github.com/MCPower-Security/mcpower-proxy).
 * **🚦 Monitors in Your IDE:** See a user-friendly monitoring trail of every agent action directly inside a VS Code window. No context switching needed to see what your agents are up to.
 
 ## **How It Works**

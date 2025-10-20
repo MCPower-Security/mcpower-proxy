@@ -11,10 +11,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ai-mcpower/mcpower-proxy"
+    "url": "https://github.com/MCPower-Security/mcpower-proxy"
   },
   "bugs": {
-    "url": "https://github.com/ai-mcpower/mcpower-proxy/issues"
+    "url": "https://github.com/MCPower-Security/mcpower-proxy/issues"
   },
   "homepage": "https://mcpower.tech",
   "categories": [

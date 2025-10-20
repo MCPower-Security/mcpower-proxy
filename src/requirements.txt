@@ -5,4 +5,4 @@ mcp>=1.0.0
 watchdog>=3.0.0
 jsonc-parser>=1.1.5
 jsonpath-ng>=1.7.0
-mcpower_shared @ git+https://github.com/ai-mcpower/mcpower-shared.git
+mcpower_shared @ git+https://github.com/MCPower-Security/mcpower-shared.git
