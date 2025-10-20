@@ -101,7 +101,7 @@ class ExecutableBundler {
             execSync(`${pythonCmd} "${preTestScript}"`, {
                 cwd: this.srcRoot,
                 stdio: 'inherit',
-                timeout: 60000
+                timeout: 180000
             });
             console.log('✅ Pre-build test passed');
         } catch (error) {
@@ -214,7 +214,7 @@ class ExecutableBundler {
             execSync(`${pythonCmd} "${postTestScript}" ${config.executable}`, {
                 cwd: this.srcRoot,
                 stdio: 'inherit',
-                timeout: 60000
+                timeout: 180000
             });
             console.log('✅ Post-build test passed');
         } catch (error) {

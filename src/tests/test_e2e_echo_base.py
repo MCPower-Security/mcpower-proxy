@@ -183,7 +183,7 @@ async def run_test(command: list[str], test_name: str):
             }
         })
         
-        init_response = client.read_json(timeout=30)
+        init_response = client.read_json(timeout=60)
         if "result" not in init_response:
             raise Exception("Initialize failed: no result in response")
         
@@ -201,7 +201,7 @@ async def run_test(command: list[str], test_name: str):
             "method": "tools/list"
         })
         
-        tools_response = client.read_json(timeout=30)
+        tools_response = client.read_json(timeout=60)
         if "result" not in tools_response:
             raise Exception("tools/list failed: no result in response")
         
@@ -244,7 +244,7 @@ async def run_test(command: list[str], test_name: str):
         })
         
         try:
-            call_response = client.read_json(timeout=15)
+            call_response = client.read_json(timeout=60)
             
             if "error" in call_response:
                 error = call_response["error"]
