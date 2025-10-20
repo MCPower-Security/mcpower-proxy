@@ -149,21 +149,33 @@ async def run_test(command: list[str], test_name: str):
     # Build full command with args
     full_command = command + ["--name", "server-everything", "--wrapped-config", config_json]
     
+    # Capture stderr in a thread to see what's happening
+    stderr_lines = []
+    def capture_stderr():
+        for line in iter(process.stderr.readline, b''):
+            decoded = line.decode().strip()
+            if decoded:
+                stderr_lines.append(decoded)
+                print(f"[STDERR] {decoded}", flush=True)
+    
     process = subprocess.Popen(
         full_command,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env={**os.environ, "MCPOWER_DEBUG": "0"},
+        env={**os.environ, "MCPOWER_DEBUG": "1"},
         bufsize=0
     )
     
     try:
+        import threading
+        stderr_thread = threading.Thread(target=capture_stderr, daemon=True)
+        stderr_thread.start()
         
         await asyncio.sleep(3)
         
         if process.poll() is not None:
-            stderr = process.stderr.read().decode()
+            stderr = '\n'.join(stderr_lines)
             raise Exception(f"Server failed to start: {stderr}")
         
         print("Server started")
