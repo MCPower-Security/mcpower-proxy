@@ -187,14 +187,7 @@ def is_debug_mode() -> bool:
     return value.lower() in ('true', '1', 'yes', 'on')
 
 
-def get_user_id() -> str:
-    """Get user ID from ~/.mcpower/uid - raises error if not found"""
-    uid_path = ConfigManager.get_user_config_dir() / 'uid'
-
-    if not uid_path.exists():
-        raise FileNotFoundError(
-            f"User ID file not found: {uid_path}\n"
-            f"This should be created by the VS Code extension installation."
-        )
-
-    return uid_path.read_text().strip()
+def get_user_id(logger: MCPLogger) -> str:
+    """Get or create user ID from ~/.mcpower/uid (never fails)"""
+    from modules.utils.ids import get_or_create_user_id
+    return get_or_create_user_id(logger)

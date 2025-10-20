@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { ConfigurationMonitor } from "./configurationMonitor";
 import { ExecutableManager } from "./executableManager";
-import { UserIdManager } from "./userIdManager";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
@@ -88,8 +87,6 @@ export async function deactivate() {
 async function initializeExtensionState(
     context: vscode.ExtensionContext
 ): Promise<ExtensionState> {
-    const userId = await new UserIdManager().getUserId();
-
     // Initialize executable manager
     const executableManager = new ExecutableManager(context);
     await executableManager.initialize();
@@ -99,7 +96,6 @@ async function initializeExtensionState(
 
     return {
         context,
-        userId,
         executableManager,
         configMonitor,
     };

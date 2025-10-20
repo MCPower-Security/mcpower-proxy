@@ -4,7 +4,6 @@ import { ExecutableManager } from "./executableManager";
 
 export interface ExtensionState {
     context: vscode.ExtensionContext;
-    userId: string;
     executableManager: ExecutableManager;
     configMonitor: ConfigurationMonitor;
 }

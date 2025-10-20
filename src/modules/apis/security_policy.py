@@ -39,7 +39,7 @@ class SecurityPolicyClient:
         self.client: Optional[httpx.AsyncClient] = None
         self.logger = logger
         self.audit_logger = audit_logger
-        self.user_id = get_user_id()
+        self.user_id = get_user_id(logger)
         self.app_id = app_id
         self.session_id = session_id
 
