@@ -20,17 +20,6 @@ from wrapper.server import create_wrapper_server
 
 def main():
     """Main entry point"""
-
-    # Force UTF-8 encoding for stdout/stderr on Windows (fixes UnicodeEncodeError in compiled executables)
-    if sys.platform == 'win32':
-        import io
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-        else:
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-    
     args = parse_args()
 
     # Read config values

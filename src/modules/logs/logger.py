@@ -11,6 +11,24 @@ from typing import Optional, TextIO
 from modules.utils.ids import get_session_id
 
 
+class UTF8StreamHandler(logging.StreamHandler):
+    """StreamHandler that forces UTF-8 encoding on Windows to prevent UnicodeEncodeError"""
+    
+    def __init__(self, stream=None):
+        # On Windows, wrap the stream with UTF-8 encoding BEFORE passing to parent
+        if sys.platform == 'win32' and stream is not None:
+            import io
+            if hasattr(stream, 'buffer'):
+                stream = io.TextIOWrapper(
+                    stream.buffer,
+                    encoding='utf-8',
+                    errors='replace',
+                    line_buffering=True
+                )
+        
+        super().__init__(stream)
+
+
 class SessionFormatter(logging.Formatter):
     """Custom formatter that includes session ID in log messages"""
     
@@ -55,8 +73,8 @@ class MCPLogger:
         self.logger = logging.getLogger('mcpower')
         self.logger.setLevel(level)
         
-        # Create console handler
-        console_handler = logging.StreamHandler(sys.stderr)
+        # Create console handler with UTF-8 support
+        console_handler = UTF8StreamHandler(sys.stderr)
         console_handler.setLevel(level)
         formatter = SessionFormatter('%(asctime)s [%(session_id)s] (%(levelname)s) %(message)s')
         console_handler.setFormatter(formatter)
@@ -64,7 +82,7 @@ class MCPLogger:
         
         # Add file handler if log file specified
         if log_file:
-            file_handler = logging.FileHandler(log_file)
+            file_handler = logging.FileHandler(log_file, encoding='utf-8')
             file_handler.setLevel(level)
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
