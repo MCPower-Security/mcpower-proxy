@@ -51,7 +51,7 @@ class SimpleMCPClient:
             if not ready:
                 raise TimeoutError(f"No response within {timeout}s")
 
-            line = self.process.stdout.readline().decode().strip()
+            line = self.process.stdout.readline().decode('utf-8', errors='replace').strip()
             if not line:
                 continue
 
@@ -82,7 +82,7 @@ class SimpleMCPClient:
         def read_thread():
             try:
                 while True:
-                    line = self.process.stdout.readline().decode().strip()
+                    line = self.process.stdout.readline().decode('utf-8', errors='replace').strip()
                     if not line:
                         continue
 
@@ -153,7 +153,7 @@ async def run_test(command: list[str], test_name: str):
     stderr_lines = []
     def capture_stderr():
         for line in iter(process.stderr.readline, b''):
-            decoded = line.decode().strip()
+            decoded = line.decode('utf-8', errors='replace').strip()
             if decoded:
                 stderr_lines.append(decoded)
                 print(f"[STDERR] {decoded}", flush=True)
