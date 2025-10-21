@@ -14,11 +14,6 @@ dependencies = [
   "mcpower-shared @ git+https://github.com/MCPower-Security/mcpower-shared.git",
 ]
 
-[project.optional-dependencies]
-dev = [
-  "pytest",
-]
-
 [project.license]
 file = "src/LICENSE"
 
