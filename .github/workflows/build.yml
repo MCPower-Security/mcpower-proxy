@@ -53,11 +53,20 @@ jobs:
   build-macos:
     needs: [bump-version]
     runs-on: macos-latest
+    env:
+      UV_PYTHON: "3.11"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
 
       - name: Install uv
         run: |
@@ -73,11 +82,20 @@ jobs:
   build-windows:
     needs: [bump-version]
     runs-on: windows-latest
+    env:
+      UV_PYTHON: "3.11"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
 
       - name: Install uv
         shell: powershell
@@ -96,6 +114,8 @@ jobs:
   package-extension:
     needs: [bump-version, build-macos, build-windows]
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.11"
     outputs:
       new_version: ${{ needs.bump-version.outputs.new_version }}
     steps:
