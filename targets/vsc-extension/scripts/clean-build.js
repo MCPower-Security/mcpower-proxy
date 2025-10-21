@@ -13,7 +13,6 @@ class BuildCleaner {
         this.extensionRoot = path.dirname(__dirname);
         this.projectRoot = path.dirname(this.extensionRoot);
         this.srcRoot = path.join(this.projectRoot, "src");
-        this.serverRoot = path.join(this.projectRoot, "server");
     }
 
     async clean() {
@@ -22,16 +21,8 @@ class BuildCleaner {
 
         let totalCleaned = 0;
 
-        // Clean extension build artifacts
         totalCleaned += await this.cleanExtensionFiles();
-
-        // Clean src build artifacts
         totalCleaned += await this.cleanSrcFiles();
-
-        // Clean server build artifacts (if any)
-        totalCleaned += await this.cleanServerFiles();
-
-        // Clean project-wide artifacts
         totalCleaned += await this.cleanProjectFiles();
 
         console.log(
@@ -49,9 +40,6 @@ class BuildCleaner {
 
             // Extension packages
             ...this.globSync(path.join(this.extensionRoot, "*.vsix")),
-
-            // Nuitka build artifacts
-            path.join(this.extensionRoot, "executables"),
         ];
 
         for (const filePath of extensionPaths) {
@@ -68,26 +56,9 @@ class BuildCleaner {
         let cleaned = 0;
 
         const srcPaths = [
-            // Virtual environment
             path.join(this.srcRoot, ".venv"),
-
-            // Python cache directories
             path.join(this.srcRoot, "__pycache__"),
             path.join(this.srcRoot, ".pytest_cache"),
-
-            // Python build artifacts
-            path.join(this.srcRoot, "build"),
-            path.join(this.srcRoot, "dist"),
-            path.join(this.srcRoot, "*.egg-info"),
-
-            // Nuitka build artifacts
-            path.join(this.srcRoot, "main.build"),
-            path.join(this.srcRoot, "main.dist"),
-            path.join(this.srcRoot, "main.onefile-build"),
-            ...this.globSync(path.join(this.srcRoot, "*.build")),
-            ...this.globSync(path.join(this.srcRoot, "*.dist")),
-
-            // Python compiled files
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyc")),
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyo")),
             ...this.globSync(path.join(this.srcRoot, "**", "__pycache__")),

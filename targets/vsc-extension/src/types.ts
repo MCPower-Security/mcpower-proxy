@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { ConfigurationMonitor } from "./configurationMonitor";
-import { ExecutableManager } from "./executableManager";
+import { UvRunner } from "./uvRunner";
 
 export interface ExtensionState {
     context: vscode.ExtensionContext;
-    executableManager: ExecutableManager;
+    uvRunner: UvRunner;
     configMonitor: ConfigurationMonitor;
 }
 
@@ -21,9 +21,8 @@ export interface MCPConfig {
     extensions?: Record<string, MCPServerConfig>; // another format
 }
 
-export interface PlatformInfo {
-    platform: "win32" | "darwin" | "linux";
-    arch: string;
-    executableName: string;
-    executablePath: string;
+export interface UvCommand {
+    executable: string;
+    args: string[];
+    repoUrl: string;
 }

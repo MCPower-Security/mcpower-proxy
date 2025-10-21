@@ -59,56 +59,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: targets/vsc-extension/package-lock.json
-
-      - name: Download version files
-        uses: actions/download-artifact@v4
-        with:
-          name: version-files
-          path: ./
-
-      - name: Cache Nuitka compilation and tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/Nuitka
-            ~/Library/Caches/Nuitka
-            ~/Library/Caches/Nuitka/downloads
-            targets/vsc-extension/executables/*.build
-            targets/vsc-extension/executables/*.dist
-          key: nuitka-macos-full-${{ hashFiles('src/**/*.py', 'src/requirements.txt') }}
-          restore-keys: |
-            nuitka-macos-full-
-            nuitka-macos-
-
-      - name: Setup build environment (macOS)
-        working-directory: targets/vsc-extension
-        env:
-          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
+      - name: Install uv
         run: |
-          chmod +x scripts/setup-build-env-macos.sh
-          ./scripts/setup-build-env-macos.sh
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # No npm ci here per your note: bundler has no deps
-      - name: Build macOS executable
-        working-directory: targets/vsc-extension
-        run: npm run bundle-executables:macos
+      - name: Sync Python dependencies
+        run: uv sync --frozen
 
-      - name: Upload macOS executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: executable-macos
-          path: targets/vsc-extension/executables/mcpower-macos
+      - name: Run E2E test on macOS
+        run: uv run python src/tests/test_e2e_echo.py
 
   build-windows:
     needs: [bump-version]
@@ -119,53 +79,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python 3.10.3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10.3'
+      - name: Install uv
+        shell: powershell
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          Add-Content $env:GITHUB_PATH "$HOME\.local\bin"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: targets/vsc-extension/package-lock.json
+      - name: Sync Python dependencies
+        shell: powershell
+        run: uv sync --frozen
 
-      - name: Download version files
-        uses: actions/download-artifact@v4
-        with:
-          name: version-files
-          path: ./
-
-      - name: Cache Nuitka compilation and tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\Nuitka
-            targets\vsc-extension\executables\*.build
-            targets\vsc-extension\executables\*.dist
-          key: nuitka-windows-full-${{ hashFiles('src/**/*.py', 'src/requirements.txt') }}
-          restore-keys: |
-            nuitka-windows-full-
-            nuitka-windows-
-
-      - name: Setup build environment (Windows)
-        working-directory: targets/vsc-extension
-        env:
-          NUITKA_COMMERCIAL_TOKEN: ${{ secrets.NUITKA_COMMERCIAL_TOKEN }}
-        run: call scripts\setup-build-env-windows.bat
-        shell: cmd
-
-      - name: Build Windows executable
-        working-directory: targets/vsc-extension
-        run: npm run bundle-executables:windows
-        shell: cmd
-
-      - name: Upload Windows executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: executable-windows
-          path: targets/vsc-extension/executables/mcpower-windows.exe
+      - name: Run E2E test on Windows
+        shell: powershell
+        run: uv run python src/tests/test_e2e_echo.py
 
   package-extension:
     needs: [bump-version, build-macos, build-windows]
@@ -190,29 +116,11 @@ jobs:
         working-directory: targets/vsc-extension
         run: npm ci
 
-      - name: Download macOS executable
-        uses: actions/download-artifact@v4
-        with:
-          name: executable-macos
-          path: targets/vsc-extension/executables/
-
-      - name: Download Windows executable
-        uses: actions/download-artifact@v4
-        with:
-          name: executable-windows
-          path: targets/vsc-extension/executables/
-
       - name: Download version files
         uses: actions/download-artifact@v4
         with:
           name: version-files
           path: ./
-
-      - name: Verify executables
-        working-directory: targets/vsc-extension
-        run: |
-          ls -la executables/
-          echo "Executables downloaded successfully"
 
       - name: Compile TypeScript and package extension
         working-directory: targets/vsc-extension
@@ -222,14 +130,6 @@ jobs:
           echo "TypeScript compilation successful, starting packaging..."
           npm run package:vsc-extension
           echo "Packaging completed successfully"
-
-      - name: List files after packaging
-        working-directory: targets/vsc-extension
-        run: |
-          echo "Files in vsc-extension directory:"
-          ls -la
-          echo "Looking for VSIX files:"
-          ls -la *.vsix || echo "No VSIX files found"
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4

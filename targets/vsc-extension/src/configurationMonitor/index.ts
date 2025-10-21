@@ -3,14 +3,14 @@ import { promises as fs } from "fs";
 import { homedir } from "os";
 import { createHash } from "crypto";
 import chokidar from "chokidar";
-import { ExecutableManager } from "../executableManager";
+import { UvRunner } from "../uvRunner";
 import { MCPConfig, MCPServerConfig } from "../types";
 import { fileExists, parseJsonc, writeFile } from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
 
 export class ConfigurationMonitor {
-    private executableManager: ExecutableManager | undefined;
+    private uvRunner: UvRunner | undefined;
     private vscode: typeof import("vscode") | undefined;
     private chokidarWatcher: chokidar.FSWatcher | undefined;
     private isMonitoring: boolean = false;
@@ -385,14 +385,14 @@ export class ConfigurationMonitor {
      * Start monitoring MCP configuration files
      * Requirements: 13.1, 13.2 - Monitor workspace and system-wide mcp.json files
      */
-    async startMonitoring(executableManager: ExecutableManager): Promise<void> {
+    async startMonitoring(uvRunner: UvRunner): Promise<void> {
         if (this.isMonitoring) {
             return;
         }
 
         // Import VS Code APIs directly (we're in extension context)
         this.vscode = await import("vscode");
-        this.executableManager = executableManager;
+        this.uvRunner = uvRunner;
         this.isMonitoring = true;
 
         try {
@@ -463,11 +463,11 @@ export class ConfigurationMonitor {
             await this.stopMonitoring();
 
             // Restart monitoring with new workspace
-            if (!this.executableManager) {
+            if (!this.uvRunner) {
                 // noinspection ExceptionCaughtLocallyJS
-                throw new Error("ExecutableManager not available for workspace change");
+                throw new Error("UvRunner not available for workspace change");
             }
-            await this.startMonitoring(this.executableManager);
+            await this.startMonitoring(this.uvRunner);
 
             log.info("✅ Successfully re-established monitoring for new workspace");
         } catch (error) {
@@ -1067,18 +1067,14 @@ export class ConfigurationMonitor {
      * Requirements: 13.4, 13.5 - Automatic wrapping logic and real-time detection
      */
     async wrapConfigurationInFile(configPath: string): Promise<boolean> {
-        if (!this.executableManager) {
+        if (!this.uvRunner) {
             log.error(
-                "Cannot wrap configuration: ExecutableManager not initialized. Call startMonitoring() first."
+                "Cannot wrap configuration: uv runner not initialized. Call startMonitoring() first."
             );
             return false;
         }
 
-        const executablePath = this.executableManager.getExecutablePath();
-        if (!executablePath) {
-            log.error("Cannot wrap configuration: executable path not available");
-            return false;
-        }
+        const uvCommand = this.uvRunner.getCommand();
 
         const result = await this.processConfigurationWithJsoncTree(
             configPath,
@@ -1118,8 +1114,9 @@ export class ConfigurationMonitor {
 
                     // Create wrapped configuration
                     const wrappedConfig = {
-                        command: executablePath,
+                        command: uvCommand.executable,
                         args: [
+                            ...uvCommand.args,
                             "--wrapped-config",
                             rawServerJsonc, // Save entire value AS-IS!
                             "--name",

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ConfigurationMonitor } from "./configurationMonitor";
-import { ExecutableManager } from "./executableManager";
+import { UvRunner } from "./uvRunner";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
@@ -32,7 +32,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
         context.subscriptions.push(workspaceChangeListener);
 
-        await state.configMonitor.startMonitoring(state.executableManager);
+        await state.configMonitor.startMonitoring(state.uvRunner);
 
         const auditTrailView = new AuditTrailView(context);
         await auditTrailView.initialize();
@@ -87,16 +87,15 @@ export async function deactivate() {
 async function initializeExtensionState(
     context: vscode.ExtensionContext
 ): Promise<ExtensionState> {
-    // Initialize executable manager
-    const executableManager = new ExecutableManager(context);
-    await executableManager.initialize();
+    const uvRunner = new UvRunner(context);
+    await uvRunner.initialize();
 
     // Initialize configuration monitor
     const configMonitor = new ConfigurationMonitor();
 
     return {
         context,
-        executableManager,
+        uvRunner,
         configMonitor,
     };
 }

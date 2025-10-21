@@ -8,9 +8,10 @@ src/**
 tsconfig.json
 .eslintrc.json
 
-# Exclude entire executables folder, then include only what we need
-executables/**
-!executables/mcpower-*
+# uv runtime installers
+scripts/setup-uvx-linux.sh
+scripts/setup-uvx-macos.sh
+scripts/setup-uvx-windows.ps1
 
 # Common excludes
 **/.DS_Store
