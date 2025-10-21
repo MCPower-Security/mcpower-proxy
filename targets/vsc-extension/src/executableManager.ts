@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import { PlatformInfo } from "./types";
-import { ensureDirectoryExists, makeExecutable } from "./utils";
+import { ensureDirectoryExists, makeExecutable, clearNuitkaTempCache } from "./utils";
 import log from "./log";
 
 export class ExecutableManager {
@@ -22,6 +22,9 @@ export class ExecutableManager {
      */
     async initialize(): Promise<void> {
         try {
+            // Clear cache on initialization to ensure fresh executables
+            await clearNuitkaTempCache();
+
             // Create executables directory in extension's global storage
             const executablesDir = path.join(
                 this.context.globalStorageUri.fsPath,

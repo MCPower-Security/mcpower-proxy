@@ -1,5 +1,6 @@
 import { ConfigurationMonitor } from "./configurationMonitor";
 import { constants, promises as fs } from "fs";
+import { clearNuitkaTempCache } from "./utils";
 
 /**
  * Uninstall hook script for MCPower Security
@@ -76,6 +77,7 @@ async function main() {
         }
 
         console.log("Registry cleanup completed");
+        await clearNuitkaTempCache();
         console.log("MCPower Security uninstall cleanup finished!");
     } catch (error) {
         console.error("❌ Uninstall cleanup failed:", error);

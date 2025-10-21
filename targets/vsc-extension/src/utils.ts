@@ -1,5 +1,7 @@
 import * as fs from "fs";
 import * as JSONC from "jsonc-parser";
+import * as path from "path";
+import * as os from "os";
 
 /**
  * Check if file exists
@@ -73,5 +75,41 @@ export function parseJsonc(text: string): any {
         throw new Error(
             `JSONC parsing failed: ${error instanceof Error ? error.message : String(error)}`
         );
+    }
+}
+
+/**
+ * Clear Nuitka temp cache directories
+ */
+export async function clearNuitkaTempCache(): Promise<void> {
+    try {
+        const platform = os.platform();
+        let tempCachePath: string;
+
+        if (platform === "win32") {
+            // Windows: %LOCALAPPDATA%\mcpower-security\Cache
+            const localAppData = process.env.LOCALAPPDATA || process.env.APPDATA || "";
+            if (!localAppData) {
+                console.warn("Could not determine Windows cache path");
+                return;
+            }
+            tempCachePath = path.join(localAppData, "mcpower-security", "Cache");
+        } else {
+            // macOS/Linux: ~/.cache/mcpower-security
+            tempCachePath = path.join(os.homedir(), ".cache", "mcpower-security");
+        }
+
+        if (await fileExists(tempCachePath)) {
+            try {
+                await fs.promises.rm(tempCachePath, { recursive: true, force: true });
+                console.log(`✅ Cleared Nuitka temp cache: ${tempCachePath}`);
+            } catch (error) {
+                console.warn(`Failed to clear cache ${tempCachePath}:`, error);
+            }
+        } else {
+            console.log(`No cache found at: ${tempCachePath}`);
+        }
+    } catch (error) {
+        console.warn("Error clearing Nuitka temp cache:", error);
     }
 }

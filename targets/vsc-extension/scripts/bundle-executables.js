@@ -115,6 +115,7 @@ class ExecutableBundler {
             '-m', 'nuitka',
             '--standalone',
             '--onefile',
+            `--onefile-tempdir-spec=${platform === 'win32' ? '%LOCALAPPDATA%\mcpower-security\Cache' : '~/.cache/mcpower-security'}`,
             `--output-filename=${outputName}${outputExt}`,
             `--output-dir=${this.outputDir}`,
             '--include-module=mcpower_shared',
