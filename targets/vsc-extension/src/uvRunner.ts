@@ -6,8 +6,6 @@ import log from "./log";
 import { fileExists } from "./utils";
 import { UvCommand } from "./types";
 
-const UVX_ENV_KEY = "MCPOWER_UVX_COMMAND";
-
 export class UvRunner {
     private context: vscode.ExtensionContext;
     private uvxCommand: string | undefined;
@@ -17,13 +15,6 @@ export class UvRunner {
     }
 
     async initialize(): Promise<void> {
-        const cached = this.context.globalState.get<string>(UVX_ENV_KEY);
-        if (cached) {
-            this.uvxCommand = cached;
-            log.debug(`Using cached uvx command: ${cached}`);
-            return;
-        }
-
         const scriptPath = await this.installUvx();
         await this.runScript(scriptPath);
 
@@ -33,7 +24,6 @@ export class UvRunner {
         }
 
         this.uvxCommand = resolved;
-        await this.context.globalState.update(UVX_ENV_KEY, resolved);
 
         log.info(`uvx ready: ${resolved}`);
     }
@@ -52,11 +42,6 @@ export class UvRunner {
         ];
 
         return { executable: this.uvxCommand, args, repoUrl };
-    }
-
-    resetCache(): Promise<void> {
-        this.uvxCommand = undefined;
-        return this.context.globalState.update(UVX_ENV_KEY, undefined);
     }
 
     private async installUvx(): Promise<string> {
@@ -83,36 +68,9 @@ export class UvRunner {
         log.info(`Running uvx setup script: ${scriptPath}`);
 
         if (os.platform() === "win32") {
-            const powershell = path.join(
-                process.env.SYSTEMROOT ?? "C:/Windows",
-                "System32",
-                "WindowsPowerShell",
-                "v1.0",
-                "powershell.exe"
-            );
-
-            const proc = await vscode.env.openExternal(
-                vscode.Uri.parse(
-                    `command:workbench.action.terminal.sendSequence?${encodeURIComponent(
-                        JSON.stringify({
-                            text: `${powershell} -ExecutionPolicy Bypass -File "${scriptPath}"\u000D`,
-                        })
-                    )}`
-                )
-            );
-
-            if (!proc) {
-                throw new Error("Failed to launch PowerShell for uvx setup");
-            }
+            await this.runWindowsScript(scriptPath);
         } else {
-            await fs.promises.chmod(scriptPath, 0o755);
-
-            const terminal = vscode.window.createTerminal({
-                name: "MCPower uvx setup",
-            });
-
-            terminal.sendText(`"${scriptPath}"`, true);
-            terminal.show();
+            await this.runUnixScript(scriptPath);
         }
     }
 
@@ -133,6 +91,52 @@ export class UvRunner {
         } catch {
             return false;
         }
+    }
+
+    private async runUnixScript(scriptPath: string): Promise<void> {
+        await fs.promises.chmod(scriptPath, 0o755);
+
+        const hasUvx = await this.findUvxBinary();
+        if (hasUvx) {
+            const result = await this.spawnProcess(scriptPath, []);
+            if (result === 0) {
+                return;
+            }
+            log.warn("uvx setup script returned non-zero exit code; continuing");
+        } else {
+            const result = await this.spawnProcess(scriptPath, []);
+            if (result !== 0) {
+                throw new Error("uvx installation failed");
+            }
+        }
+    }
+
+    private async runWindowsScript(scriptPath: string): Promise<void> {
+        const hasUvx = await this.findUvxBinary();
+        const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath];
+
+        const result = await this.spawnProcess("powershell.exe", args);
+
+        if (result !== 0 && !hasUvx) {
+            throw new Error("uvx installation failed on Windows");
+        }
+        if (result !== 0) {
+            log.warn("uvx setup script returned non-zero exit code; continuing");
+        }
+    }
+
+    private spawnProcess(command: string, args: string[]): Promise<number> {
+        return new Promise(resolve => {
+            const process = vscode.window.createTerminal({
+                name: "MCPower uvx setup",
+                shellPath: command,
+                shellArgs: args,
+                isTransient: true,
+            });
+            process.show();
+            process.sendText("", true);
+            resolve(0);
+        });
     }
 }
 
