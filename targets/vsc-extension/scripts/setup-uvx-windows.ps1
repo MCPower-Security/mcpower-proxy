@@ -12,8 +12,7 @@ function Ensure-Uv {
 
     Write-Log "uv not found; installing via Astral installer"
     $installer = "https://astral.sh/uv/install.ps1"
-    $scriptContent = (Invoke-WebRequest -UseBasicParsing $installer).Content
-    Invoke-Expression "& { $scriptContent }" | Out-Null
+    Invoke-RestMethod $installer | Invoke-Expression
 
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
         $localBin = Join-Path $HOME ".local\bin"
