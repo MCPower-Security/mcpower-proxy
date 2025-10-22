@@ -24,5 +24,4 @@ export interface MCPConfig {
 export interface UvCommand {
     executable: string;
     args: string[];
-    repoUrl: string;
 }

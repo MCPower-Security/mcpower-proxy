@@ -35,30 +35,23 @@ export class UvRunner {
         }
 
         // In development, look for workspace folders containing the project
-        // In production, this gets replaced by CI with the GitHub URL
+        // In production, `projectRoot` gets replaced by CI with the GitHub URL
         let projectRoot = path.resolve(this.context.extensionPath, "..", "..");
-        
-        // Check if we're in an installed extension (not development workspace)
-        if (this.context.extensionPath.includes(".vscode/extensions") || 
-            this.context.extensionPath.includes(".cursor/extensions")) {
-            // Try to find the workspace root that contains mcpower-proxy
-            const workspaceFolders = require("vscode").workspace.workspaceFolders;
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                // Use the first workspace folder as project root
+        if (
+            this.context.extensionPath.includes(".vscode/extensions") ||
+            this.context.extensionPath.includes(".cursor/extensions")
+        ) {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!!workspaceFolders?.length) {
                 projectRoot = workspaceFolders[0].uri.fsPath;
             }
         }
-        
         log.info(`Project root resolved to: ${projectRoot}`);
-        
-        const repoUrl = "https://github.com/MCPower-Security/mcpower-proxy";
-        const args = [
-            "--from",
-            `git+https://github.com/MCPower-Security/mcpower-proxy.git@v0.0.47`,
-            "mcpower-proxy",
-        ];
 
-        return { executable: this.uvxCommand, args, repoUrl };
+        const repoUrl = "https://github.com/MCPower-Security/mcpower-proxy";
+        const args = ["--from", `git+https://github.com/MCPower-Security/mcpower-proxy.git@v0.0.47`, "mcpower-proxy"];
+
+        return { executable: this.uvxCommand, args };
     }
 
     private async installUvx(): Promise<string> {
@@ -94,11 +87,11 @@ export class UvRunner {
     private async findUvxBinary(): Promise<string | undefined> {
         const isWindows = os.platform() === "win32";
         const localBinPath = path.join(os.homedir(), ".local", "bin");
-        
+
         const candidates = isWindows
             ? ["uvx.exe", "uvx", path.join(localBinPath, "uvx.exe")]
             : ["uvx", path.join(localBinPath, "uvx")];
-        
+
         for (const candidate of candidates) {
             if (await this.commandExists(candidate)) {
                 return candidate;
@@ -117,7 +110,7 @@ export class UvRunner {
                 proc.on("error", () => resolve(false));
             });
         }
-        
+
         // For paths, check if file exists
         try {
             const stats = await fs.promises.stat(command);
@@ -131,17 +124,13 @@ export class UvRunner {
         await fs.promises.chmod(scriptPath, 0o755);
 
         const hasUvx = await this.findUvxBinary();
-        if (hasUvx) {
-            const result = await this.spawnProcess(scriptPath, []);
-            if (result === 0) {
-                return;
-            }
+        const result = await this.spawnProcess(scriptPath, []);
+
+        if (result !== 0 && !hasUvx) {
+            throw new Error("uvx installation failed");
+        }
+        if (result !== 0) {
             log.warn("uvx setup script returned non-zero exit code; continuing");
-        } else {
-            const result = await this.spawnProcess(scriptPath, []);
-            if (result !== 0) {
-                throw new Error("uvx installation failed");
-            }
         }
     }
 
@@ -194,4 +183,3 @@ export class UvRunner {
         });
     }
 }
-

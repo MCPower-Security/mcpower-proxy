@@ -126,7 +126,6 @@ async function testWrapUnwrapCycle() {
                     "-m",
                     "main",
                 ],
-                repoUrl: "https://github.com/MCPower-Security/mcpower-proxy",
             }),
         };
 
