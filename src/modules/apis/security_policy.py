@@ -3,6 +3,7 @@
 import json
 import uuid
 from typing import Dict, Any, Optional, List
+import time
 
 import httpx
 
@@ -169,6 +170,7 @@ class SecurityPolicyClient:
                 "X-App-UID": self.app_id
             }
 
+            on_make_request_start_time = time.time()
             method_upper = method.upper()
             if method_upper == "PUT":
                 response = await self.client.put(
@@ -184,6 +186,9 @@ class SecurityPolicyClient:
                 )
             else:
                 raise SecurityAPIError(f"Unsupported HTTP method: {method}. Supported methods: POST, PUT")
+
+            on_make_request_duration = time.time() - on_make_request_start_time
+            self.logger.info(f"PROFILE: {method} id: {id} make_request duration: {on_make_request_duration:.2f} seconds url: {url}")
 
             match response.status_code:
                 case 200:
