@@ -173,7 +173,7 @@ class E2ETestRunner {
 
         // Compile the extension to ensure it's up to date
         console.log("\n🔨 Compiling extension...");
-        execSync("npm run compile", {
+        execSync("npm run compile:vsc-extension", {
             cwd: this.extensionPath,
             stdio: "pipe",
         });
