@@ -10,9 +10,11 @@ const targetDir = path.join(extensionRoot, 'proxy-bundled');
 function shouldExclude(relativePath, fileName) {
     const pathParts = relativePath.split(path.sep);
     
-    // Exclude test/tests directories
-    if (pathParts.includes('test') || pathParts.includes('tests')) {
-        return true;
+    // Exclude directories named exactly 'test' or 'tests'
+    for (const part of pathParts) {
+        if (part === 'test' || part === 'tests') {
+            return true;
+        }
     }
     
     // Exclude files with 'test' in their name
