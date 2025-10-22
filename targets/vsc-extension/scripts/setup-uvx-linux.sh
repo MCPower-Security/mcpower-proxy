@@ -6,6 +6,32 @@ log() {
     printf '%s\n' "$1"
 }
 
+ensure_git() {
+    if command -v git >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log "Git not found; attempting installation"
+    
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update && sudo apt-get install -y git
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y git
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y git
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm git
+    else
+        log "Package manager not detected; cannot auto-install Git"
+        return 1
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        log "Git installation failed"
+        return 1
+    fi
+}
+
 ensure_uv() {
     if command -v uv >/dev/null 2>&1; then
         return 0
@@ -39,10 +65,11 @@ ensure_uvx() {
 }
 
 main() {
-    log "Ensuring uvx is installed (Linux)"
+    log "Ensuring Git and uvx are installed (Linux)"
+    ensure_git
     ensure_uv
     ensure_uvx
-    log "uvx ready"
+    log "Git and uvx ready"
 }
 
 main "$@"

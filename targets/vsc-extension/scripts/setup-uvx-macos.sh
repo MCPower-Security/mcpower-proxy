@@ -6,6 +6,25 @@ log() {
     printf '%s\n' "$1"
 }
 
+ensure_git() {
+    if command -v git >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log "Git not found; installing via Homebrew"
+    if ! command -v brew >/dev/null 2>&1; then
+        log "Homebrew not found; installing"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    fi
+    
+    brew install git
+
+    if ! command -v git >/dev/null 2>&1; then
+        log "Git installation failed"
+        return 1
+    fi
+}
+
 ensure_uv() {
     if command -v uv >/dev/null 2>&1; then
         return 0
@@ -41,10 +60,11 @@ ensure_uvx() {
 }
 
 main() {
-    log "Ensuring uvx is installed (macOS)"
+    log "Ensuring Git and uvx are installed (macOS)"
+    ensure_git
     ensure_uv
     ensure_uvx
-    log "uvx ready"
+    log "Git and uvx ready"
 }
 
 main "$@"

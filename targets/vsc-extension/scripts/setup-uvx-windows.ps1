@@ -5,6 +5,29 @@ function Write-Log($Message) {
     Write-Host $Message
 }
 
+function Ensure-Git {
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    Write-Log "Git not found; installing via official installer"
+    $gitUrl = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
+    $installerPath = Join-Path $env:TEMP "git-installer.exe"
+    
+    Invoke-WebRequest -Uri $gitUrl -OutFile $installerPath -UseBasicParsing
+    Start-Process $installerPath -ArgumentList '/VERYSILENT','/NORESTART','/NOCANCEL','/SP-' -Wait
+    Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+
+    $gitPath = "C:\Program Files\Git\cmd"
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        $env:PATH = "$gitPath;$env:PATH"
+    }
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "Git installation succeeded but command not found; restart required"
+    }
+}
+
 function Ensure-Uv {
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         return
@@ -37,8 +60,9 @@ function Ensure-Uvx {
     }
 }
 
-Write-Log "Ensuring uvx is installed (Windows)"
+Write-Log "Ensuring Git and uvx are installed (Windows)"
+Ensure-Git
 Ensure-Uv
 Ensure-Uvx
-Write-Log "uvx ready"
+Write-Log "Git and uvx ready"
 
