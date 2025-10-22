@@ -20,7 +20,7 @@ async def run_main_py_test():
     command = [
         "uvx",
         "--from",
-        "git+https://github.com/MCPower-Security/mcpower-proxy.git",
+        "git+https://github.com/MCPower-Security/mcpower-proxy.git@3d3893d92998e39159c48e0aa15e11dd1dde9527",
         "mcpower-proxy",
     ]
     await run_test(command, "main.py")

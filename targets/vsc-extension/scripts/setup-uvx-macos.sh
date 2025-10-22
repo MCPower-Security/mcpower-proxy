@@ -65,7 +65,7 @@ ensure_uvx() {
 }
 
 cache_mcpower_proxy() {
-    local version="__MCPOWER_VERSION__"
+    local version="0.0.47"
     
     log "Pre-warming mcpower-proxy v${version} cache..."
     uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v${version}" mcpower-proxy --help >/dev/null 2>&1 || true

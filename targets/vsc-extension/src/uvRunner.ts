@@ -54,7 +54,7 @@ export class UvRunner {
         const repoUrl = "https://github.com/MCPower-Security/mcpower-proxy";
         const args = [
             "--from",
-            `git+file://${projectRoot}`,
+            `git+https://github.com/MCPower-Security/mcpower-proxy.git@v0.0.47`,
             "mcpower-proxy",
         ];
 

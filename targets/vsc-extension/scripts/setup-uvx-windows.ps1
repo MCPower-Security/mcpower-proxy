@@ -68,7 +68,7 @@ function Ensure-Uvx {
 }
 
 function Cache-McpowerProxy {
-    $version = "__MCPOWER_VERSION__"
+    $version = "0.0.47"
     
     Write-Log "Pre-warming mcpower-proxy v$version cache..."
     uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v$version" mcpower-proxy --help | Out-Null
