@@ -25,12 +25,6 @@ class PIIDetector:
                 r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
                 re.IGNORECASE
             ),
-            'PHONE_NUMBER': re.compile(
-                r'(?:\+?1[-.\s]?)?'  # Optional country code
-                r'(?:\(?[0-9]{3}\)?[-.\s]?)'  # Area code
-                r'[0-9]{3}[-.\s]?'  # First 3 digits
-                r'[0-9]{4}\b'  # Last 4 digits
-            ),
             'US_SSN': re.compile(
                 r'\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b'
             ),
