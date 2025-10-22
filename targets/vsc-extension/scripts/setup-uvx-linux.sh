@@ -6,32 +6,6 @@ log() {
     printf '%s\n' "$1"
 }
 
-ensure_git() {
-    if command -v git >/dev/null 2>&1; then
-        return 0
-    fi
-
-    log "Git not found; attempting installation"
-    
-    if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update && sudo apt-get install -y git
-    elif command -v yum >/dev/null 2>&1; then
-        sudo yum install -y git
-    elif command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y git
-    elif command -v pacman >/dev/null 2>&1; then
-        sudo pacman -S --noconfirm git
-    else
-        log "Package manager not detected; cannot auto-install Git"
-        return 1
-    fi
-
-    if ! command -v git >/dev/null 2>&1; then
-        log "Git installation failed"
-        return 1
-    fi
-}
-
 ensure_uv() {
     if command -v uv >/dev/null 2>&1; then
         return 0
@@ -65,19 +39,28 @@ ensure_uvx() {
 }
 
 cache_mcpower_proxy() {
-    local version="0.0.47"
+    local bundled_path="$1"
     
-    log "Pre-warming mcpower-proxy v${version} cache..."
-    uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v${version}" mcpower-proxy --help >/dev/null 2>&1 || true
+    if [[ -z "$bundled_path" || ! -d "$bundled_path" ]]; then
+        log "Bundled proxy path not provided or invalid; skipping cache"
+        return 0
+    fi
+
+    log "Pre-warming mcpower-proxy cache from bundled source..."
+    cd "$bundled_path" && uv sync >/dev/null 2>&1 || true
 }
 
 main() {
-    log "Ensuring Git and uvx are installed (Linux)"
-    ensure_git
+    log "Ensuring uvx is installed (Linux)"
     ensure_uv
     ensure_uvx
-    cache_mcpower_proxy
-    log "Git and uvx ready"
+
+    # Cache dependencies if bundled path provided
+    if [[ $# -gt 0 ]]; then
+        cache_mcpower_proxy "$1"
+    fi
+
+    log "uvx ready"
 }
 
 main "$@"

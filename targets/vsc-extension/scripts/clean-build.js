@@ -38,6 +38,9 @@ class BuildCleaner {
             // TypeScript compilation output
             path.join(this.extensionRoot, "out"),
 
+            // Bundled Python source
+            path.join(this.extensionRoot, "proxy-bundled"),
+
             // Extension packages
             ...this.globSync(path.join(this.extensionRoot, "*.vsix")),
         ];

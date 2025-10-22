@@ -4,6 +4,7 @@ node_modules
 .vscode-test/
 *.vsix
 executables/
+proxy-bundled/
 .DS_Store
 *.log
 

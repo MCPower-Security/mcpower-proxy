@@ -87,7 +87,7 @@
     "compile:vsc-extension": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
-    "package:vsc-extension": "vsce package --allow-star-activation",
+    "package:vsc-extension": "node scripts/copy-proxy.js && vsce package --allow-star-activation",
     "build:vsc-extension": "npm run compile:vsc-extension && npm run package:vsc-extension",
     "clean:build": "node scripts/clean-build.js"
   },

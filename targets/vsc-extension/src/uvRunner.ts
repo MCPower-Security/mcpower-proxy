@@ -17,7 +17,8 @@ export class UvRunner {
 
     async initialize(): Promise<void> {
         const scriptPath = await this.installUvx();
-        await this.runScript(scriptPath);
+        const bundledProxyPath = path.join(this.context.extensionPath, "proxy-bundled");
+        await this.runScript(scriptPath, bundledProxyPath);
 
         const resolved = await this.findUvxBinary();
         if (!resolved) {
@@ -34,22 +35,8 @@ export class UvRunner {
             throw new Error("uvx command not available; initialize() first");
         }
 
-        // In development, look for workspace folders containing the project
-        // In production, `projectRoot` gets replaced by CI with the GitHub URL
-        let projectRoot = path.resolve(this.context.extensionPath, "..", "..");
-        if (
-            this.context.extensionPath.includes(".vscode/extensions") ||
-            this.context.extensionPath.includes(".cursor/extensions")
-        ) {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!!workspaceFolders?.length) {
-                projectRoot = workspaceFolders[0].uri.fsPath;
-            }
-        }
-        log.info(`Project root resolved to: ${projectRoot}`);
-
-        const repoUrl = "https://github.com/MCPower-Security/mcpower-proxy";
-        const args = ["--from", `git+https://github.com/MCPower-Security/mcpower-proxy.git@v0.0.47`, "mcpower-proxy"];
+        const bundledProxyPath = path.join(this.context.extensionPath, "proxy-bundled");
+        const args = ["--from", bundledProxyPath, "mcpower-proxy"];
 
         return { executable: this.uvxCommand, args };
     }
@@ -70,7 +57,7 @@ export class UvRunner {
         }
     }
 
-    private async runScript(scriptPath: string): Promise<void> {
+    private async runScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
         if (!(await fileExists(scriptPath))) {
             throw new Error(`uvx setup script missing: ${scriptPath}`);
         }
@@ -78,9 +65,9 @@ export class UvRunner {
         log.info(`Running uvx setup script: ${scriptPath}`);
 
         if (os.platform() === "win32") {
-            await this.runWindowsScript(scriptPath);
+            await this.runWindowsScript(scriptPath, bundledProxyPath);
         } else {
-            await this.runUnixScript(scriptPath);
+            await this.runUnixScript(scriptPath, bundledProxyPath);
         }
     }
 
@@ -120,11 +107,11 @@ export class UvRunner {
         }
     }
 
-    private async runUnixScript(scriptPath: string): Promise<void> {
+    private async runUnixScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
         await fs.promises.chmod(scriptPath, 0o755);
 
         const hasUvx = await this.findUvxBinary();
-        const result = await this.spawnProcess(scriptPath, []);
+        const result = await this.spawnProcess(scriptPath, [bundledProxyPath]);
 
         if (result !== 0 && !hasUvx) {
             throw new Error("uvx installation failed");
@@ -134,9 +121,9 @@ export class UvRunner {
         }
     }
 
-    private async runWindowsScript(scriptPath: string): Promise<void> {
+    private async runWindowsScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
         const hasUvx = await this.findUvxBinary();
-        const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath];
+        const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath, bundledProxyPath];
 
         const result = await this.spawnProcess("powershell.exe", args);
 

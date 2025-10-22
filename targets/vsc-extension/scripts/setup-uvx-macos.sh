@@ -6,30 +6,6 @@ log() {
     printf '%s\n' "$1"
 }
 
-ensure_git() {
-    if command -v git >/dev/null 2>&1; then
-        return 0
-    fi
-
-    log "Git not found; attempting to install via Xcode Command Line Tools"
-    
-    # Try Xcode Command Line Tools first (includes Git)
-    xcode-select --install 2>/dev/null || true
-    
-    # Wait for user to complete installation
-    log "Waiting for Xcode Command Line Tools installation..."
-    sleep 300
-    
-    if command -v git >/dev/null 2>&1; then
-        return 0
-    fi
-
-    if ! command -v git >/dev/null 2>&1; then
-        log "Git installation failed"
-        return 1
-    fi
-}
-
 ensure_uv() {
     if command -v uv >/dev/null 2>&1; then
         return 0
@@ -65,19 +41,28 @@ ensure_uvx() {
 }
 
 cache_mcpower_proxy() {
-    local version="0.0.47"
+    local bundled_path="$1"
     
-    log "Pre-warming mcpower-proxy v${version} cache..."
-    uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v${version}" mcpower-proxy --help >/dev/null 2>&1 || true
+    if [[ -z "$bundled_path" || ! -d "$bundled_path" ]]; then
+        log "Bundled proxy path not provided or invalid; skipping cache"
+        return 0
+    fi
+
+    log "Pre-warming mcpower-proxy cache from bundled source..."
+    cd "$bundled_path" && uv sync >/dev/null 2>&1 || true
 }
 
 main() {
-    log "Ensuring Git and uvx are installed (macOS)"
-    ensure_git
+    log "Ensuring uvx is installed (macOS)"
     ensure_uv
     ensure_uvx
-    cache_mcpower_proxy
-    log "Git and uvx ready"
+
+    # Cache dependencies if bundled path provided
+    if [[ $# -gt 0 ]]; then
+        cache_mcpower_proxy "$1"
+    fi
+
+    log "uvx ready"
 }
 
 main "$@"

@@ -5,36 +5,6 @@ function Write-Log($Message) {
     Write-Host $Message
 }
 
-function Ensure-Git {
-    if (Get-Command git -ErrorAction SilentlyContinue) {
-        return
-    }
-
-    Write-Log "Git not found; installing via official installer"
-    $gitUrl = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
-    $installerPath = Join-Path $env:TEMP "git-installer.exe"
-    
-    Invoke-WebRequest -Uri $gitUrl -OutFile $installerPath -UseBasicParsing
-    Start-Process $installerPath -ArgumentList '/VERYSILENT','/NORESTART','/NOCANCEL','/SP-' -Wait
-    Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
-
-    $gitPath = "C:\Program Files\Git\cmd"
-    
-    # Add Git to system PATH permanently
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-    if ($currentPath -notlike "*$gitPath*") {
-        Write-Log "Adding Git to system PATH"
-        [Environment]::SetEnvironmentVariable("PATH", "$gitPath;$currentPath", "User")
-    }
-    
-    # Update current session PATH for verification
-    $env:PATH = "$gitPath;$env:PATH"
-
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        throw "Git installation succeeded but command not found; new shells will have Git in PATH"
-    }
-}
-
 function Ensure-Uv {
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         return
@@ -68,16 +38,31 @@ function Ensure-Uvx {
 }
 
 function Cache-McpowerProxy {
-    $version = "0.0.47"
+    param($BundledPath)
     
-    Write-Log "Pre-warming mcpower-proxy v$version cache..."
-    uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v$version" mcpower-proxy --help | Out-Null
+    if (-not $BundledPath -or -not (Test-Path $BundledPath)) {
+        Write-Log "Bundled proxy path not provided or invalid; skipping cache"
+        return
+    }
+
+    Write-Log "Pre-warming mcpower-proxy cache from bundled source..."
+    Push-Location $BundledPath
+    try {
+        uv sync 2>&1 | Out-Null
+    } catch {
+        # Ignore errors during cache warming
+    }
+    Pop-Location
 }
 
-Write-Log "Ensuring Git and uvx are installed (Windows)"
-Ensure-Git
+Write-Log "Ensuring uvx is installed (Windows)"
 Ensure-Uv
 Ensure-Uvx
-Cache-McpowerProxy
-Write-Log "Git and uvx ready"
+
+# Cache dependencies if bundled path provided
+if ($args.Count -gt 0) {
+    Cache-McpowerProxy $args[0]
+}
+
+Write-Log "uvx ready"
 

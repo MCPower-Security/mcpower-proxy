@@ -8,6 +8,9 @@ src/**
 tsconfig.json
 .eslintrc.json
 
+# Include bundled proxy
+!proxy-bundled/
+
 # Common excludes
 **/.DS_Store
 **/Thumbs.db
