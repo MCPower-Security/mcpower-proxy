@@ -38,9 +38,7 @@ export class UvRunner {
         const args = [
             "--from",
             "git+https://github.com/MCPower-Security/mcpower-proxy.git",
-            "python",
-            "-m",
-            "main",
+            "mcpower-proxy",
         ];
 
         return { executable: this.uvxCommand, args, repoUrl };

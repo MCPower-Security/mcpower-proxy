@@ -16,14 +16,12 @@ async def run_main_py_test():
     test_dir = Path(__file__).parent
     src_dir = test_dir.parent
     main_py = src_dir / "main.py"
-    
+
     command = [
         "uvx",
         "--from",
         "git+https://github.com/MCPower-Security/mcpower-proxy.git",
-        "python",
-        "-m",
-        "main",
+        "mcpower-proxy",
     ]
     await run_test(command, "main.py")
 

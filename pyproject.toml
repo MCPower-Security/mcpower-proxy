@@ -17,7 +17,17 @@ dependencies = [
 [project.license]
 file = "src/LICENSE"
 
-packages = ["main"]
+[project.scripts]
+mcpower-proxy = "main:cli_main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["modules", "modules.apis", "modules.logs", "modules.redaction", "modules.ui", "modules.ui.xdialog", "modules.utils", "wrapper"]
+py-modules = ["main"]
 
 [tool.uv]
 

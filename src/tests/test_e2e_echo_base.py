@@ -156,9 +156,6 @@ async def run_test(command: list[str], test_name: str):
 
     # Build full command with args
     full_command = command + [
-        "python",
-        "-m",
-        "main",
         "--name",
         "server-everything",
         "--wrapped-config",

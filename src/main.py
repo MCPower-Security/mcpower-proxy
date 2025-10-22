@@ -103,5 +103,10 @@ def main():
         sys.exit(1)
 
 
+def cli_main():
+    """Entry point for console script"""
+    main()
+
+
 if __name__ == "__main__":
     main()
