@@ -78,6 +78,35 @@ class BuildCleaner {
         return cleaned;
     }
 
+    async cleanServerFiles() {
+        console.log("\n🖥️  Cleaning server build files...");
+        let cleaned = 0;
+
+        const serverPaths = [
+            // Python cache directories
+            path.join(this.serverRoot, "__pycache__"),
+            path.join(this.serverRoot, ".pytest_cache"),
+
+            // Python build artifacts
+            path.join(this.serverRoot, "build"),
+            path.join(this.serverRoot, "dist"),
+            path.join(this.serverRoot, "*.egg-info"),
+
+            // Python compiled files
+            ...this.globSync(path.join(this.serverRoot, "**", "*.pyc")),
+            ...this.globSync(path.join(this.serverRoot, "**", "*.pyo")),
+            ...this.globSync(path.join(this.serverRoot, "**", "__pycache__")),
+        ];
+
+        for (const filePath of serverPaths) {
+            if (await this.removeIfExists(filePath)) {
+                cleaned++;
+            }
+        }
+
+        return cleaned;
+    }
+
     async cleanProjectFiles() {
         console.log("\n🗂️  Cleaning project-wide files...");
         let cleaned = 0;
