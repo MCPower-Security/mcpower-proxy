@@ -9,6 +9,24 @@ import fs from "fs";
 
 let state: ExtensionState | undefined;
 
+function getActivationStateFile(context: vscode.ExtensionContext): string {
+    return path.join(context.extensionPath, ".activation-state");
+}
+
+function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
+    return fs.existsSync(getActivationStateFile(context));
+}
+
+function markActivationMessageShown(context: vscode.ExtensionContext): void {
+    fs.writeFileSync(
+        getActivationStateFile(context),
+        JSON.stringify({
+            activated: true,
+            timestamp: Date.now(),
+        })
+    );
+}
+
 // noinspection JSUnusedGlobalSymbols
 export async function activate(context: vscode.ExtensionContext) {
     log.info("Extension is now active");
@@ -16,6 +34,13 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         // Handle extension updates before initialization
         await handleExtensionUpdate(context);
+
+        // Show installation message during initialization
+        const isFirstActivation = !hasShownActivationMessage(context);
+
+        if (isFirstActivation) {
+            vscode.window.showInformationMessage("🛠️ Installing MCPower, please wait...");
+        }
 
         // Initialize extension state
         state = await initializeExtensionState(context);
@@ -40,11 +65,7 @@ export async function activate(context: vscode.ExtensionContext) {
             dispose: () => auditTrailView.dispose(),
         });
 
-        // Use extension-specific state file (that gets cleaned up on uninstallation)
-        const extensionStateFile = path.join(context.extensionPath, ".activation-state");
-        const hasShownActivationMessage = fs.existsSync(extensionStateFile);
-
-        if (!hasShownActivationMessage) {
+        if (isFirstActivation) {
             // Show activate action on first activation
             const action = await vscode.window.showInformationMessage(
                 "✅ MCPower Security Installed",
@@ -52,13 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
             );
 
             if (action === "Activate") {
-                fs.writeFileSync(
-                    extensionStateFile,
-                    JSON.stringify({
-                        activated: true,
-                        timestamp: Date.now(),
-                    })
-                );
+                markActivationMessageShown(context);
                 await vscode.commands.executeCommand("workbench.action.reloadWindow");
             }
         } else {
