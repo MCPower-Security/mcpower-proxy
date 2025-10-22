@@ -2,7 +2,7 @@
   "name": "mcpower",
   "displayName": "MCPower Security",
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
-  "version": "0.0.50",
+  "version": "0.0.51",
   "publisher": "mcpower",
   "license": "Apache-2.0",
   "icon": "resources/ext-icon-dark.png",
