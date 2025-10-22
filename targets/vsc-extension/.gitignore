@@ -1,0 +1,27 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+executables/
+proxy-bundled/
+.DS_Store
+*.log
+
+# Build artifacts
+build/
+specs/
+
+# Platform-specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE files
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
