@@ -11,7 +11,7 @@ const path = require("path");
 class BuildCleaner {
     constructor() {
         this.extensionRoot = path.dirname(__dirname);
-        this.projectRoot = path.dirname(this.extensionRoot);
+        this.projectRoot = path.dirname(path.dirname(this.extensionRoot));
         this.srcRoot = path.join(this.projectRoot, "src");
     }
 
@@ -59,41 +59,14 @@ class BuildCleaner {
             path.join(this.srcRoot, ".venv"),
             path.join(this.srcRoot, "__pycache__"),
             path.join(this.srcRoot, ".pytest_cache"),
+            path.join(this.srcRoot, "mcpower_proxy.egg-info"),
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyc")),
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyo")),
             ...this.globSync(path.join(this.srcRoot, "**", "__pycache__")),
+            ...this.globSync(path.join(this.srcRoot, "**", "mcpower_proxy.egg-info")),
         ];
 
         for (const filePath of srcPaths) {
-            if (await this.removeIfExists(filePath)) {
-                cleaned++;
-            }
-        }
-
-        return cleaned;
-    }
-
-    async cleanServerFiles() {
-        console.log("\n🖥️  Cleaning server build files...");
-        let cleaned = 0;
-
-        const serverPaths = [
-            // Python cache directories
-            path.join(this.serverRoot, "__pycache__"),
-            path.join(this.serverRoot, ".pytest_cache"),
-
-            // Python build artifacts
-            path.join(this.serverRoot, "build"),
-            path.join(this.serverRoot, "dist"),
-            path.join(this.serverRoot, "*.egg-info"),
-
-            // Python compiled files
-            ...this.globSync(path.join(this.serverRoot, "**", "*.pyc")),
-            ...this.globSync(path.join(this.serverRoot, "**", "*.pyo")),
-            ...this.globSync(path.join(this.serverRoot, "**", "__pycache__")),
-        ];
-
-        for (const filePath of serverPaths) {
             if (await this.removeIfExists(filePath)) {
                 cleaned++;
             }
