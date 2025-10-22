@@ -46,13 +46,11 @@ function Cache-McpowerProxy {
     }
 
     Write-Log "Pre-warming mcpower-proxy cache from bundled source..."
-    Push-Location $BundledPath
     try {
-        uv sync 2>&1 | Out-Null
+        uvx --from $BundledPath mcpower-proxy --help 2>&1 | Out-Null
     } catch {
         # Ignore errors during cache warming
     }
-    Pop-Location
 }
 
 Write-Log "Ensuring uvx is installed (Windows)"

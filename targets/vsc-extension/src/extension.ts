@@ -27,46 +27,48 @@ function markActivationMessageShown(context: vscode.ExtensionContext): void {
     );
 }
 
+async function performInitialization(context: vscode.ExtensionContext): Promise<void> {
+    state = await initializeExtensionState(context);
+
+    // Listen for workspace folder changes
+    const workspaceChangeListener = vscode.workspace.onDidChangeWorkspaceFolders(
+        async event => {
+            log.info(
+                `Workspace folders changed: added=${event.added.join(",")}, removed=${event.removed.join(",")}`
+            );
+            await state!.configMonitor.handleWorkspaceChange();
+        }
+    );
+    context.subscriptions.push(workspaceChangeListener);
+
+    await state.configMonitor.startMonitoring(state.uvRunner);
+
+    const auditTrailView = new AuditTrailView(context);
+    await auditTrailView.initialize();
+    context.subscriptions.push({
+        dispose: () => auditTrailView.dispose(),
+    });
+}
+
 // noinspection JSUnusedGlobalSymbols
 export async function activate(context: vscode.ExtensionContext) {
     log.info("Extension is now active");
 
     try {
-        // Handle extension updates before initialization
         await handleExtensionUpdate(context);
 
-        // Show installation message during initialization
         const isFirstActivation = !hasShownActivationMessage(context);
-
+        
         if (isFirstActivation) {
-            vscode.window.showInformationMessage("🛠️ Installing MCPower, please wait...");
-        }
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "🛠️ Installing MCPower, please wait...",
+                    cancellable: false,
+                },
+                async () => await performInitialization(context)
+            );
 
-        // Initialize extension state
-        state = await initializeExtensionState(context);
-
-        // Listen for workspace folder changes
-        // Requirements: 13.8 - Re-establish monitoring when workspace changes
-        const workspaceChangeListener = vscode.workspace.onDidChangeWorkspaceFolders(
-            async event => {
-                log.info(
-                    `Workspace folders changed: added=${event.added.join(",")}, removed=${event.removed.join(",")}`
-                );
-                await state!.configMonitor.handleWorkspaceChange();
-            }
-        );
-        context.subscriptions.push(workspaceChangeListener);
-
-        await state.configMonitor.startMonitoring(state.uvRunner);
-
-        const auditTrailView = new AuditTrailView(context);
-        await auditTrailView.initialize();
-        context.subscriptions.push({
-            dispose: () => auditTrailView.dispose(),
-        });
-
-        if (isFirstActivation) {
-            // Show activate action on first activation
             const action = await vscode.window.showInformationMessage(
                 "✅ MCPower Security Installed",
                 "Activate"
@@ -77,6 +79,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 await vscode.commands.executeCommand("workbench.action.reloadWindow");
             }
         } else {
+            await performInitialization(context);
             vscode.window.showInformationMessage(`✅ MCPower Security activated`);
         }
     } catch (error) {

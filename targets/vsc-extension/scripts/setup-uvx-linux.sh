@@ -47,7 +47,7 @@ cache_mcpower_proxy() {
     fi
 
     log "Pre-warming mcpower-proxy cache from bundled source..."
-    cd "$bundled_path" && uv sync >/dev/null 2>&1 || true
+    uvx --from "$bundled_path" mcpower-proxy --help >/dev/null 2>&1 || true
 }
 
 main() {

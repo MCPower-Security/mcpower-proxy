@@ -142,24 +142,17 @@ export class UvRunner {
                 shell: false,
             });
 
-            let stdout = "";
-            let stderr = "";
-
             proc.stdout?.on("data", data => {
-                stdout += data.toString();
+                const lines = data.toString().split("\n").filter((l: string) => l.trim());
+                lines.forEach((line: string) => log.info(`[setup] ${line.trim()}`));
             });
 
             proc.stderr?.on("data", data => {
-                stderr += data.toString();
+                const lines = data.toString().split("\n").filter((l: string) => l.trim());
+                lines.forEach((line: string) => log.info(`[setup] ${line.trim()}`));
             });
 
             proc.on("close", code => {
-                if (stdout) {
-                    log.info(`uvx setup stdout: ${stdout.trim()}`);
-                }
-                if (stderr) {
-                    log.info(`uvx setup stderr: ${stderr.trim()}`);
-                }
                 resolve(code ?? 0);
             });
 
