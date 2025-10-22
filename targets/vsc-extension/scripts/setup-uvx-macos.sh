@@ -64,11 +64,19 @@ ensure_uvx() {
     fi
 }
 
+cache_mcpower_proxy() {
+    local version="__MCPOWER_VERSION__"
+    
+    log "Pre-warming mcpower-proxy v${version} cache..."
+    uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v${version}" mcpower-proxy --help >/dev/null 2>&1 || true
+}
+
 main() {
     log "Ensuring Git and uvx are installed (macOS)"
     ensure_git
     ensure_uv
     ensure_uvx
+    cache_mcpower_proxy
     log "Git and uvx ready"
 }
 

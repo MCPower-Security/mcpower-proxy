@@ -34,10 +34,27 @@ export class UvRunner {
             throw new Error("uvx command not available; initialize() first");
         }
 
+        // In development, look for workspace folders containing the project
+        // In production, this gets replaced by CI with the GitHub URL
+        let projectRoot = path.resolve(this.context.extensionPath, "..", "..");
+        
+        // Check if we're in an installed extension (not development workspace)
+        if (this.context.extensionPath.includes(".vscode/extensions") || 
+            this.context.extensionPath.includes(".cursor/extensions")) {
+            // Try to find the workspace root that contains mcpower-proxy
+            const workspaceFolders = require("vscode").workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                // Use the first workspace folder as project root
+                projectRoot = workspaceFolders[0].uri.fsPath;
+            }
+        }
+        
+        log.info(`Project root resolved to: ${projectRoot}`);
+        
         const repoUrl = "https://github.com/MCPower-Security/mcpower-proxy";
         const args = [
             "--from",
-            "git+https://github.com/MCPower-Security/mcpower-proxy.git",
+            `git+file://${projectRoot}`,
             "mcpower-proxy",
         ];
 

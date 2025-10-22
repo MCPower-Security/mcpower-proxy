@@ -67,9 +67,17 @@ function Ensure-Uvx {
     }
 }
 
+function Cache-McpowerProxy {
+    $version = "__MCPOWER_VERSION__"
+    
+    Write-Log "Pre-warming mcpower-proxy v$version cache..."
+    uvx --from "git+https://github.com/MCPower-Security/mcpower-proxy.git@v$version" mcpower-proxy --help | Out-Null
+}
+
 Write-Log "Ensuring Git and uvx are installed (Windows)"
 Ensure-Git
 Ensure-Uv
 Ensure-Uvx
+Cache-McpowerProxy
 Write-Log "Git and uvx ready"
 
