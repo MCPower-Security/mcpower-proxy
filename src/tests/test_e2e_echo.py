@@ -15,12 +15,12 @@ from test_e2e_echo_base import run_test
 async def run_main_py_test():
     test_dir = Path(__file__).parent
     src_dir = test_dir.parent
-    main_py = src_dir / "main.py"
+    repo_root = src_dir.parent
 
     command = [
         "uvx",
         "--from",
-        "git+https://github.com/MCPower-Security/mcpower-proxy.git@3d3893d92998e39159c48e0aa15e11dd1dde9527",
+        str(repo_root),
         "mcpower-proxy",
     ]
     await run_test(command, "main.py")

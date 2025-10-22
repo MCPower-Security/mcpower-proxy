@@ -85,6 +85,8 @@ class BuildCleaner {
         const projectPaths = [
             // OS-specific files
             path.join(this.projectRoot, ".DS_Store"),
+            path.join(this.projectRoot, "build"),
+
             ...this.globSync(path.join(this.projectRoot, "**", ".DS_Store")),
 
             // IDE files (optional)
