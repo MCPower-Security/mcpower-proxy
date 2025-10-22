@@ -11,13 +11,18 @@ ensure_git() {
         return 0
     fi
 
-    log "Git not found; installing via Homebrew"
-    if ! command -v brew >/dev/null 2>&1; then
-        log "Homebrew not found; installing"
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    fi
+    log "Git not found; attempting to install via Xcode Command Line Tools"
     
-    brew install git
+    # Try Xcode Command Line Tools first (includes Git)
+    xcode-select --install 2>/dev/null || true
+    
+    # Wait for user to complete installation
+    log "Waiting for Xcode Command Line Tools installation..."
+    sleep 300
+    
+    if command -v git >/dev/null 2>&1; then
+        return 0
+    fi
 
     if ! command -v git >/dev/null 2>&1; then
         log "Git installation failed"

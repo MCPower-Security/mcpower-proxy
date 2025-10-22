@@ -19,12 +19,19 @@ function Ensure-Git {
     Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
 
     $gitPath = "C:\Program Files\Git\cmd"
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        $env:PATH = "$gitPath;$env:PATH"
+    
+    # Add Git to system PATH permanently
+    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+    if ($currentPath -notlike "*$gitPath*") {
+        Write-Log "Adding Git to system PATH"
+        [Environment]::SetEnvironmentVariable("PATH", "$gitPath;$currentPath", "User")
     }
+    
+    # Update current session PATH for verification
+    $env:PATH = "$gitPath;$env:PATH"
 
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        throw "Git installation succeeded but command not found; restart required"
+        throw "Git installation succeeded but command not found; new shells will have Git in PATH"
     }
 }
 
