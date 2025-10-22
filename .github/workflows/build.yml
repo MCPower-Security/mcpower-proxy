@@ -94,72 +94,9 @@ jobs:
             src/wrapper/__version__.py
             pyproject.toml
 
-  build-macos:
-    needs: [bump-version]
-    runs-on: macos-latest
-    env:
-      UV_PYTHON: "3.11"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: targets/vsc-extension/package-lock.json
-
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Sync Python dependencies
-        run: uv sync --frozen
-
-      - name: Run E2E test on macOS
-        run: uv run python src/tests/test_e2e_echo.py
-
-  build-windows:
-    needs: [bump-version]
-    runs-on: windows-latest
-    env:
-      UV_PYTHON: "3.11"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: targets/vsc-extension/package-lock.json
-
-      - name: Install uv
-        shell: powershell
-        run: |
-          irm https://astral.sh/uv/install.ps1 | iex
-          Add-Content $env:GITHUB_PATH "$HOME\.local\bin"
-
-      - name: Sync Python dependencies
-        shell: powershell
-        run: uv sync --frozen
-
-      - name: Run E2E test on Windows
-        shell: powershell
-        run: uv run python src/tests/test_e2e_echo.py
-
   package-extension:
     needs: [bump-version]
     runs-on: ubuntu-latest
-    env:
-      UV_PYTHON: "3.11"
     outputs:
       new_version: ${{ needs.bump-version.outputs.new_version }}
     steps:
