@@ -1,0 +1,202 @@
+name: vsc-extension
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vsc-extension-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'targets/vsc-extension/**'
+      - '.github/workflows/**'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bump version
+        id: bump
+        working-directory: targets/vsc-extension
+        run: |
+          npm version patch --no-git-tag-version
+          v=$(node -p "require('./package.json').version")
+          echo "new_version=$v" >> $GITHUB_OUTPUT
+          sed -i "s/__version__ = \".*\"/__version__ = \"$v\"/" ../../src/wrapper/__version__.py
+          echo "Bumped version to $v"
+
+      - name: Upload version files
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-files
+          path: |
+            targets/vsc-extension/package.json
+            targets/vsc-extension/package-lock.json
+            src/wrapper/__version__.py
+
+  build-macos:
+    needs: [bump-version]
+    runs-on: macos-latest
+    env:
+      UV_PYTHON: "3.11"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Sync Python dependencies
+        run: uv sync --frozen
+
+      - name: Run E2E test on macOS
+        run: uv run python src/tests/test_e2e_echo.py
+
+  build-windows:
+    needs: [bump-version]
+    runs-on: windows-latest
+    env:
+      UV_PYTHON: "3.11"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Install uv
+        shell: powershell
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          Add-Content $env:GITHUB_PATH "$HOME\.local\bin"
+
+      - name: Sync Python dependencies
+        shell: powershell
+        run: uv sync --frozen
+
+      - name: Run E2E test on Windows
+        shell: powershell
+        run: uv run python src/tests/test_e2e_echo.py
+
+  package-extension:
+    needs: [bump-version, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.11"
+    outputs:
+      new_version: ${{ needs.bump-version.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: targets/vsc-extension/package-lock.json
+
+      - name: Install Node.js dependencies (for compile/package)
+        working-directory: targets/vsc-extension
+        run: npm ci
+
+      - name: Download version files
+        uses: actions/download-artifact@v4
+        with:
+          name: version-files
+          path: ./
+
+      - name: Compile TypeScript and package extension
+        working-directory: targets/vsc-extension
+        run: |
+          echo "Running TypeScript compilation..."
+          npm run compile:vsc-extension
+          echo "TypeScript compilation successful, starting packaging..."
+          npm run package:vsc-extension
+          echo "Packaging completed successfully"
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpower-extension
+          path: targets/vsc-extension/*.vsix
+
+      - name: Commit version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: targets/vsc-extension
+        run: |
+          v=$(node -p "require('./package.json').version")
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json package-lock.json ../../src/wrapper/__version__.py
+          git commit -m "chore: bump version to $v [skip ci]"
+          git pull --rebase origin main
+          git push
+
+  release:
+    needs: package-extension
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mcpower-extension
+          path: release/
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ needs.package-extension.outputs.new_version }}
+          name: MCPower v${{ needs.package-extension.outputs.new_version }}
+          generateReleaseNotes: true
+          artifacts: "release/*.vsix"
+          token: ${{ secrets.GITHUB_TOKEN }}

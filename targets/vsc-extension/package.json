@@ -1,0 +1,111 @@
+{
+  "name": "mcpower",
+  "displayName": "MCPower Security",
+  "description": "Automatically wraps MCP servers with security policies for enhanced protection",
+  "version": "0.0.43",
+  "publisher": "mcpower",
+  "license": "Apache-2.0",
+  "icon": "resources/ext-icon-dark.png",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MCPower-Security/mcpower-proxy"
+  },
+  "bugs": {
+    "url": "https://github.com/MCPower-Security/mcpower-proxy/issues"
+  },
+  "homepage": "https://mcpower.tech",
+  "categories": [
+    "Linters",
+    "Machine Learning",
+    "Testing"
+  ],
+  "keywords": [
+    "mcp",
+    "security",
+    "model-context-protocol",
+    "ai-safety",
+    "ai",
+    "agents",
+    "coding-agents",
+    "llm"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mcpower",
+          "title": "MCPower",
+          "icon": "resources/activitybar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mcpower": [
+        {
+          "id": "mcpower.auditTrail",
+          "name": "MCP Monitor"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mcpower.copyAuditEntry",
+        "title": "Copy Entry to Clipboard",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "mcpower.copyAuditField",
+        "title": "Copy Field to Clipboard",
+        "icon": "$(copy)"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "mcpower.copyAuditEntry",
+          "when": "view == mcpower.auditTrail && viewItem == root",
+          "group": "inline"
+        },
+        {
+          "command": "mcpower.copyAuditField",
+          "when": "view == mcpower.auditTrail && (viewItem == field || viewItem == field_expandable)",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile:vsc-extension",
+    "vscode:uninstall": "node ./out/uninstall_hook.js",
+    "compile:vsc-extension": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package:vsc-extension": "vsce package --allow-star-activation",
+    "build:vsc-extension": "npm run compile:vsc-extension && npm run package:vsc-extension",
+    "clean:build": "node scripts/clean-build.js"
+  },
+  "devDependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@types/node": "^18.19.0",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.74.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vscode/vsce": "^3.6.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "jsonc-parser": "^3.3.1",
+    "uuid": "^9.0.1"
+  }
+}

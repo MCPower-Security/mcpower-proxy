@@ -1,0 +1,29 @@
+[project]
+name = "mcpower-proxy"
+version = "0.0.42"
+description = "MCPower Security proxy"
+requires-python = "~=3.11.0"
+dependencies = [
+  "fastmcp>=2.10.5",
+  "httpx>=0.25.0",
+  "mcp>=1.0.0",
+  "watchdog>=3.0.0",
+  "jsonc-parser>=1.1.5",
+  "jsonpath-ng>=1.7.0",
+  "pydantic>=2.8.0",
+  "mcpower-shared @ git+https://github.com/MCPower-Security/mcpower-shared.git",
+]
+
+[project.license]
+file = "src/LICENSE"
+
+packages = ["main"]
+
+[tool.uv]
+
+[tool.uv.sources]
+mcpower-shared = { git = "https://github.com/MCPower-Security/mcpower-shared.git" }
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
