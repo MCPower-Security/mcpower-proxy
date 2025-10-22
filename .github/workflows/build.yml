@@ -43,21 +43,6 @@ jobs:
           sed -i "s/__version__ = \".*\"/__version__ = \"$v\"/" ../../src/wrapper/__version__.py
           sed -i "s/version = \".*\"/version = \"$v\"/" ../../pyproject.toml
           
-          # Inject version into setup scripts
-          sed -i "s/__MCPOWER_VERSION__/$v/g" scripts/setup-uvx-macos.sh
-          sed -i "s/__MCPOWER_VERSION__/$v/g" scripts/setup-uvx-linux.sh
-          sed -i "s/__MCPOWER_VERSION__/$v/g" scripts/setup-uvx-windows.ps1
-          
-          # Inject GitHub URL with version tag into uvRunner.ts
-          sed -i "s|git+file://\${projectRoot}|git+https://github.com/MCPower-Security/mcpower-proxy.git@v$v|g" src/uvRunner.ts
-          
-          # Capture current commit for tests
-          commit_hash=$(git rev-parse HEAD)
-          echo "commit_hash=$commit_hash" >> $GITHUB_OUTPUT
-          
-          # Pin test to this commit
-          sed -i "s|git+https://github.com/MCPower-Security/mcpower-proxy.git\"|git+https://github.com/MCPower-Security/mcpower-proxy.git@$commit_hash\"|" ../../src/tests/test_e2e_echo.py
-          
           echo "Bumped version to $v"
 
       - name: Upload version files
@@ -67,12 +52,7 @@ jobs:
           path: |
             targets/vsc-extension/package.json
             targets/vsc-extension/package-lock.json
-            targets/vsc-extension/scripts/setup-uvx-macos.sh
-            targets/vsc-extension/scripts/setup-uvx-linux.sh
-            targets/vsc-extension/scripts/setup-uvx-windows.ps1
-            targets/vsc-extension/src/uvRunner.ts
             src/wrapper/__version__.py
-            src/tests/test_e2e_echo.py
             pyproject.toml
 
   build-macos:
@@ -201,7 +181,7 @@ jobs:
           v=$(node -p "require('./package.json').version")
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json package-lock.json scripts/*.sh scripts/*.ps1 src/uvRunner.ts ../../src/wrapper/__version__.py ../../src/tests/test_e2e_echo.py ../../pyproject.toml
+          git add package.json package-lock.json ../../src/wrapper/__version__.py ../../pyproject.toml
           git commit -m "chore: bump version to $v [skip ci]"
           git pull --rebase origin main
           git push

@@ -121,10 +121,8 @@ async function testWrapUnwrapCycle() {
                 executable: "uvx",
                 args: [
                     "--from",
-                    "git+https://github.com/MCPower-Security/mcpower-proxy.git",
-                    "python",
-                    "-m",
-                    "main",
+                    "/mock/path/to/proxy-bundled",
+                    "mcpower-proxy",
                 ],
             }),
         };
