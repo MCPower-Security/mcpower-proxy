@@ -15,10 +15,54 @@ class PIIMatch(NamedTuple):
     confidence: float
 
 
+class URLDetector:
+    """URL detector with protocol requirement and intelligent boundary detection."""
+    
+    def __init__(self):
+        # Common protocols that use :// format
+        protocols = r'(?:https?|ftps?|sftp|ssh|wss?|git|file|telnet|ldaps?|smb|nfs)'
+        self.pattern = re.compile(
+            rf'{protocols}://[^\s]+',
+            re.IGNORECASE
+        )
+        self.sentence_enders = '.,:;!?\'"'
+    
+    def extract(self, text: str) -> List[PIIMatch]:
+        """Extract URLs with proper boundary detection."""
+        matches = []
+        for match in self.pattern.finditer(text):
+            cleaned_url = self._clean_url(match.group())
+            if cleaned_url:
+                end = match.start() + len(cleaned_url)
+                matches.append(PIIMatch(
+                    start=match.start(),
+                    end=end,
+                    entity_type='URL',
+                    confidence=0.85
+                ))
+        return matches
+    
+    def _clean_url(self, url: str) -> str:
+        """Remove trailing punctuation intelligently."""
+        url = url.rstrip(self.sentence_enders)
+        
+        # Balance paired delimiters
+        for opener, closer in [('(', ')'), ('[', ']'), ('{', '}')]:
+            while url.endswith(closer):
+                if url.count(opener) >= url.count(closer):
+                    break
+                url = url[:-1]
+        
+        return url
+
+
 class PIIDetector:
     """Lightweight PII detector using only regex patterns."""
     
     def __init__(self):
+        # URL detector with intelligent boundary detection
+        self.url_detector = URLDetector()
+        
         # Compile regex patterns for better performance
         self.patterns = {
             'EMAIL_ADDRESS': re.compile(
@@ -44,16 +88,6 @@ class PIIDetector:
                 r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
                 r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
             ),
-            'URL': re.compile(
-                r'https?://(?:[-\w.])+(?:\:[0-9]+)?(?:/(?:[\w/_.-])*)?(?:\?(?:[\w&=%.-])*)?(?:\#(?:[\w.-])*)?',
-                re.IGNORECASE
-            ),
-            'US_PASSPORT': re.compile(
-                r'\b[A-Z]{1,2}[0-9]{6,9}\b'
-            ),
-            'US_DRIVER_LICENSE': re.compile(
-                r'\b[A-Z]{1,2}[0-9]{5,8}\b'
-            ),
             # Common crypto addresses
             'CRYPTO_ADDRESS': re.compile(
                 r'\b(?:'
@@ -68,6 +102,22 @@ class PIIDetector:
             ),
         }
     
+    def validate_credit_card(self, number: str) -> bool:
+        """Validate credit card using Luhn algorithm"""
+        digits = re.sub(r'\D', '', number)  # Remove non-digits
+        if not digits:
+            return False
+        
+        total = 0
+        for i, digit in enumerate(reversed(digits)):
+            n = int(digit)
+            if i % 2 == 1:
+                n *= 2
+                if n > 9:
+                    n -= 9
+            total += n
+        return total % 10 == 0
+    
     def analyze(self, text: str) -> List[PIIMatch]:
         """
         Analyze text and return detected PII matches.
@@ -80,8 +130,17 @@ class PIIDetector:
         """
         matches = []
         
+        # Extract URLs using URLDetector
+        matches.extend(self.url_detector.extract(text))
+        
+        # Extract other PII using regex patterns
         for entity_type, pattern in self.patterns.items():
             for match in pattern.finditer(text):
+                # For credit cards, validate with Luhn algorithm (gate)
+                if entity_type == 'CREDIT_CARD':
+                    if not self.validate_credit_card(match.group()):
+                        continue  # Skip if Luhn validation fails
+                
                 # Calculate confidence based on pattern specificity
                 confidence = self._calculate_confidence(entity_type, match.group())
                 
