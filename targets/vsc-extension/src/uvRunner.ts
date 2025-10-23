@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import { spawn } from "child_process";
 import log from "./log";
-import { fileExists } from "./utils";
+import { fileExists, mapOS } from "./utils";
 import { UvCommand } from "./types";
 
 export class UvRunner {
@@ -49,14 +49,14 @@ export class UvRunner {
 
     private async installUvx(): Promise<string> {
         const scriptsDir = path.join(this.context.extensionPath, "scripts");
-        const platform = os.platform();
+        const platform = mapOS();
 
         switch (platform) {
-            case "darwin":
+            case "macos":
                 return path.join(scriptsDir, "setup-uvx-macos.sh");
             case "linux":
                 return path.join(scriptsDir, "setup-uvx-linux.sh");
-            case "win32":
+            case "windows":
                 return path.join(scriptsDir, "setup-uvx-windows.ps1");
             default:
                 throw new Error(`Unsupported platform: ${platform}`);
@@ -70,7 +70,7 @@ export class UvRunner {
 
         log.info(`Running uvx setup script: ${scriptPath}`);
 
-        if (os.platform() === "win32") {
+        if (mapOS() === "windows") {
             await this.runWindowsScript(scriptPath, bundledProxyPath);
         } else {
             await this.runUnixScript(scriptPath, bundledProxyPath);
@@ -78,7 +78,7 @@ export class UvRunner {
     }
 
     private async findUvxBinary(): Promise<string | undefined> {
-        const isWindows = os.platform() === "win32";
+        const isWindows = mapOS() === "windows";
         const localBinPath = path.join(os.homedir(), ".local", "bin");
 
         const candidates = isWindows
@@ -97,7 +97,7 @@ export class UvRunner {
         // For bare commands (no path separators), check if they're in PATH
         if (!command.includes(path.sep) && !command.includes("/")) {
             return new Promise(resolve => {
-                const testCmd = os.platform() === "win32" ? "where" : "which";
+                const testCmd = mapOS() === "windows" ? "where" : "which";
                 const proc = spawn(testCmd, [command], { stdio: "ignore" });
                 proc.on("close", code => resolve(code === 0));
                 proc.on("error", () => resolve(false));

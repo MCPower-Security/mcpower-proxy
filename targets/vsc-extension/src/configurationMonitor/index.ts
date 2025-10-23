@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 import chokidar from "chokidar";
 import { UvRunner } from "../uvRunner";
 import { MCPConfig, MCPServerConfig } from "../types";
-import { fileExists, parseJsonc, writeFile } from "../utils";
+import { detectIDEFromScriptPath, fileExists, parseJsonc, writeFile } from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
 
@@ -42,65 +42,7 @@ export class ConfigurationMonitor {
     private readonly currentIDE: string | undefined;
 
     constructor() {
-        this.currentIDE = this.detectIDEFromScriptPath();
-    }
-
-    /**
-     * Detect IDE from script path - works in uninstall script context
-     */
-    detectIDEFromScriptPath(): string | undefined {
-        const scriptPath = __dirname.toLowerCase();
-
-        // Standard extension directory patterns
-        const idePatterns = [
-            {
-                name: "cursor",
-                patterns: [
-                    "/.cursor/extensions/",
-                    "\\.cursor\\extensions\\",
-                    "/cursor.app/",
-                ],
-            },
-            {
-                name: "windsurf",
-                patterns: [
-                    "/.windsurf/extensions/",
-                    "\\.windsurf\\extensions\\",
-                    "/windsurf.app/",
-                ],
-            },
-            {
-                name: "kiro",
-                patterns: ["/.kiro/extensions/", "\\.kiro\\extensions\\", "/kiro.app/"],
-            },
-            {
-                name: "cline",
-                patterns: ["/.cline/extensions/", "\\.cline\\extensions\\"],
-            },
-            {
-                name: "claude",
-                patterns: ["/.claude/extensions/", "\\.claude\\extensions\\"],
-            },
-            {
-                name: "vscode",
-                patterns: [
-                    "/.vscode/extensions/",
-                    "\\.vscode\\extensions\\",
-                    "/visual studio code.app/",
-                    "/code.app/",
-                ],
-            },
-        ];
-
-        for (const ide of idePatterns) {
-            for (const pattern of ide.patterns) {
-                if (scriptPath.includes(pattern)) {
-                    return ide.name;
-                }
-            }
-        }
-
-        return undefined; // Cannot determine IDE - fail safely
+        this.currentIDE = detectIDEFromScriptPath();
     }
 
     /**

@@ -5,6 +5,7 @@ import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
 import { hashDirectory } from "./utils";
+import { reportLifecycleEvent } from "./api";
 import path from "path";
 import fs from "fs";
 
@@ -162,12 +163,19 @@ async function handleExtensionUpdate(context: vscode.ExtensionContext): Promise<
             `Extension version check: current=${currentVersion}, stored=${storedVersion}`
         );
 
-        if (storedVersion && storedVersion !== currentVersion) {
-            log.info(`Extension updated from ${storedVersion} to ${currentVersion}`);
-        } else if (!storedVersion) {
-            log.info("First-time extension activation");
-        } else {
-            log.debug("Extension version unchanged");
+        try {
+            if (storedVersion && storedVersion !== currentVersion) {
+                log.info(`Extension updated from ${storedVersion} to ${currentVersion}`);
+                await reportLifecycleEvent("update");
+            } else if (!storedVersion) {
+                log.info("First-time extension activation");
+                await reportLifecycleEvent("install");
+            } else {
+                log.debug("Extension version unchanged");
+                await reportLifecycleEvent("heartbeat");
+            }
+        } catch {
+            // never crash
         }
 
         await context.globalState.update("extensionVersion", currentVersion);
