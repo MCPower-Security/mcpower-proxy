@@ -1,6 +1,6 @@
 [project]
 name = "mcpower-proxy"
-version = "0.0.55"
+version = "0.0.56"
 description = "MCPower Security proxy"
 requires-python = "~=3.11.0"
 dependencies = [
