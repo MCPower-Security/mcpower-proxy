@@ -17,7 +17,7 @@ class PIIMatch(NamedTuple):
 
 class URLDetector:
     """URL detector with protocol requirement and intelligent boundary detection."""
-
+    
     def __init__(self):
         # Common protocols that use :// format
         protocols = r'(?:https?|ftps?|sftp|ssh|wss?|git|file|telnet|ldaps?|smb|nfs)'
@@ -26,7 +26,7 @@ class URLDetector:
             re.IGNORECASE
         )
         self.sentence_enders = '.,:;!?\'"'
-
+    
     def extract(self, text: str) -> List[PIIMatch]:
         """Extract URLs with proper boundary detection."""
         matches = []
@@ -41,18 +41,18 @@ class URLDetector:
                     confidence=0.85
                 ))
         return matches
-
+    
     def _clean_url(self, url: str) -> str:
         """Remove trailing punctuation intelligently."""
         url = url.rstrip(self.sentence_enders)
-
+        
         # Balance paired delimiters
         for opener, closer in [('(', ')'), ('[', ']'), ('{', '}')]:
             while url.endswith(closer):
                 if url.count(opener) >= url.count(closer):
                     break
                 url = url[:-1]
-
+        
         return url
 
 
@@ -62,7 +62,7 @@ class PIIDetector:
     def __init__(self):
         # URL detector with intelligent boundary detection
         self.url_detector = URLDetector()
-
+        
         # Compile regex patterns for better performance
         self.patterns = {
             'EMAIL_ADDRESS': re.compile(
@@ -126,7 +126,7 @@ class PIIDetector:
         digits = re.sub(r'\D', '', number)  # Remove non-digits
         if not digits:
             return False
-
+        
         total = 0
         for i, digit in enumerate(reversed(digits)):
             n = int(digit)
@@ -136,19 +136,19 @@ class PIIDetector:
                     n -= 9
             total += n
         return total % 10 == 0
-
+    
     def validate_iban(self, iban: str) -> bool:
         """Validate IBAN using MOD-97 algorithm"""
         # Remove spaces and convert to uppercase
         iban = re.sub(r'\s', '', iban).upper()
-
+        
         # IBAN must be at least 15 characters
         if len(iban) < 15:
             return False
-
+        
         # Move first 4 characters to the end
         rearranged_iban = iban[4:] + iban[:4]
-
+        
         # Convert letters to numbers (A=10, B=11, ..., Z=35)
         numeric_iban = ""
         for char in rearranged_iban:
@@ -158,12 +158,12 @@ class PIIDetector:
                 numeric_iban += str(ord(char) - ord('A') + 10)
             else:
                 return False  # Invalid character
-
+        
         try:
             return int(numeric_iban) % 97 == 1
         except ValueError:
             return False
-
+    
     def analyze(self, text: str) -> List[PIIMatch]:
         """
         Analyze text and return detected PII matches.
@@ -178,26 +178,21 @@ class PIIDetector:
         
         # Extract URLs using URLDetector
         matches.extend(self.url_detector.extract(text))
-
+        
         # Extract other PII using regex patterns
         for entity_type, pattern in self.patterns.items():
             for match in pattern.finditer(text):
                 matched_text = match.group()
-
-                # For credit cards, validate with Luhn algorithm (gate)
-                if entity_type == 'CREDIT_CARD':
-                    if not self.validate_credit_card(match.group()):
-                        continue  # Skip if Luhn validation fails
-
+                
                 # Calculate base confidence
                 confidence = self._calculate_confidence(entity_type, matched_text)
-
+                
                 # Validation gates - boost confidence for validated entities
                 if entity_type == 'CREDIT_CARD':
                     if not self.validate_credit_card(matched_text):
                         continue  # Skip if Luhn validation fails
                     confidence = 0.99  # Near-certainty for validated credit cards
-
+                
                 if entity_type == 'IBAN':
                     if not self.validate_iban(matched_text):
                         continue  # Skip if MOD-97 validation fails
