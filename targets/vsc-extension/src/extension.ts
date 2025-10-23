@@ -11,7 +11,8 @@ import fs from "fs";
 let state: ExtensionState | undefined;
 
 function getActivationStateFile(context: vscode.ExtensionContext): string {
-    return path.join(context.extensionPath, ".activation-state");
+    const configMonitor = new ConfigurationMonitor();
+    return path.join(configMonitor.getStatesDir(), ".activation-state");
 }
 
 function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
@@ -19,8 +20,10 @@ function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
 }
 
 function markActivationMessageShown(context: vscode.ExtensionContext): void {
+    const stateFile = getActivationStateFile(context);
+    fs.mkdirSync(path.dirname(stateFile), { recursive: true });
     fs.writeFileSync(
-        getActivationStateFile(context),
+        stateFile,
         JSON.stringify({
             activated: true,
             timestamp: Date.now(),
