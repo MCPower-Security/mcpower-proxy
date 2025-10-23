@@ -184,17 +184,19 @@ class PIIDetector:
             for match in pattern.finditer(text):
                 matched_text = match.group()
                 
-                # Validation gates - only redact if validation passes
+                # Calculate base confidence
+                confidence = self._calculate_confidence(entity_type, matched_text)
+                
+                # Validation gates - boost confidence for validated entities
                 if entity_type == 'CREDIT_CARD':
                     if not self.validate_credit_card(matched_text):
                         continue  # Skip if Luhn validation fails
+                    confidence = 0.99  # Near-certainty for validated credit cards
                 
                 if entity_type == 'IBAN':
                     if not self.validate_iban(matched_text):
                         continue  # Skip if MOD-97 validation fails
-                
-                # Calculate confidence based on pattern specificity
-                confidence = self._calculate_confidence(entity_type, matched_text)
+                    confidence = 0.99  # Near-certainty for validated IBANs
                 
                 matches.append(PIIMatch(
                     start=match.start(),
@@ -211,22 +213,14 @@ class PIIDetector:
         # Base confidence scores
         base_scores = {
             'EMAIL_ADDRESS': 0.95,
-            'CREDIT_CARD': 0.85,
+            'CREDIT_CARD': 0.85,  # Will be 0.99 after Luhn validation
             'IP_ADDRESS': 0.90,
             'URL': 0.80,
             'CRYPTO_ADDRESS': 0.95,
-            'IBAN': 0.85,
+            'IBAN': 0.85,  # Will be 0.99 after MOD-97 validation
         }
         
-        base_score = base_scores.get(entity_type, 0.5)
-        
-        # Adjust based on length and format
-        if entity_type == 'CREDIT_CARD':
-            # Higher confidence for properly formatted cards
-            if '-' in matched_text or ' ' in matched_text:
-                base_score += 0.1
-
-        return min(1.0, base_score)
+        return base_scores.get(entity_type, 0.5)
     
     def _resolve_overlaps(self, matches: List[PIIMatch]) -> List[PIIMatch]:
         """Resolve overlapping matches by keeping the highest confidence one."""

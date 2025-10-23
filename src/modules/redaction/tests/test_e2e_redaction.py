@@ -1851,6 +1851,41 @@ class TestE2ERedaction:
         assert "[REDACTED-IBAN]" not in str(redacted["invalid_combo"])
         assert "[REDACTED-CREDIT-CARD]" not in str(redacted["invalid_combo"])
 
+    def test_validated_entities_high_confidence(self):
+        """Test that validated credit cards and IBANs have high confidence scores"""
+        from modules.redaction.pii_rules import detect_pii
+        
+        # Test with validated credit card
+        text_with_card = "Card number: 4532015112830366"
+        matches = detect_pii(text_with_card)
+        
+        # Find credit card match
+        card_match = [m for m in matches if m.entity_type == 'CREDIT_CARD']
+        assert len(card_match) == 1
+        assert card_match[0].confidence == 0.99  # Near-certainty after Luhn validation
+        
+        # Test with validated IBAN
+        text_with_iban = "Account: DE89370400440532013000"
+        matches = detect_pii(text_with_iban)
+        
+        # Find IBAN match
+        iban_match = [m for m in matches if m.entity_type == 'IBAN']
+        assert len(iban_match) == 1
+        assert iban_match[0].confidence == 0.99  # Near-certainty after MOD-97 validation
+        
+        # Test with non-validated entity (email)
+        text_with_email = "Contact: test@example.com"
+        matches = detect_pii(text_with_email)
+        
+        # Find email match
+        email_match = [m for m in matches if m.entity_type == 'EMAIL_ADDRESS']
+        assert len(email_match) == 1
+        assert email_match[0].confidence == 0.95  # Standard confidence, no validation
+        
+        # Validated entities should have higher confidence than non-validated
+        assert card_match[0].confidence > email_match[0].confidence
+        assert iban_match[0].confidence > email_match[0].confidence
+
 
 if __name__ == "__main__":
     # Allow running the test directly
@@ -1896,5 +1931,17 @@ if __name__ == "__main__":
     print("Running IPv4/IPv6 mixed tests...")
     test.test_ipv4_and_ipv6_mixed_detection()
     print("✅ IPv4/IPv6 mixed test passed!")
+    
+    print("Running IBAN MOD-97 validation tests...")
+    test.test_iban_mod97_validation_gate()
+    print("✅ IBAN MOD-97 validation test passed!")
+    
+    print("Running IBAN comprehensive tests...")
+    test.test_iban_validation_comprehensive()
+    print("✅ IBAN comprehensive test passed!")
+    
+    print("Running IBAN mixed PII tests...")
+    test.test_iban_and_other_pii_mixed()
+    print("✅ IBAN mixed PII test passed!")
 
     print("🎉 All E2E redaction tests passed!")
