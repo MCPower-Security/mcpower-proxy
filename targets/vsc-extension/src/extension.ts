@@ -10,22 +10,12 @@ import fs from "fs";
 
 let state: ExtensionState | undefined;
 
-function getActivationStateFile(context: vscode.ExtensionContext): string {
-    return path.join(context.extensionPath, ".activation-state");
-}
-
 function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
-    return fs.existsSync(getActivationStateFile(context));
+    return context.globalState.get<boolean>("hasShownActivationMessage", false);
 }
 
 function markActivationMessageShown(context: vscode.ExtensionContext): void {
-    fs.writeFileSync(
-        getActivationStateFile(context),
-        JSON.stringify({
-            activated: true,
-            timestamp: Date.now(),
-        })
-    );
+    context.globalState.update("hasShownActivationMessage", true);
 }
 
 async function syncProxyToGlobalStorage(
