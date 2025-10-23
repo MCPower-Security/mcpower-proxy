@@ -75,15 +75,6 @@ async function main() {
             // ignore folder removal error; non-critical
         }
 
-        // Clean up states directory
-        try {
-            const statesDir = configMonitor.getStatesDir();
-            await fs.rm(statesDir, { recursive: true, force: true });
-        } catch (e) {
-            console.error("States directory cleanup failed:", e);
-            // ignore cleanup error; non-critical
-        }
-
         console.log("Registry cleanup completed");
         console.log("MCPower Security uninstall cleanup finished!");
     } catch (error) {

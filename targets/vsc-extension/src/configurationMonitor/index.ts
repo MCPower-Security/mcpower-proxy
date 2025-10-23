@@ -121,16 +121,6 @@ export class ConfigurationMonitor {
     };
 
     /**
-     * Get IDE-specific states directory
-     */
-    public getStatesDir = (): string => {
-        if (!this.currentIDE) {
-            throw new Error("Cannot determine IDE - states operations not safe");
-        }
-        return join(homedir(), ".mcpower", ".states", this.currentIDE);
-    };
-
-    /**
      * Generate symlink name for registry
      */
     private getSymlinkName(configPath: string): string {
