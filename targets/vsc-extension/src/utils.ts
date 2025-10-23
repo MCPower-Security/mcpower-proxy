@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
+import * as os from "os";
 import * as JSONC from "jsonc-parser";
 
 /**
@@ -87,7 +88,7 @@ export function hashDirectory(dirPath: string): string {
     }
 
     const files: string[] = [];
-    
+
     function walkDir(currentPath: string): void {
         const entries = fs.readdirSync(currentPath, { withFileTypes: true });
         for (const entry of entries) {
@@ -99,10 +100,10 @@ export function hashDirectory(dirPath: string): string {
             }
         }
     }
-    
+
     walkDir(dirPath);
     files.sort();
-    
+
     const hash = crypto.createHash("sha256");
     for (const file of files) {
         const relativePath = path.relative(dirPath, file);
@@ -110,6 +111,127 @@ export function hashDirectory(dirPath: string): string {
         const content = fs.readFileSync(file);
         hash.update(content);
     }
-    
+
     return hash.digest("hex");
+}
+
+/**
+ * Read user UID from ~/.mcpower/uid
+ * Returns null if file doesn't exist
+ */
+export async function getUserUid(): Promise<string | null> {
+    try {
+        const uidPath = path.join(os.homedir(), ".mcpower", "uid");
+        const content = await fs.promises.readFile(uidPath, "utf8");
+        return content.trim();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Read API URL from ~/.mcpower/config
+ * Returns null if file doesn't exist or API_URL not found
+ */
+export async function getApiUrl(): Promise<string | null> {
+    try {
+        const configPath = path.join(os.homedir(), ".mcpower", "config");
+        const content = await fs.promises.readFile(configPath, "utf8");
+
+        for (const line of content.split("\n")) {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+                const [key, value] = trimmed.split("=", 2);
+                if (key.trim() === "API_URL") {
+                    return value.trim();
+                }
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Map Node.js os.platform() to standard OS names
+ */
+export function mapOS(): "macos" | "windows" | "linux" | undefined {
+    switch (os.platform()) {
+        case "darwin":
+            return "macos";
+        case "win32":
+            return "windows";
+        case "linux":
+            return "linux";
+        default:
+            return undefined;
+    }
+}
+
+/**
+ * Get extension version from package.json
+ */
+export function getVersion(): string | null {
+    try {
+        const packageJson = require("../package.json");
+        return packageJson.version || null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Detect IDE from script path - works in uninstall script context
+ */
+export function detectIDEFromScriptPath(): string | undefined {
+    const scriptPath = __dirname.toLowerCase();
+
+    // Standard extension directory patterns
+    const idePatterns = [
+        {
+            name: "cursor",
+            patterns: ["/.cursor/extensions/", "\\.cursor\\extensions\\", "/cursor.app/"],
+        },
+        {
+            name: "windsurf",
+            patterns: [
+                "/.windsurf/extensions/",
+                "\\.windsurf\\extensions\\",
+                "/windsurf.app/",
+            ],
+        },
+        {
+            name: "kiro",
+            patterns: ["/.kiro/extensions/", "\\.kiro\\extensions\\", "/kiro.app/"],
+        },
+        {
+            name: "cline",
+            patterns: ["/.cline/extensions/", "\\.cline\\extensions\\"],
+        },
+        {
+            name: "claude",
+            patterns: ["/.claude/extensions/", "\\.claude\\extensions\\"],
+        },
+        {
+            name: "vscode",
+            patterns: [
+                "/.vscode/extensions/",
+                "\\.vscode\\extensions\\",
+                "/visual studio code.app/",
+                "/code.app/",
+            ],
+        },
+    ];
+
+    for (const ide of idePatterns) {
+        for (const pattern of ide.patterns) {
+            if (scriptPath.includes(pattern)) {
+                return ide.name;
+            }
+        }
+    }
+
+    return undefined; // Cannot determine IDE - fail safely
 }

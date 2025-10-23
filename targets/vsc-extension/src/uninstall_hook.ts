@@ -1,5 +1,6 @@
 import { ConfigurationMonitor } from "./configurationMonitor";
 import { constants, promises as fs } from "fs";
+import { reportLifecycleEvent } from "./api";
 
 /**
  * Uninstall hook script for MCPower Security
@@ -10,6 +11,8 @@ async function main() {
     console.log("Starting MCPower Security uninstall cleanup...");
 
     try {
+        await reportLifecycleEvent("uninstall");
+
         const configMonitor = new ConfigurationMonitor();
 
         const detectedIDE = configMonitor.getCurrentIDE();
