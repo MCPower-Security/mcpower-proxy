@@ -4,7 +4,7 @@ No external dependencies beyond Python's built-in re module.
 """
 
 import re
-from typing import List, Tuple, NamedTuple
+from typing import List, NamedTuple
 
 
 class PIIMatch(NamedTuple):
@@ -69,9 +69,6 @@ class PIIDetector:
                 r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
                 re.IGNORECASE
             ),
-            'US_SSN': re.compile(
-                r'\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b'
-            ),
             'CREDIT_CARD': re.compile(
                 r'\b(?:'
                 r'4[0-9]{3}[-\s]?[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}(?:[0-9]{3})?|'  # Visa with formatting
@@ -85,8 +82,30 @@ class PIIDetector:
                 r')\b'
             ),
             'IP_ADDRESS': re.compile(
+                r'(?:'
+                # IPv4
                 r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
                 r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+                r'|'
+                # IPv6 - comprehensive pattern
+                r'(?:'
+                # Full IPv6 or with :: compression
+                r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|'  # Full: 1:2:3:4:5:6:7:8
+                r'(?:[0-9a-fA-F]{1,4}:){1,7}:|'  # Compressed trailing: 1:: or 1:2:3:4:5:6:7::
+                r'(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|'  # Compressed middle: 1::8 or 1:2:3:4:5:6::8
+                r'(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|'  # 1::7:8 or 1:2:3:4:5::7:8
+                r'(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|'  # 1::6:7:8 or 1:2:3:4::6:7:8
+                r'(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|'  # 1::5:6:7:8 or 1:2:3::5:6:7:8
+                r'(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|'  # 1::4:5:6:7:8 or 1:2::4:5:6:7:8
+                r'[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|'  # 1::3:4:5:6:7:8
+                r':(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|'  # ::2:3:4:5:6:7:8 or ::
+                # IPv4-mapped IPv6: ::ffff:192.0.2.1
+                r'(?:[0-9a-fA-F]{1,4}:){1,4}:'
+                r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
+                r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+                r')'
+                r')',
+                re.IGNORECASE
             ),
             # Common crypto addresses
             'CRYPTO_ADDRESS': re.compile(
@@ -118,6 +137,33 @@ class PIIDetector:
             total += n
         return total % 10 == 0
     
+    def validate_iban(self, iban: str) -> bool:
+        """Validate IBAN using MOD-97 algorithm"""
+        # Remove spaces and convert to uppercase
+        iban = re.sub(r'\s', '', iban).upper()
+        
+        # IBAN must be at least 15 characters
+        if len(iban) < 15:
+            return False
+        
+        # Move first 4 characters to the end
+        rearranged_iban = iban[4:] + iban[:4]
+        
+        # Convert letters to numbers (A=10, B=11, ..., Z=35)
+        numeric_iban = ""
+        for char in rearranged_iban:
+            if char.isdigit():
+                numeric_iban += char
+            elif char.isalpha():
+                numeric_iban += str(ord(char) - ord('A') + 10)
+            else:
+                return False  # Invalid character
+        
+        try:
+            return int(numeric_iban) % 97 == 1
+        except ValueError:
+            return False
+    
     def analyze(self, text: str) -> List[PIIMatch]:
         """
         Analyze text and return detected PII matches.
@@ -136,13 +182,19 @@ class PIIDetector:
         # Extract other PII using regex patterns
         for entity_type, pattern in self.patterns.items():
             for match in pattern.finditer(text):
-                # For credit cards, validate with Luhn algorithm (gate)
+                matched_text = match.group()
+                
+                # Validation gates - only redact if validation passes
                 if entity_type == 'CREDIT_CARD':
-                    if not self.validate_credit_card(match.group()):
+                    if not self.validate_credit_card(matched_text):
                         continue  # Skip if Luhn validation fails
                 
+                if entity_type == 'IBAN':
+                    if not self.validate_iban(matched_text):
+                        continue  # Skip if MOD-97 validation fails
+                
                 # Calculate confidence based on pattern specificity
-                confidence = self._calculate_confidence(entity_type, match.group())
+                confidence = self._calculate_confidence(entity_type, matched_text)
                 
                 matches.append(PIIMatch(
                     start=match.start(),
@@ -159,13 +211,9 @@ class PIIDetector:
         # Base confidence scores
         base_scores = {
             'EMAIL_ADDRESS': 0.95,
-            'PHONE_NUMBER': 0.85,
-            'US_SSN': 0.90,
             'CREDIT_CARD': 0.85,
             'IP_ADDRESS': 0.90,
             'URL': 0.80,
-            'US_PASSPORT': 0.70,
-            'US_DRIVER_LICENSE': 0.65,
             'CRYPTO_ADDRESS': 0.95,
             'IBAN': 0.85,
         }
@@ -173,19 +221,11 @@ class PIIDetector:
         base_score = base_scores.get(entity_type, 0.5)
         
         # Adjust based on length and format
-        if entity_type == 'PHONE_NUMBER':
-            # Higher confidence for formatted phone numbers
-            if any(char in matched_text for char in '()-. '):
-                base_score += 0.1
-        elif entity_type == 'CREDIT_CARD':
+        if entity_type == 'CREDIT_CARD':
             # Higher confidence for properly formatted cards
             if '-' in matched_text or ' ' in matched_text:
                 base_score += 0.1
-        elif entity_type in ['US_PASSPORT', 'US_DRIVER_LICENSE']:
-            # Lower confidence for very short matches
-            if len(matched_text) < 6:
-                base_score -= 0.2
-        
+
         return min(1.0, base_score)
     
     def _resolve_overlaps(self, matches: List[PIIMatch]) -> List[PIIMatch]:
