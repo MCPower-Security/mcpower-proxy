@@ -2,7 +2,12 @@
 name = "mcpower-proxy"
 version = "0.0.56"
 description = "MCPower Security proxy"
+readme = "README.md"
 requires-python = "~=3.11.0"
+keywords = ["mcp", "security", "proxy", "monitoring", "audit", "redaction", "policy-enforcement"]
+authors = [
+  { name = "MCPower Security", email = "support@mcpower.tech" }
+]
 dependencies = [
   "fastmcp>=2.10.5",
   "httpx>=0.25.0",
