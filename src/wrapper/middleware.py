@@ -68,6 +68,7 @@ class SecurityMiddleware(Middleware):
         self.session_id = get_session_id()
         self.logger = logger
         self.audit_logger = audit_logger
+        self.app_id = ""
 
         self.wrapped_server_name, self.wrapped_server_transport = (
             extract_wrapped_server_info(self.wrapper_server_name, self.logger, self.wrapped_server_configs)
@@ -83,6 +84,16 @@ class SecurityMiddleware(Middleware):
 
     async def on_message(self, context: MiddlewareContext, call_next: CallNext) -> Any:
         self.logger.info(f"on_message: {redact(safe_json_dumps(context))}")
+
+        # Ensure app_id is set before making API calls
+        if not self.app_id:
+            workspace_roots = await self._extract_workspace_roots(context)
+            if workspace_roots:
+                self.app_id = read_app_uid(logger=self.logger, project_folder_path=workspace_roots[0])
+            else:
+                # Fallback: read app_uid from ~/.mcpower when no workspace roots
+                self.app_id = read_app_uid(logger=self.logger, project_folder_path=str(Path.home() / ".mcpower"))
+            self.audit_logger.set_app_uid(self.app_id)
 
         operation_type = "message"
         call_next_callback = call_next
@@ -340,14 +351,6 @@ class SecurityMiddleware(Middleware):
             event_id = generate_event_id()
 
             workspace_roots = await self._extract_workspace_roots(context)
-            if not self.app_id:
-                if workspace_roots:
-                    self.app_id = read_app_uid(logger=self.logger, project_folder_path=workspace_roots[0])
-                else:
-                    # Fallback: read app_uid from ~/.mcpower when no workspace roots
-                    self.app_id = read_app_uid(logger=self.logger, project_folder_path=str(Path.home() / ".mcpower"))
-                self.audit_logger.set_app_uid(self.app_id)
-
             environment_context = EnvironmentContext(
                 session_id=self.session_id,
                 workspace={
