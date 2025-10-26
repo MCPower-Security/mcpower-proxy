@@ -14,6 +14,7 @@
     {
       "registryType": "pypi",
       "identifier": "mcpower-proxy",
+      "version": "0.0.58",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
