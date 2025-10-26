@@ -27,3 +27,4 @@ MCPower is built as a Python-based proxy server that wraps MCP servers and provi
 
 **VSC Extension**: See [targets/vsc-extension/README.md](targets/vsc-extension/README.md) for installation and user guide
 
+<!-- mcp-name: io.github.ai-mcpower/mcpower-proxy -->
