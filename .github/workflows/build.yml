@@ -153,7 +153,6 @@ jobs:
   release:
     needs: package-extension
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -181,3 +180,25 @@ jobs:
           generateReleaseNotes: true
           artifacts: "release/*.vsix"
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-pypi:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC trusted publishing
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
