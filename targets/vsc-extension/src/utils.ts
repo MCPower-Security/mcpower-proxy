@@ -3,6 +3,7 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as os from "os";
 import * as JSONC from "jsonc-parser";
+import * as vscode from "vscode";
 
 /**
  * Check if file exists
@@ -234,4 +235,14 @@ export function detectIDEFromScriptPath(): string | undefined {
     }
 
     return undefined; // Cannot determine IDE - fail safely
+}
+
+export function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
+    const activationMessagePath = path.join(context.globalStorageUri.fsPath, ".activation-message-shown");
+    return fs.existsSync(activationMessagePath);
+}
+
+export function markActivationMessageShown(context: vscode.ExtensionContext): void {
+    const activationMessagePath = path.join(context.globalStorageUri.fsPath, ".activation-message-shown");
+    fs.writeFileSync(activationMessagePath, "true");
 }
