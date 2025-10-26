@@ -157,3 +157,6 @@ vsc-extension/executables
 signing-config.json
 *.pfx
 *.p12
+
+/.mcpregistry_github_token
+/.mcpregistry_registry_token
