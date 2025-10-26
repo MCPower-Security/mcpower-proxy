@@ -2,6 +2,17 @@
 
 Real-time semantic monitoring of AI agent<->MCP Server communication to protect from data leaks and malicious prompt injections.
 
+## 🚀 How to use
+
+The simplest way to use MCPower is to install the VS Code/Cursor extension:
+
+- **VS Code Marketplace**: [Install MCPower](https://marketplace.visualstudio.com/items?itemName=mcpower.mcpower)
+- **Open VSX (Cursor & others)**: [Install MCPower](https://open-vsx.org/extension/mcpower/mcpower)
+
+The extension automatically installs and protects all your MCP servers - no manual configuration needed!
+
+---
+
 ## Overview
 
 MCPower is a semantic policy broker that understands *what* your AI agents are doing, not just *where* they're sending data. It acts as an intelligent security layer that intercepts every MCP tool call made by AI agents, analyzes the payload for sensitive information in real-time, and enforces security policies seamlessly.

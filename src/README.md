@@ -2,6 +2,17 @@
 
 Transparent MCP wrapper with security middleware for real-time policy enforcement and visual monitoring.
 
+## 🚀 How to use
+
+The simplest way to use MCPower is to install the VS Code/Cursor extension:
+
+- **VS Code Marketplace**: [Install MCPower](https://marketplace.visualstudio.com/items?itemName=mcpower.mcpower)
+- **Open VSX (Cursor & others)**: [Install MCPower](https://open-vsx.org/extension/mcpower/mcpower)
+
+The extension automatically installs and protects all your MCP servers - no manual configuration needed!
+
+---
+
 ## Architecture
 
 MCPower Proxy Server is built as a transparent 1:1 MCP wrapper that intercepts all communication between AI clients and MCP servers. The architecture includes:
