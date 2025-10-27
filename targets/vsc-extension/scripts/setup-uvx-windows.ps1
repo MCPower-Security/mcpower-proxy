@@ -38,16 +38,16 @@ function Ensure-Uvx {
 }
 
 function Cache-McpowerProxy {
-    param($BundledPath)
+    param($Version)
     
-    if (-not $BundledPath -or -not (Test-Path $BundledPath)) {
-        Write-Log "Bundled proxy path not provided or invalid; skipping cache"
+    if (-not $Version) {
+        Write-Log "Version parameter is required; skipping cache"
         return
     }
 
-    Write-Log "Pre-warming mcpower-proxy cache from bundled source..."
+    Write-Log "Pre-warming mcpower-proxy==$Version from PyPI..."
     try {
-        uvx --from $BundledPath mcpower-proxy --help 2>&1 | Out-Null
+        uvx mcpower-proxy=="$Version" --help 2>&1 | Out-Null
     } catch {
         # Ignore errors during cache warming
     }
@@ -57,10 +57,9 @@ Write-Log "Ensuring uvx is installed (Windows)"
 Ensure-Uv
 Ensure-Uvx
 
-# Cache dependencies if bundled path provided
+# Cache dependencies if version provided
 if ($args.Count -gt 0) {
     Cache-McpowerProxy $args[0]
 }
 
 Write-Log "uvx ready"
-

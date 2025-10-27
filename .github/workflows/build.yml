@@ -46,7 +46,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          powershell -ExecutionPolicy Bypass -File targets/vsc-extension/scripts/setup-uvx-windows.ps1
+          targets/vsc-extension/scripts/setup-uvx-windows.ps1
 
       - name: Sync Python dependencies
         run: uv sync --frozen
