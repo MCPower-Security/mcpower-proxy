@@ -17,11 +17,11 @@ export class UvRunner {
         this.version = getCurrentExtensionVersion(context);
     }
 
-    async initialize(): Promise<void> {
+    async initialize(cleanCache: boolean = false): Promise<void> {
         if (this.uvxCommand) return;
 
         const scriptPath = await this.installUvx();
-        await this.runScript(scriptPath, this.version);
+        await this.runScript(scriptPath, this.version, cleanCache);
 
         const resolved = await this.findUvxBinary();
         if (!resolved) {
@@ -59,7 +59,7 @@ export class UvRunner {
         }
     }
 
-    private async runScript(scriptPath: string, version: string): Promise<void> {
+    private async runScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
         if (!(await fileExists(scriptPath))) {
             throw new Error(`uvx setup script missing: ${scriptPath}`);
         }
@@ -68,12 +68,12 @@ export class UvRunner {
             throw new Error("Version parameter is required for setup script");
         }
 
-        log.info(`Running uvx setup script: ${scriptPath} with version ${version}`);
+        log.info(`Running uvx setup script: ${scriptPath} with version ${version}, cleanCache=${cleanCache}`);
 
         if (mapOS() === "windows") {
-            await this.runWindowsScript(scriptPath, version);
+            await this.runWindowsScript(scriptPath, version, cleanCache);
         } else {
-            await this.runUnixScript(scriptPath, version);
+            await this.runUnixScript(scriptPath, version, cleanCache);
         }
     }
 
@@ -113,11 +113,15 @@ export class UvRunner {
         }
     }
 
-    private async runUnixScript(scriptPath: string, version: string): Promise<void> {
+    private async runUnixScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
         await fs.promises.chmod(scriptPath, 0o755);
 
         const hasUvx = await this.findUvxBinary();
-        const result = await this.spawnProcess(scriptPath, [version]);
+        const args = [version];
+        if (cleanCache) {
+            args.push("--clean-cache");
+        }
+        const result = await this.spawnProcess(scriptPath, args);
 
         if (result !== 0 && !hasUvx) {
             throw new Error("uvx installation failed");
@@ -127,9 +131,12 @@ export class UvRunner {
         }
     }
 
-    private async runWindowsScript(scriptPath: string, version: string): Promise<void> {
+    private async runWindowsScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
         const hasUvx = await this.findUvxBinary();
         const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath, version];
+        if (cleanCache) {
+            args.push("-CleanCache");
+        }
 
         const result = await this.spawnProcess("powershell.exe", args);
 

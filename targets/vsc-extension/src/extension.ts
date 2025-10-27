@@ -105,7 +105,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 },
                 // initialize will take some time,
                 // do it while showing a progressing notification
-                () => uvRunner.initialize()
+                () => uvRunner.initialize(true)
             );
 
             // Only after successful warm-up, save the new version

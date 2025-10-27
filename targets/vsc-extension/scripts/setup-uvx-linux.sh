@@ -40,14 +40,22 @@ ensure_uvx() {
 
 cache_mcpower_proxy() {
     local version="$1"
-    
+    local clean_cache="$2"
+
     if [[ -z "$version" ]]; then
         log "Version parameter is required; skipping cache"
         return 0
     fi
 
-    log "Pre-warming mcpower-proxy==$version from PyPI..."
-    uvx mcpower-proxy=="$version" --help >/dev/null 2>&1 || true
+    local refresh_flag=""
+    if [[ "$clean_cache" == "--clean-cache" ]]; then
+        log "Pre-warming mcpower-proxy==$version from PyPI (forcing refresh)..."
+        refresh_flag="--refresh"
+    else
+        log "Pre-warming mcpower-proxy==$version from PyPI..."
+    fi
+
+    uvx $refresh_flag mcpower-proxy=="$version" --help >/dev/null 2>&1 || true
 }
 
 main() {
@@ -57,7 +65,7 @@ main() {
 
     # Cache dependencies if version provided
     if [[ $# -gt 0 ]]; then
-        cache_mcpower_proxy "$1"
+        cache_mcpower_proxy "$1" "$2"
     fi
 
     log "uvx ready"
