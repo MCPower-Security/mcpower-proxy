@@ -35,8 +35,11 @@ const showPersistentAction = async (
     );
 };
 
-const performInitialization = async (_state: ExtensionState): Promise<void> => {
-    state = _state;
+const performInitialization = async (
+    _state: Omit<ExtensionState, "configMonitor">
+): Promise<void> => {
+    state = { ..._state, configMonitor: new ConfigurationMonitor() };
+    await state.uvRunner.initialize();
 
     // Listen for workspace folder changes
     const workspaceChangeListener = vscode.workspace.onDidChangeWorkspaceFolders(
@@ -90,7 +93,6 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         const uvRunner = new UvRunner(context);
-        const configMonitor = new ConfigurationMonitor();
 
         if (isFirstActivation || isUpdate) {
             // Warm up the new version
@@ -101,14 +103,16 @@ export async function activate(context: vscode.ExtensionContext) {
                     title: `🛠️ ${isFirstActivation ? "Installing" : "Updating"} MCPower, please wait...`,
                     cancellable: false,
                 },
-                async () => await uvRunner.initialize()
+                // initialize will take some time,
+                // do it while showing a progressing notification
+                () => uvRunner.initialize()
             );
 
             // Only after successful warm-up, save the new version
             await updateStoredExtensionVersion(context);
 
             // Perform full initialization
-            await performInitialization({ context, uvRunner, configMonitor });
+            await performInitialization({ context, uvRunner });
 
             // Show the appropriate message
             if (isFirstActivation) {
@@ -132,8 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         } else {
             // No update needed, just initialize normally
-            await uvRunner.initialize();
-            await performInitialization({ context, uvRunner, configMonitor });
+            await performInitialization({ context, uvRunner });
             vscode.window.showInformationMessage(`✅ MCPower Security activated`);
         }
     } catch (error) {

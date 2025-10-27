@@ -18,6 +18,8 @@ export class UvRunner {
     }
 
     async initialize(): Promise<void> {
+        if (this.uvxCommand) return;
+
         const scriptPath = await this.installUvx();
         await this.runScript(scriptPath, this.version);
 
