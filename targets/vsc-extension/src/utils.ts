@@ -172,21 +172,31 @@ export function detectIDEFromScriptPath(): string | undefined {
     return undefined; // Cannot determine IDE - fail safely
 }
 
-export function getCurrentExtensionVersion(context: vscode.ExtensionContext) {
+export function getCurrentExtensionVersion(context: vscode.ExtensionContext): string {
     return context.extension.packageJSON.version;
 }
 
-export function getLastStoredExtensionVersion(
+const getVersionFile = (context: vscode.ExtensionContext) =>
+    path.join(context.globalStorageUri.fsPath, ".installed_version");
+
+export async function getLastStoredExtensionVersion(
     context: vscode.ExtensionContext
-): string | undefined {
-    return context.globalState.get<string>("extensionVersion");
+): Promise<string | undefined> {
+    try {
+        const version = await fs.promises.readFile(getVersionFile(context), "utf8");
+        return version.trim();
+    } catch {
+        return undefined; // File doesn't exist = first install
+    }
 }
 
-export function updateStoredExtensionVersion(
+export async function updateStoredExtensionVersion(
     context: vscode.ExtensionContext
-): Thenable<void> {
-    return context.globalState.update(
-        "extensionVersion",
-        getCurrentExtensionVersion(context)
-    );
+): Promise<void> {
+    const currentVersion = getCurrentExtensionVersion(context);
+    const versionFile = getVersionFile(context);
+
+    // Ensure directory exists
+    await fs.promises.mkdir(path.dirname(versionFile), { recursive: true });
+    await fs.promises.writeFile(versionFile, currentVersion, "utf8");
 }

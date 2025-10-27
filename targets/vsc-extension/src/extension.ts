@@ -64,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
         const currentVersion = getCurrentExtensionVersion(context);
-        const storedVersion = getLastStoredExtensionVersion(context);
+        const storedVersion = await getLastStoredExtensionVersion(context);
 
         log.info(
             `Extension version check: current=${currentVersion}, stored=${storedVersion}`
