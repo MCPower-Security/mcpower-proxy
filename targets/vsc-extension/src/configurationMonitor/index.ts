@@ -325,7 +325,6 @@ export class ConfigurationMonitor {
 
     /**
      * Start monitoring MCP configuration files
-     * Requirements: 13.1, 13.2 - Monitor workspace and system-wide mcp.json files
      */
     async startMonitoring(uvRunner: UvRunner): Promise<void> {
         if (this.isMonitoring) {
@@ -378,7 +377,6 @@ export class ConfigurationMonitor {
 
     /**
      * Handle workspace folder changes
-     * Requirements: 13.8 - Re-establish monitoring when workspace changes
      */
     async handleWorkspaceChange(): Promise<void> {
         log.info("Workspace changed - re-establishing MCP configuration monitoring...");
@@ -429,7 +427,6 @@ export class ConfigurationMonitor {
 
         /**
          * Find MCP configuration files in workspace
-         * Requirements: 13.9 - Only target AI client where extension is installed
          */
         if (this.vscode?.workspace.workspaceFolders) {
             for (const folder of this.vscode.workspace.workspaceFolders) {
@@ -468,7 +465,6 @@ export class ConfigurationMonitor {
 
         /**
          * Find system-wide MCP configuration files
-         * Requirements: 13.9 - Only target AI client where extension is installed
          */
         const systemPaths = this.getSystemPaths(homedir());
         const systemConfigPaths = systemPaths[aiClientType] || [];
@@ -862,7 +858,6 @@ export class ConfigurationMonitor {
 
     /**
      * Process a single configuration file
-     * Requirements: 13.3, 13.4, 13.5 - Create backups and wrap configurations
      */
     private async processConfigurationFile(configPath: string): Promise<void> {
         const normalizedPath = normalize(resolve(configPath));
@@ -974,7 +969,7 @@ export class ConfigurationMonitor {
 
     /**
      * Wrap MCP configuration using JSONC tree manipulation to preserve comments
-     * Requirements: 13.4, 13.5 - Automatic wrapping logic and real-time detection
+     * Also handles version migration for already-wrapped servers
      */
     async wrapConfigurationInFile(configPath: string): Promise<boolean> {
         if (!this.uvRunner) {
@@ -985,6 +980,7 @@ export class ConfigurationMonitor {
         }
 
         const uvCommand = this.uvRunner.getCommand();
+        const expectedFirstArg = uvCommand.args[0]; // mcpower-proxy==X.Y.Z
 
         const result = await this.processConfigurationWithJsoncTree(
             configPath,
@@ -992,35 +988,61 @@ export class ConfigurationMonitor {
                 let modifiedContent = content;
                 let hasChanges = false;
 
-                // Process each server for wrapping
+                // Process each server for wrapping or version migration
                 for (const [serverName, serverConfig] of Object.entries(servers)) {
-                    // Skip if already wrapped
-                    if (this.isAlreadyWrapped(serverConfig)) {
+                    const isWrapped = this.isAlreadyWrapped(serverConfig);
+
+                    // Check if version matches current extension version
+                    const hasCorrectVersion =
+                        isWrapped && serverConfig.args?.[0] === expectedFirstArg;
+
+                    // Skip only if already wrapped AND has correct version
+                    if (hasCorrectVersion) {
                         continue;
                     }
 
-                    // Find server node in tree
-                    const parseTree = JSONC.parseTree(modifiedContent);
-                    if (!parseTree) {
-                        continue;
-                    }
-                    const serverNode = JSONC.findNodeAtLocation(parseTree, [
-                        serverKey,
-                        serverName,
-                    ]);
-                    if (
-                        !serverNode ||
-                        serverNode.offset === undefined ||
-                        serverNode.length === undefined
-                    ) {
-                        continue;
-                    }
+                    // Need to wrap or re-wrap (version migration)
+                    let rawServerJsonc: string;
 
-                    // Extract raw JSONC string AS-IS (zero manipulations!)
-                    const rawServerJsonc = modifiedContent.substring(
-                        serverNode.offset,
-                        serverNode.offset + serverNode.length
-                    );
+                    if (isWrapped) {
+                        // Extract raw config from wrapped server for re-wrapping
+                        log.info(
+                            `Re-wrapping server ${serverName} for version migration`
+                        );
+                        const extracted = this.extractRawWrappedConfig(serverConfig);
+                        if (!extracted) {
+                            log.warn(
+                                `Failed to extract raw config for server ${serverName}, skipping`
+                            );
+                            continue;
+                        }
+                        rawServerJsonc = extracted;
+                    } else {
+                        // First-time wrapping: extract current server config
+
+                        // Find server node in tree
+                        const parseTree = JSONC.parseTree(modifiedContent);
+                        if (!parseTree) {
+                            continue;
+                        }
+                        const serverNode = JSONC.findNodeAtLocation(parseTree, [
+                            serverKey,
+                            serverName,
+                        ]);
+                        if (
+                            !serverNode ||
+                            serverNode.offset === undefined ||
+                            serverNode.length === undefined
+                        ) {
+                            continue;
+                        }
+
+                        // Extract raw JSONC string AS-IS (zero manipulations!)
+                        rawServerJsonc = modifiedContent.substring(
+                            serverNode.offset,
+                            serverNode.offset + serverNode.length
+                        );
+                    }
 
                     // Create wrapped configuration
                     const wrappedConfig = {

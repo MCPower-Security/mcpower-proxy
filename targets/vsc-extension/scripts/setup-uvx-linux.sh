@@ -39,15 +39,15 @@ ensure_uvx() {
 }
 
 cache_mcpower_proxy() {
-    local bundled_path="$1"
+    local version="$1"
     
-    if [[ -z "$bundled_path" || ! -d "$bundled_path" ]]; then
-        log "Bundled proxy path not provided or invalid; skipping cache"
+    if [[ -z "$version" ]]; then
+        log "Version parameter is required; skipping cache"
         return 0
     fi
 
-    log "Pre-warming mcpower-proxy cache from bundled source..."
-    uvx --from "$bundled_path" mcpower-proxy --help >/dev/null 2>&1 || true
+    log "Pre-warming mcpower-proxy==$version from PyPI..."
+    uvx mcpower-proxy=="$version" --help >/dev/null 2>&1 || true
 }
 
 main() {
@@ -55,7 +55,7 @@ main() {
     ensure_uv
     ensure_uvx
 
-    # Cache dependencies if bundled path provided
+    # Cache dependencies if version provided
     if [[ $# -gt 0 ]]; then
         cache_mcpower_proxy "$1"
     fi
@@ -64,4 +64,3 @@ main() {
 }
 
 main "$@"
-

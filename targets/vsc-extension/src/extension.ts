@@ -4,14 +4,8 @@ import { UvRunner } from "./uvRunner";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
-import {
-    hashDirectory,
-    hasShownActivationMessage,
-    markActivationMessageShown,
-} from "./utils";
+import { hasShownActivationMessage, markActivationMessageShown } from "./utils";
 import { reportLifecycleEvent } from "./api";
-import path from "path";
-import fs from "fs";
 
 let state: ExtensionState | undefined;
 
@@ -36,38 +30,6 @@ const showPersistentAction = async (
         async () => new Promise(() => {})
     );
 };
-
-async function syncProxyToGlobalStorage(
-    context: vscode.ExtensionContext
-): Promise<boolean> {
-    const sourcePath = path.join(context.extensionPath, "proxy-bundled");
-    const destPath = path.join(context.globalStorageUri.fsPath, "proxy-bundled");
-
-    if (!fs.existsSync(sourcePath)) {
-        log.error("Source proxy-bundled not found in extension package");
-        throw new Error("proxy-bundled missing from extension");
-    }
-
-    const sourceHash = hashDirectory(sourcePath);
-    const destHash = hashDirectory(destPath);
-
-    if (sourceHash === destHash) {
-        log.info("Proxy already up-to-date in globalStorage");
-        return false;
-    }
-
-    log.info(`Syncing proxy to globalStorage (hash mismatch or missing)`);
-
-    if (fs.existsSync(destPath)) {
-        fs.rmSync(destPath, { recursive: true, force: true });
-    }
-
-    fs.mkdirSync(path.dirname(destPath), { recursive: true });
-    fs.cpSync(sourcePath, destPath, { recursive: true });
-
-    log.info("Proxy synced to globalStorage successfully");
-    return true;
-}
 
 async function performInitialization(context: vscode.ExtensionContext): Promise<void> {
     state = await initializeExtensionState(context);
@@ -97,34 +59,70 @@ export async function activate(context: vscode.ExtensionContext) {
     log.info("Extension is now active");
 
     try {
-        await handleExtensionUpdate(context);
+        const currentVersion = context.extension.packageJSON.version;
+        const storedVersion = context.globalState.get<string>("extensionVersion");
 
-        const proxyWasUpdated = await syncProxyToGlobalStorage(context);
+        log.info(
+            `Extension version check: current=${currentVersion}, stored=${storedVersion}`
+        );
 
-        if (proxyWasUpdated) {
-            const isFirstActivation = !hasShownActivationMessage(context);
+        const isFirstActivation = !storedVersion;
+        const isUpdate = storedVersion && storedVersion !== currentVersion;
+
+        // Report lifecycle event
+        try {
+            if (isUpdate) {
+                log.info(`Extension updated from ${storedVersion} to ${currentVersion}`);
+                await reportLifecycleEvent("update");
+            } else if (isFirstActivation) {
+                log.info("First-time extension activation");
+                await reportLifecycleEvent("install");
+            } else {
+                log.debug("Extension version unchanged");
+                await reportLifecycleEvent("heartbeat");
+            }
+        } catch {
+            // never crash
+        }
+
+        if (isFirstActivation || isUpdate) {
+            // Initialize UvRunner
+            const uvRunner = new UvRunner(context);
+            await uvRunner.initialize();
+
+            // Warm up the new version
+            log.info(`Warming up mcpower-proxy==${currentVersion}...`);
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: "🛠️ Installing MCPower, please wait...",
+                    cancellable: false,
+                },
+                async () => await uvRunner.warmUp(currentVersion)
+            );
+
+            // Only after successful warm-up, save the new version
+            await context.globalState.update("extensionVersion", currentVersion);
+
+            // Perform full initialization
+            await performInitialization(context);
+
+            // Show appropriate message
             if (isFirstActivation) {
-                await vscode.window.withProgress(
-                    {
-                        location: vscode.ProgressLocation.Notification,
-                        title: "🛠️ Installing MCPower, please wait...",
-                        cancellable: false,
-                    },
-                    async () => await performInitialization(context)
-                );
-
-                await showPersistentAction(
-                    "✅ MCPower Security Installed",
-                    "Activate",
-                    () => {
-                        markActivationMessageShown(context);
-                        setTimeout(() => {
-                            vscode.commands.executeCommand(
-                                "workbench.action.reloadWindow"
-                            );
-                        }, 100);
-                    }
-                );
+                if (!hasShownActivationMessage(context)) {
+                    await showPersistentAction(
+                        "✅ MCPower Security Installed",
+                        "Activate",
+                        () => {
+                            markActivationMessageShown(context);
+                            setTimeout(() => {
+                                vscode.commands.executeCommand(
+                                    "workbench.action.reloadWindow"
+                                );
+                            }, 100);
+                        }
+                    );
+                }
             } else {
                 await showPersistentAction("✅ MCPower updated", "Apply changes", () => {
                     setTimeout(() => {
@@ -133,6 +131,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 });
             }
         } else {
+            // No update needed, just initialize normally
+            await performInitialization(context);
             vscode.window.showInformationMessage(`✅ MCPower Security activated`);
         }
     } catch (error) {
@@ -169,34 +169,4 @@ async function initializeExtensionState(
         uvRunner,
         configMonitor,
     };
-}
-
-async function handleExtensionUpdate(context: vscode.ExtensionContext): Promise<void> {
-    try {
-        const currentVersion = context.extension.packageJSON.version;
-        const storedVersion = context.globalState.get<string>("extensionVersion");
-
-        log.info(
-            `Extension version check: current=${currentVersion}, stored=${storedVersion}`
-        );
-
-        try {
-            if (storedVersion && storedVersion !== currentVersion) {
-                log.info(`Extension updated from ${storedVersion} to ${currentVersion}`);
-                await reportLifecycleEvent("update");
-            } else if (!storedVersion) {
-                log.info("First-time extension activation");
-                await reportLifecycleEvent("install");
-            } else {
-                log.debug("Extension version unchanged");
-                await reportLifecycleEvent("heartbeat");
-            }
-        } catch {
-            // never crash
-        }
-
-        await context.globalState.update("extensionVersion", currentVersion);
-    } catch (error) {
-        log.warn("Non-critical error handling extension update", error);
-    }
 }

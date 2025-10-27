@@ -119,11 +119,7 @@ async function testWrapUnwrapCycle() {
         monitor.uvRunner = {
             getCommand: () => ({
                 executable: "uvx",
-                args: [
-                    "--from",
-                    "/mock/path/to/proxy-bundled",
-                    "mcpower-proxy",
-                ],
+                args: ["--from", "/mock/path/to/proxy-bundled", "mcpower-proxy"],
             }),
         };
 
@@ -145,14 +141,14 @@ async function testWrapUnwrapCycle() {
             const serverKey = Object.keys(wrappedConfig).find(k =>
                 ["mcpServers", "servers", "extensions"].includes(k)
             );
-            
+
             if (!serverKey) {
                 throw new Error(`No server key found in wrapped config (cycle ${i})`);
             }
 
             const servers = wrappedConfig[serverKey];
             const serverNames = Object.keys(servers);
-            
+
             // Verify all servers are wrapped
             for (const serverName of serverNames) {
                 const server = servers[serverName];
@@ -168,7 +164,11 @@ async function testWrapUnwrapCycle() {
                 }
                 const wrappedConfigIndex = server.args.indexOf("--wrapped-config");
                 const rawConfig = server.args[wrappedConfigIndex + 1];
-                if (!rawConfig || typeof rawConfig !== "string" || !rawConfig.includes("{")) {
+                if (
+                    !rawConfig ||
+                    typeof rawConfig !== "string" ||
+                    !rawConfig.includes("{")
+                ) {
                     throw new Error(
                         `Server ${serverName} has invalid --wrapped-config value (cycle ${i})`
                     );
@@ -225,7 +225,7 @@ async function testWrapUnwrapCycle() {
         process.removeAllListeners("exit");
         process.removeAllListeners("SIGINT");
         process.removeAllListeners("SIGTERM");
-        
+
         // Cleanup temp directory
         await cleanup(tmpDir);
     }

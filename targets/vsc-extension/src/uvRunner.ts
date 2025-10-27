@@ -10,18 +10,16 @@ import { UvCommand } from "./types";
 export class UvRunner {
     private context: vscode.ExtensionContext;
     private uvxCommand: string | undefined;
+    private version: string;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
+        this.version = context.extension.packageJSON.version;
     }
 
     async initialize(): Promise<void> {
         const scriptPath = await this.installUvx();
-        const bundledProxyPath = path.join(
-            this.context.globalStorageUri.fsPath,
-            "proxy-bundled"
-        );
-        await this.runScript(scriptPath, bundledProxyPath);
+        await this.runScript(scriptPath, this.version);
 
         const resolved = await this.findUvxBinary();
         if (!resolved) {
@@ -33,16 +31,45 @@ export class UvRunner {
         log.info(`uvx ready: ${resolved}`);
     }
 
+    async warmUp(version: string): Promise<void> {
+        if (!this.uvxCommand) {
+            throw new Error("uvx command not available; initialize() first");
+        }
+
+        log.info(`Warming up mcpower-proxy==${version} from PyPI...`);
+
+        return new Promise((resolve, reject) => {
+            const proc = spawn(
+                this.uvxCommand!,
+                ["mcpower-proxy==" + version, "--help"],
+                {
+                    stdio: "pipe",
+                    shell: false,
+                }
+            );
+
+            proc.on("close", code => {
+                if (code === 0) {
+                    log.info(`mcpower-proxy==${version} warmed up successfully`);
+                    resolve();
+                } else {
+                    reject(new Error(`Warm-up failed with exit code ${code}`));
+                }
+            });
+
+            proc.on("error", err => {
+                log.error(`Failed to warm up mcpower-proxy: ${err.message}`);
+                reject(err);
+            });
+        });
+    }
+
     getCommand(): UvCommand {
         if (!this.uvxCommand) {
             throw new Error("uvx command not available; initialize() first");
         }
 
-        const bundledProxyPath = path.join(
-            this.context.globalStorageUri.fsPath,
-            "proxy-bundled"
-        );
-        const args = ["--from", bundledProxyPath, "mcpower-proxy"];
+        const args = [`mcpower-proxy==${this.version}`];
 
         return { executable: this.uvxCommand, args };
     }
@@ -63,17 +90,21 @@ export class UvRunner {
         }
     }
 
-    private async runScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
+    private async runScript(scriptPath: string, version: string): Promise<void> {
         if (!(await fileExists(scriptPath))) {
             throw new Error(`uvx setup script missing: ${scriptPath}`);
         }
 
-        log.info(`Running uvx setup script: ${scriptPath}`);
+        if (!version) {
+            throw new Error("Version parameter is required for setup script");
+        }
+
+        log.info(`Running uvx setup script: ${scriptPath} with version ${version}`);
 
         if (mapOS() === "windows") {
-            await this.runWindowsScript(scriptPath, bundledProxyPath);
+            await this.runWindowsScript(scriptPath, version);
         } else {
-            await this.runUnixScript(scriptPath, bundledProxyPath);
+            await this.runUnixScript(scriptPath, version);
         }
     }
 
@@ -113,11 +144,11 @@ export class UvRunner {
         }
     }
 
-    private async runUnixScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
+    private async runUnixScript(scriptPath: string, version: string): Promise<void> {
         await fs.promises.chmod(scriptPath, 0o755);
 
         const hasUvx = await this.findUvxBinary();
-        const result = await this.spawnProcess(scriptPath, [bundledProxyPath]);
+        const result = await this.spawnProcess(scriptPath, [version]);
 
         if (result !== 0 && !hasUvx) {
             throw new Error("uvx installation failed");
@@ -127,9 +158,9 @@ export class UvRunner {
         }
     }
 
-    private async runWindowsScript(scriptPath: string, bundledProxyPath: string): Promise<void> {
+    private async runWindowsScript(scriptPath: string, version: string): Promise<void> {
         const hasUvx = await this.findUvxBinary();
-        const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath, bundledProxyPath];
+        const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath, version];
 
         const result = await this.spawnProcess("powershell.exe", args);
 
@@ -149,12 +180,18 @@ export class UvRunner {
             });
 
             proc.stdout?.on("data", data => {
-                const lines = data.toString().split("\n").filter((l: string) => l.trim());
+                const lines = data
+                    .toString()
+                    .split("\n")
+                    .filter((l: string) => l.trim());
                 lines.forEach((line: string) => log.info(`[setup] ${line.trim()}`));
             });
 
             proc.stderr?.on("data", data => {
-                const lines = data.toString().split("\n").filter((l: string) => l.trim());
+                const lines = data
+                    .toString()
+                    .split("\n")
+                    .filter((l: string) => l.trim());
                 lines.forEach((line: string) => log.info(`[setup] ${line.trim()}`));
             });
 
