@@ -130,16 +130,20 @@ class AuditTrailLogger:
         
         This is called by the middleware after workspace roots are available.
         All queued logs will be written with app_uid as the first key.
+        Supports updating app_uid when workspace context changes.
         
         Args:
             app_uid: The application UID from workspace root
         """
-        if self.app_uid is not None:
-            self.logger.warning(f"app_uid already set to {self.app_uid}, ignoring new value {app_uid}")
+        if self.app_uid == app_uid:
             return
         
+        if self.app_uid is not None:
+            self.logger.info(f"app_uid changed from {self.app_uid} to {app_uid}")
+        else:
+            self.logger.debug(f"app_uid set to: {app_uid}")
+        
         self.app_uid = app_uid
-        self.logger.debug(f"✅ app_uid set to: {app_uid}")
         
         # Flush all pending logs
         if self._pending_logs:

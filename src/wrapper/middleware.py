@@ -55,6 +55,7 @@ class SecurityMiddleware(Middleware):
     app_id: str = ""
     _TOOLS_INIT_DEBOUNCE_SECONDS = 60
     _last_tools_init_time: Optional[float] = None
+    _last_workspace_root: Optional[str] = None
 
     def __init__(self,
                  wrapped_server_configs: dict,
@@ -69,6 +70,7 @@ class SecurityMiddleware(Middleware):
         self.logger = logger
         self.audit_logger = audit_logger
         self.app_id = ""
+        self._last_workspace_root = None
 
         self.wrapped_server_name, self.wrapped_server_transport = (
             extract_wrapped_server_info(self.wrapper_server_name, self.logger, self.wrapped_server_configs)
@@ -85,14 +87,13 @@ class SecurityMiddleware(Middleware):
     async def on_message(self, context: MiddlewareContext, call_next: CallNext) -> Any:
         self.logger.info(f"on_message: {redact(safe_json_dumps(context))}")
 
-        # Ensure app_id is set before making API calls
-        if not self.app_id:
-            workspace_roots = await self._extract_workspace_roots(context)
-            if workspace_roots:
-                self.app_id = read_app_uid(logger=self.logger, project_folder_path=workspace_roots[0])
-            else:
-                # Fallback: read app_uid from ~/.mcpower when no workspace roots
-                self.app_id = read_app_uid(logger=self.logger, project_folder_path=str(Path.home() / ".mcpower"))
+        # Check workspace roots and re-initialize app_uid if workspace changed
+        workspace_roots = await self._extract_workspace_roots(context)
+        current_workspace_root = workspace_roots[0] if workspace_roots else str(Path.home() / ".mcpower")
+        if current_workspace_root != self._last_workspace_root:
+            self.logger.debug(f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
+            self._last_workspace_root = current_workspace_root
+            self.app_id = read_app_uid(logger=self.logger, project_folder_path=current_workspace_root)
             self.audit_logger.set_app_uid(self.app_id)
 
         operation_type = "message"
