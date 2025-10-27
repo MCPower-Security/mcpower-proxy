@@ -95,7 +95,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 if (action === "Activate") {
                     markActivationMessageShown(context);
-                    await vscode.commands.executeCommand("workbench.action.reloadWindow");
+                    setTimeout(() => {
+                        vscode.commands.executeCommand("workbench.action.reloadWindow");
+                    }, 100);
                 }
             } else {
                 const action = await vscode.window.showInformationMessage(
@@ -103,7 +105,9 @@ export async function activate(context: vscode.ExtensionContext) {
                     "Reload"
                 );
                 if (action === "Reload") {
-                    await vscode.commands.executeCommand("workbench.action.reloadWindow");
+                    setTimeout(() => {
+                        vscode.commands.executeCommand("workbench.action.reloadWindow");
+                    }, 100);
                 }
             }
         }
