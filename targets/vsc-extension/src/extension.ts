@@ -4,13 +4,38 @@ import { UvRunner } from "./uvRunner";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
-import { hashDirectory } from "./utils";
+import {
+    hashDirectory,
+    hasShownActivationMessage,
+    markActivationMessageShown,
+} from "./utils";
 import { reportLifecycleEvent } from "./api";
 import path from "path";
 import fs from "fs";
-import { hasShownActivationMessage, markActivationMessageShown } from "./utils";
 
 let state: ExtensionState | undefined;
+
+const showPersistentAction = async (
+    message: string,
+    actionText: string,
+    onAction: () => void
+): Promise<void> => {
+    const commandId = `mcpower.tempAction_${Date.now()}`;
+
+    const disposable = vscode.commands.registerCommand(commandId, () => {
+        disposable.dispose();
+        onAction();
+    });
+
+    await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: `${message} - [${actionText}](command:${commandId})`,
+            cancellable: false,
+        },
+        async () => new Promise(() => {})
+    );
+};
 
 async function syncProxyToGlobalStorage(
     context: vscode.ExtensionContext
@@ -88,30 +113,26 @@ export async function activate(context: vscode.ExtensionContext) {
                     async () => await performInitialization(context)
                 );
 
-                const action = await vscode.window.showInformationMessage(
+                await showPersistentAction(
                     "✅ MCPower Security Installed",
-                    "Activate"
+                    "Activate",
+                    () => {
+                        markActivationMessageShown(context);
+                        setTimeout(() => {
+                            vscode.commands.executeCommand(
+                                "workbench.action.reloadWindow"
+                            );
+                        }, 100);
+                    }
                 );
-
-                if (action === "Activate") {
-                    markActivationMessageShown(context);
-                    setTimeout(() => {
-                        vscode.commands.executeCommand("workbench.action.reloadWindow");
-                    }, 100);
-                }
             } else {
-                const action = await vscode.window.showInformationMessage(
-                    "✅ MCPower updated. Reload required for changes to take effect.",
-                    "Reload"
-                );
-                if (action === "Reload") {
+                await showPersistentAction("✅ MCPower updated", "Apply changes", () => {
                     setTimeout(() => {
                         vscode.commands.executeCommand("workbench.action.reloadWindow");
                     }, 100);
-                }
+                });
             }
-        }
-        else {
+        } else {
             vscode.window.showInformationMessage(`✅ MCPower Security activated`);
         }
     } catch (error) {
@@ -155,7 +176,7 @@ async function handleExtensionUpdate(context: vscode.ExtensionContext): Promise<
         const currentVersion = context.extension.packageJSON.version;
         const storedVersion = context.globalState.get<string>("extensionVersion");
 
-        log.debug(
+        log.info(
             `Extension version check: current=${currentVersion}, stored=${storedVersion}`
         );
 
