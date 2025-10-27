@@ -2,6 +2,7 @@
 Utilities for generating event IDs, session IDs, app UIDs, and timing helpers
 """
 import os
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -67,7 +68,8 @@ def _atomic_write_uuid(file_path: Path, new_uuid: str) -> bool:
         True if write succeeded, False if file exists
     """
     try:
-        fd = os.open(str(file_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        mode = 0o666 if sys.platform == 'win32' else 0o600
+        fd = os.open(str(file_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, mode)
         try:
             os.write(fd, new_uuid.encode('utf-8'))
         finally:
@@ -91,7 +93,7 @@ def _get_or_create_uuid(uid_path: Path, logger, id_type: str) -> str:
         UUID string
     """
     uid_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     max_attempts = 3
     for attempt in range(max_attempts):
         if uid_path.exists():
@@ -111,7 +113,7 @@ def _get_or_create_uuid(uid_path: Path, logger, id_type: str) -> str:
         new_uid = str(uuid.uuid4())
         
         if _atomic_write_uuid(uid_path, new_uid):
-            logger.info(f"Generated {id_type}: {new_uid}")
+            logger.info(f"Generated {id_type}: {new_uid} at {uid_path}")
             return new_uid
         
         logger.debug(f"{id_type.title()} file created by another process, reading (attempt {attempt + 1}/{max_attempts})")

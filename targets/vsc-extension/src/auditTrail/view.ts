@@ -25,6 +25,8 @@ export class AuditTrailView {
         this.registerWorkspaceListeners();
 
         const appUid = await this.getWorkspaceAppUid();
+        log.info(`Audit trail appUid: ${appUid}`);
+
         if (appUid) {
             await this.provider.setAppUid(appUid);
             log.info("Audit trail view initialized");

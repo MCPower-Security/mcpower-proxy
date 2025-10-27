@@ -2,6 +2,7 @@
 FastMCP middleware for security policy enforcement
 Implements pre/post interception for all MCP operations
 """
+import sys
 import time
 import urllib.parse
 from datetime import datetime, timezone
@@ -481,6 +482,12 @@ class SecurityMiddleware(Middleware):
                         file_path_prefix = 'file://'
                         if uri.startswith(file_path_prefix):
                             path = urllib.parse.unquote(uri[len(file_path_prefix):])
+                            
+                            # Windows fix: remove leading slash before drive letter
+                            # file:///C:/path becomes /C:/path, should be C:/path
+                            if sys.platform == 'win32' and len(path) >= 3 and path[0] == '/' and path[2] == ':':
+                                path = path[1:]
+                            
                             try:
                                 resolved_path = str(Path(path).resolve())
                                 workspace_roots.append(resolved_path)
