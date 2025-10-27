@@ -172,18 +172,21 @@ export function detectIDEFromScriptPath(): string | undefined {
     return undefined; // Cannot determine IDE - fail safely
 }
 
-export function hasShownActivationMessage(context: vscode.ExtensionContext): boolean {
-    const activationMessagePath = path.join(
-        context.globalStorageUri.fsPath,
-        ".activation-message-shown"
-    );
-    return fs.existsSync(activationMessagePath);
+export function getCurrentExtensionVersion(context: vscode.ExtensionContext) {
+    return context.extension.packageJSON.version;
 }
 
-export function markActivationMessageShown(context: vscode.ExtensionContext): void {
-    const activationMessagePath = path.join(
-        context.globalStorageUri.fsPath,
-        ".activation-message-shown"
+export function getLastStoredExtensionVersion(
+    context: vscode.ExtensionContext
+): string | undefined {
+    return context.globalState.get<string>("extensionVersion");
+}
+
+export function updateStoredExtensionVersion(
+    context: vscode.ExtensionContext
+): Thenable<void> {
+    return context.globalState.update(
+        "extensionVersion",
+        getCurrentExtensionVersion(context)
     );
-    fs.writeFileSync(activationMessagePath, "true");
 }

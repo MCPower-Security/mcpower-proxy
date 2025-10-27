@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import { spawn } from "child_process";
 import log from "./log";
-import { fileExists, mapOS } from "./utils";
+import { fileExists, getCurrentExtensionVersion, mapOS } from "./utils";
 import { UvCommand } from "./types";
 
 export class UvRunner {
@@ -14,7 +14,7 @@ export class UvRunner {
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        this.version = context.extension.packageJSON.version;
+        this.version = getCurrentExtensionVersion(context);
     }
 
     async initialize(): Promise<void> {
@@ -29,39 +29,6 @@ export class UvRunner {
         this.uvxCommand = resolved;
 
         log.info(`uvx ready: ${resolved}`);
-    }
-
-    async warmUp(version: string): Promise<void> {
-        if (!this.uvxCommand) {
-            throw new Error("uvx command not available; initialize() first");
-        }
-
-        log.info(`Warming up mcpower-proxy==${version} from PyPI...`);
-
-        return new Promise((resolve, reject) => {
-            const proc = spawn(
-                this.uvxCommand!,
-                ["mcpower-proxy==" + version, "--help"],
-                {
-                    stdio: "pipe",
-                    shell: false,
-                }
-            );
-
-            proc.on("close", code => {
-                if (code === 0) {
-                    log.info(`mcpower-proxy==${version} warmed up successfully`);
-                    resolve();
-                } else {
-                    reject(new Error(`Warm-up failed with exit code ${code}`));
-                }
-            });
-
-            proc.on("error", err => {
-                log.error(`Failed to warm up mcpower-proxy: ${err.message}`);
-                reject(err);
-            });
-        });
     }
 
     getCommand(): UvCommand {

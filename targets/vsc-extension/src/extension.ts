@@ -4,7 +4,11 @@ import { UvRunner } from "./uvRunner";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
-import { hasShownActivationMessage, markActivationMessageShown } from "./utils";
+import {
+    getCurrentExtensionVersion,
+    getLastStoredExtensionVersion,
+    updateStoredExtensionVersion,
+} from "./utils";
 import { reportLifecycleEvent } from "./api";
 
 let state: ExtensionState | undefined;
@@ -31,8 +35,8 @@ const showPersistentAction = async (
     );
 };
 
-async function performInitialization(context: vscode.ExtensionContext): Promise<void> {
-    state = await initializeExtensionState(context);
+const performInitialization = async (_state: ExtensionState): Promise<void> => {
+    state = _state;
 
     // Listen for workspace folder changes
     const workspaceChangeListener = vscode.workspace.onDidChangeWorkspaceFolders(
@@ -43,24 +47,24 @@ async function performInitialization(context: vscode.ExtensionContext): Promise<
             await state!.configMonitor.handleWorkspaceChange();
         }
     );
-    context.subscriptions.push(workspaceChangeListener);
+    state.context.subscriptions.push(workspaceChangeListener);
 
     await state.configMonitor.startMonitoring(state.uvRunner);
 
-    const auditTrailView = new AuditTrailView(context);
+    const auditTrailView = new AuditTrailView(state.context);
     await auditTrailView.initialize();
-    context.subscriptions.push({
+    state.context.subscriptions.push({
         dispose: () => auditTrailView.dispose(),
     });
-}
+};
 
 // noinspection JSUnusedGlobalSymbols
 export async function activate(context: vscode.ExtensionContext) {
     log.info("Extension is now active");
 
     try {
-        const currentVersion = context.extension.packageJSON.version;
-        const storedVersion = context.globalState.get<string>("extensionVersion");
+        const currentVersion = getCurrentExtensionVersion(context);
+        const storedVersion = getLastStoredExtensionVersion(context);
 
         log.info(
             `Extension version check: current=${currentVersion}, stored=${storedVersion}`
@@ -85,44 +89,40 @@ export async function activate(context: vscode.ExtensionContext) {
             // never crash
         }
 
-        if (isFirstActivation || isUpdate) {
-            // Initialize UvRunner
-            const uvRunner = new UvRunner(context);
-            await uvRunner.initialize();
+        const uvRunner = new UvRunner(context);
+        const configMonitor = new ConfigurationMonitor();
 
+        if (isFirstActivation || isUpdate) {
             // Warm up the new version
             log.info(`Warming up mcpower-proxy==${currentVersion}...`);
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: "🛠️ Installing MCPower, please wait...",
+                    title: `🛠️ ${isFirstActivation ? "Installing" : "Updating"} MCPower, please wait...`,
                     cancellable: false,
                 },
-                async () => await uvRunner.warmUp(currentVersion)
+                async () => await uvRunner.initialize()
             );
 
             // Only after successful warm-up, save the new version
-            await context.globalState.update("extensionVersion", currentVersion);
+            await updateStoredExtensionVersion(context);
 
             // Perform full initialization
-            await performInitialization(context);
+            await performInitialization({ context, uvRunner, configMonitor });
 
-            // Show appropriate message
+            // Show the appropriate message
             if (isFirstActivation) {
-                if (!hasShownActivationMessage(context)) {
-                    await showPersistentAction(
-                        "✅ MCPower Security Installed",
-                        "Activate",
-                        () => {
-                            markActivationMessageShown(context);
-                            setTimeout(() => {
-                                vscode.commands.executeCommand(
-                                    "workbench.action.reloadWindow"
-                                );
-                            }, 100);
-                        }
-                    );
-                }
+                await showPersistentAction(
+                    "✅ MCPower Security Installed",
+                    "Activate",
+                    () => {
+                        setTimeout(() => {
+                            vscode.commands.executeCommand(
+                                "workbench.action.reloadWindow"
+                            );
+                        }, 100);
+                    }
+                );
             } else {
                 await showPersistentAction("✅ MCPower updated", "Apply changes", () => {
                     setTimeout(() => {
@@ -132,7 +132,8 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         } else {
             // No update needed, just initialize normally
-            await performInitialization(context);
+            await uvRunner.initialize();
+            await performInitialization({ context, uvRunner, configMonitor });
             vscode.window.showInformationMessage(`✅ MCPower Security activated`);
         }
     } catch (error) {
@@ -153,20 +154,4 @@ export async function deactivate() {
         state = undefined;
     }
     log.info("Extension deactivated");
-}
-
-async function initializeExtensionState(
-    context: vscode.ExtensionContext
-): Promise<ExtensionState> {
-    const uvRunner = new UvRunner(context);
-    await uvRunner.initialize();
-
-    // Initialize configuration monitor
-    const configMonitor = new ConfigurationMonitor();
-
-    return {
-        context,
-        uvRunner,
-        configMonitor,
-    };
 }
