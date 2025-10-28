@@ -12,6 +12,10 @@ from typing import Any, Dict, List, Optional
 from fastmcp.exceptions import FastMCPError
 from fastmcp.server.middleware.middleware import Middleware, MiddlewareContext, CallNext
 from fastmcp.server.proxy import ProxyClient
+
+from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
+                                      InitRequest,
+                                      ServerRef, ToolRef, UserConfirmation)
 from modules.apis.security_policy import SecurityPolicyClient
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
@@ -23,10 +27,6 @@ from modules.utils.ids import generate_event_id, get_session_id, read_app_uid
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
 from wrapper.schema import merge_input_schema_with_existing
-
-from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
-                                      InitRequest,
-                                      ServerRef, ToolRef, UserConfirmation)
 
 
 class MockContext:
@@ -88,14 +88,18 @@ class SecurityMiddleware(Middleware):
     async def on_message(self, context: MiddlewareContext, call_next: CallNext) -> Any:
         self.logger.info(f"on_message: {redact(safe_json_dumps(context))}")
 
-        # Check workspace roots and re-initialize app_uid if workspace changed
-        workspace_roots = await self._extract_workspace_roots(context)
-        current_workspace_root = workspace_roots[0] if workspace_roots else str(Path.home() / ".mcpower")
-        if current_workspace_root != self._last_workspace_root:
-            self.logger.debug(f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
-            self._last_workspace_root = current_workspace_root
-            self.app_id = read_app_uid(logger=self.logger, project_folder_path=current_workspace_root)
-            self.audit_logger.set_app_uid(self.app_id)
+        # Skip workspace check for `initialize` calls to avoid premature app_uid changes.
+        # The `initialize` request doesn't contain workspace data, so checking it would
+        # cause unnecessary audit log flushes before the actual workspace init arrives.
+        if context.method != "initialize":
+            # Check workspace roots and re-initialize app_uid if workspace changed
+            workspace_roots = await self._extract_workspace_roots(context)
+            current_workspace_root = workspace_roots[0] if workspace_roots else str(Path.home() / ".mcpower")
+            if current_workspace_root != self._last_workspace_root:
+                self.logger.debug(f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
+                self._last_workspace_root = current_workspace_root
+                self.app_id = read_app_uid(logger=self.logger, project_folder_path=current_workspace_root)
+                self.audit_logger.set_app_uid(self.app_id)
 
         operation_type = "message"
         call_next_callback = call_next
@@ -184,12 +188,12 @@ class SecurityMiddleware(Middleware):
         # FIXME: log_message should be redacted before logging, 
         self.logger.info(f"secure_log_handler: {str(log_message)[:100]}...")
         # FIXME: log_message should be reviewed with policy before forwarding
-        
+
         # Handle case where log_message.data is a string instead of dict
         # The default_log_handler expects data to be a dict with 'msg' and 'extra' keys
         if hasattr(log_message, 'data') and isinstance(log_message.data, str):
             log_message = safe_copy(log_message, {'data': {'msg': log_message.data, 'extra': None}})
-        
+
         return await ProxyClient.default_log_handler(log_message)
 
     async def _handle_operation(self, context: MiddlewareContext, call_next, error_class, operation_type: str):
@@ -482,12 +486,12 @@ class SecurityMiddleware(Middleware):
                         file_path_prefix = 'file://'
                         if uri.startswith(file_path_prefix):
                             path = urllib.parse.unquote(uri[len(file_path_prefix):])
-                            
+
                             # Windows fix: remove leading slash before drive letter
                             # file:///C:/path becomes /C:/path, should be C:/path
                             if sys.platform == 'win32' and len(path) >= 3 and path[0] == '/' and path[2] == ':':
                                 path = path[1:]
-                            
+
                             try:
                                 resolved_path = str(Path(path).resolve())
                                 workspace_roots.append(resolved_path)
