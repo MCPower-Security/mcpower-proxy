@@ -7,7 +7,7 @@ import argparse
 def parse_args():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="MCPower - Transparent 1:1 MCP Wrapper with security enforcement",
+        description="Transparent MCP wrapper with security middleware for real-time policy enforcement and monitoring.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -24,10 +24,8 @@ Examples:
   %(prog)s --wrapped-config '{"command": "node", "args": ["server.js"]}' --name MyWrapper
 
 Reference Links:
-  • FastMCP Proxy: https://gofastmcp.com/servers/proxy
-  • FastMCP Middleware: https://gofastmcp.com/servers/middleware  
+  • MCPower Proxy: https://github.com/ai-mcpower/mcpower-proxy
   • MCP Official: https://modelcontextprotocol.io
-  • Claude MCP Config: https://docs.anthropic.com/en/docs/claude-code/mcp
         """
     )
 
