@@ -1,9 +1,9 @@
 """Security Policy API Client"""
 
 import json
+import time
 import uuid
 from typing import Dict, Any, Optional, List
-import time
 
 import httpx
 
@@ -13,6 +13,7 @@ from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.config import get_api_url, get_user_id
 from modules.utils.json import safe_json_dumps, to_dict
+from wrapper.__version__ import __version__
 
 
 class SecurityAPIError(Exception):
@@ -166,6 +167,7 @@ class SecurityPolicyClient:
 
             headers = {
                 "Content-Type": "application/json",
+                "User-Agent": f"MCPower-{__version__}",
                 "X-User-UID": self.user_id,
                 "X-App-UID": self.app_id
             }
