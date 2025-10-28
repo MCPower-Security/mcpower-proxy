@@ -226,7 +226,8 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_inspect_request_duration = time.time() - on_inspect_request_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} inspect_request duration: {on_inspect_request_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} inspect_request duration: {on_inspect_request_duration:.2f} seconds")
 
         await self._enforce_decision(
             decision=request_decision,
@@ -255,7 +256,8 @@ class SecurityMiddleware(Middleware):
         # Call wrapped MCP with cleaned context (e.g., no wrapper args)
         result = await call_next(cleaned_context)
         on_call_next_duration = time.time() - on_call_next_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} call_next duration: {on_call_next_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} call_next duration: {on_call_next_duration:.2f} seconds")
 
         response_content = self._extract_response_content(result)
 
@@ -280,7 +282,8 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_inspect_response_duration = time.time() - on_inspect_response_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} inspect_response duration: {on_inspect_response_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} inspect_response duration: {on_inspect_response_duration:.2f} seconds")
 
         await self._enforce_decision(
             decision=response_decision,
@@ -305,7 +308,8 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_handle_operation_duration = time.time() - on_handle_operation_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} duration: {on_handle_operation_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} duration: {on_handle_operation_duration:.2f} seconds")
         return result
 
     async def _handle_tools_list(self, context: MiddlewareContext, call_next: CallNext) -> Any:
@@ -313,7 +317,8 @@ class SecurityMiddleware(Middleware):
         event_id = generate_event_id()
         on_handle_tools_list_start_time = time.time()
         result = await call_next(context)
-        self.logger.info(f"PROFILE: tools/list call_next duration: {time.time() - on_handle_tools_list_start_time:.2f} seconds id: {event_id}")
+        self.logger.debug(
+            f"PROFILE: tools/list call_next duration: {time.time() - on_handle_tools_list_start_time:.2f} seconds id: {event_id}")
         tools_list = None
         if isinstance(result, list):
             tools_list = result
@@ -343,11 +348,13 @@ class SecurityMiddleware(Middleware):
                 enhanced_result = result
 
             on_handle_tools_list_duration = time.time() - on_handle_tools_list_start_time
-            self.logger.info(f"PROFILE: tools/list enhanced_result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
+            self.logger.debug(
+                f"PROFILE: tools/list enhanced_result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
             return enhanced_result
 
         on_handle_tools_list_duration = time.time() - on_handle_tools_list_start_time
-        self.logger.info(f"PROFILE: tools/list result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
+        self.logger.debug(
+            f"PROFILE: tools/list result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
 
         return result
 
