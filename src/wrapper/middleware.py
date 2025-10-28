@@ -116,7 +116,7 @@ class SecurityMiddleware(Middleware):
             case "tools/list":
                 # Special handling for tools/list - call /init instead of normal inspection
                 return await self._handle_tools_list(context, call_next)
-            case "resources/list" | "resources/templates/list" | "prompts/list":
+            case "initialize" | "resources/list" | "resources/templates/list" | "prompts/list":
                 return await call_next_callback(context)
 
         return await self._handle_operation(
