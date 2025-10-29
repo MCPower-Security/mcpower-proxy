@@ -2,6 +2,7 @@
 FastMCP middleware for security policy enforcement
 Implements pre/post interception for all MCP operations
 """
+import asyncio
 import sys
 import time
 import urllib.parse
@@ -55,10 +56,7 @@ class MockContext:
 class SecurityMiddleware(Middleware):
     """FastMCP middleware for security policy enforcement"""
 
-    app_id: str = ""
     _TOOLS_INIT_DEBOUNCE_SECONDS = 60
-    _last_tools_init_time: Optional[float] = None
-    _last_workspace_root: Optional[str] = None
 
     def __init__(self,
                  wrapped_server_configs: dict,
@@ -74,6 +72,9 @@ class SecurityMiddleware(Middleware):
         self.audit_logger = audit_logger
         self.app_id = ""
         self._last_workspace_root = None
+        self._last_tools_init_time: Optional[float] = None
+        self._tools_list_in_progress: Optional[asyncio.Task] = None
+        self._tools_list_lock = asyncio.Lock()
 
         self.wrapped_server_name, self.wrapped_server_transport = (
             extract_wrapped_server_info(self.wrapper_server_name, self.logger, self.wrapped_server_configs)
@@ -330,12 +331,25 @@ class SecurityMiddleware(Middleware):
         return result
 
     async def _handle_tools_list(self, context: MiddlewareContext, call_next: CallNext) -> Any:
-        """Handle tools/list by calling /init API and modifying schemas"""
+        """Handle tools/list by calling /init API and modifying schemas with deduplication"""
         event_id = generate_event_id()
         on_handle_tools_list_start_time = time.time()
-        result = await call_next(context)
+
+        async with self._tools_list_lock:
+            if not self._tools_list_in_progress or self._tools_list_in_progress.done():
+                self._tools_list_in_progress = asyncio.create_task(call_next(context))
+            shared_task = self._tools_list_in_progress
+
+        try:
+            result = await shared_task
+        except Exception as e:
+            async with self._tools_list_lock:
+                if self._tools_list_in_progress is shared_task:
+                    self._tools_list_in_progress = None
+            raise
         self.logger.debug(
             f"PROFILE: tools/list call_next duration: {time.time() - on_handle_tools_list_start_time:.2f} seconds id: {event_id}")
+
         tools_list = None
         if isinstance(result, list):
             tools_list = result
