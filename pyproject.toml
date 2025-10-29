@@ -9,7 +9,7 @@ authors = [
   { name = "MCPower Security", email = "support@mcpower.tech" }
 ]
 dependencies = [
-  "fastmcp==2.13.0.1",
+  "fastmcp==2.13.0.2",
   "httpx>=0.25.0",
   "mcp>=1.0.0",
   "watchdog>=3.0.0",

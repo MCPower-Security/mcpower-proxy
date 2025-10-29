@@ -87,12 +87,16 @@
     "compile:vsc-extension": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "package:vsc-extension": "vsce package --allow-star-activation",
     "build:vsc-extension": "npm run compile:vsc-extension && npm run package:vsc-extension",
     "clean:build": "node scripts/clean-build.js"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
+    "@types/jest": "^30.0.0",
     "@types/node": "^18.19.0",
     "@types/uuid": "^9.0.0",
     "@types/vscode": "^1.74.1",
@@ -100,7 +104,9 @@
     "@typescript-eslint/parser": "^7.18.0",
     "@vscode/vsce": "^3.6.2",
     "eslint": "^8.57.0",
+    "jest": "^29.7.0",
     "prettier": "^3.6.2",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.5.0"
   },
   "dependencies": {

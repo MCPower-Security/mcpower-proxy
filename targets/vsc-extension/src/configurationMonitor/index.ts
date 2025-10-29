@@ -5,7 +5,13 @@ import { createHash } from "crypto";
 import chokidar from "chokidar";
 import { UvRunner } from "../uvRunner";
 import { MCPConfig, MCPServerConfig } from "../types";
-import { detectIDEFromScriptPath, fileExists, parseJsonc, writeFile } from "../utils";
+import {
+    detectIDEFromScriptPath,
+    fileExists,
+    isRemoteUrl,
+    parseJsonc,
+    writeFile,
+} from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
 
@@ -547,12 +553,17 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Extract raw JSONC string from wrapped server configuration
+     * Extract raw JSONC string from wrapped server configuration (or backup)
      * Returns the original JSONC string (with comments) for file reconstruction
      */
     private extractRawWrappedConfig(serverConfig: MCPServerConfig): string | undefined {
         if (!this.isAlreadyWrapped(serverConfig)) {
             return undefined; // Not wrapped
+        }
+
+        // if a backup key exists - use it as-is
+        if (serverConfig.__bak_configs) {
+            return serverConfig.__bak_configs;
         }
 
         // Find --wrapped-config argument
@@ -569,6 +580,22 @@ export class ConfigurationMonitor {
 
         // Return the RAW JSONC string (preserving comments and formatting)
         return serverConfig.args[wrappedConfigIndex + 1];
+    }
+
+    /**
+     * Convert URL-based MCP config to mcp-remote args array
+     */
+    private convertUrlConfigToMcpRemoteArgs(urlConfig: any): string[] {
+        const args: string[] = ["-y", "mcp-remote", urlConfig.url];
+
+        // Convert headers to --header flags
+        if (!!urlConfig.headers && typeof urlConfig.headers === "object") {
+            for (const [key, value] of Object.entries(urlConfig.headers)) {
+                args.push("--header", `${key}: ${value}`);
+            }
+        }
+
+        return args;
     }
 
     /**
@@ -1003,6 +1030,7 @@ export class ConfigurationMonitor {
 
                     // Need to wrap or re-wrap (version migration)
                     let rawServerJsonc: string;
+                    let backupConfig: string | undefined;
 
                     if (isWrapped) {
                         // Extract raw config from wrapped server for re-wrapping
@@ -1017,6 +1045,8 @@ export class ConfigurationMonitor {
                             continue;
                         }
                         rawServerJsonc = extracted;
+
+                        backupConfig = serverConfig.__bak_configs;
                     } else {
                         // First-time wrapping: extract current server config
 
@@ -1044,8 +1074,36 @@ export class ConfigurationMonitor {
                         );
                     }
 
+                    // Check if this is a URL-based config that needs mcp-remote wrapping
+                    try {
+                        const parsedConfig = parseJsonc(rawServerJsonc);
+
+                        if (parsedConfig.url && isRemoteUrl(parsedConfig.url)) {
+                            log.info(
+                                `Server ${serverName} has remote URL, wrapping with mcp-remote`
+                            );
+
+                            // backup original, non mcp-remote transformed configs
+                            backupConfig ||= rawServerJsonc;
+
+                            const mcpRemoteArgs =
+                                this.convertUrlConfigToMcpRemoteArgs(parsedConfig);
+                            const mcpRemoteConfig = {
+                                command: "npx",
+                                args: mcpRemoteArgs,
+                                env: parsedConfig.env,
+                            };
+
+                            rawServerJsonc = JSON.stringify(mcpRemoteConfig);
+                        }
+                    } catch (error) {
+                        log.warn(
+                            `Config is not URL-based or parsing failed for ${serverName}, proceeding with standard wrapping`
+                        );
+                    }
+
                     // Create wrapped configuration
-                    const wrappedConfig = {
+                    const wrappedConfig: MCPServerConfig = {
                         command: uvCommand.executable,
                         args: [
                             ...uvCommand.args,
@@ -1056,6 +1114,7 @@ export class ConfigurationMonitor {
                         ],
                         env: serverConfig.env,
                         disabled: serverConfig.disabled,
+                        __bak_configs: backupConfig,
                     };
 
                     // Use JSONC.modify to replace server with wrapped config

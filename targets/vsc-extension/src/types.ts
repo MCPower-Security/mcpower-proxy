@@ -13,6 +13,9 @@ export interface MCPServerConfig {
     args?: string[];
     env?: Record<string, string>;
     disabled?: boolean;
+    // backup of original, non-transformed configs;
+    // this key won't be set unless configs are being transformed
+    __bak_configs?: string;
 }
 
 export interface MCPConfig {
