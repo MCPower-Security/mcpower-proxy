@@ -5,6 +5,7 @@ Implements transparent 1:1 MCP proxying with security middleware
 
 import logging
 
+from fastmcp import FastMCP
 from fastmcp.server.middleware.logging import StructuredLoggingMiddleware
 from fastmcp.server.proxy import ProxyClient, default_proxy_roots_handler, FastMCPProxy
 
@@ -42,7 +43,7 @@ def create_wrapper_server(wrapper_server_name: str,
         logger=logger,
         audit_logger=audit_logger
     )
-    
+
     # Log MCPower startup to audit trail
     audit_logger.log_event("mcpower_start", {
         "wrapper_version": __version__,
@@ -50,19 +51,15 @@ def create_wrapper_server(wrapper_server_name: str,
         "wrapped_server_configs": wrapped_server_configs
     })
 
-    # Create FastMCP server as proxy with our security-aware ProxyClient
-    def client_factory():
-        return ProxyClient(
-            wrapped_server_configs,
-            name=wrapper_server_name,
-            roots=default_proxy_roots_handler,  # Use default for filesystem roots
-            sampling_handler=security_middleware.secure_sampling_handler,
-            elicitation_handler=security_middleware.secure_elicitation_handler,
-            log_handler=security_middleware.secure_log_handler,
-            progress_handler=security_middleware.secure_progress_handler,
-        )
-
-    server = FastMCPProxy(client_factory=client_factory, name=wrapper_server_name, version=__version__)
+    server = FastMCP.as_proxy(backend=ProxyClient(
+        wrapped_server_configs,
+        name=wrapper_server_name,
+        roots=default_proxy_roots_handler,  # Use default for filesystem roots
+        sampling_handler=security_middleware.secure_sampling_handler,
+        elicitation_handler=security_middleware.secure_elicitation_handler,
+        log_handler=security_middleware.secure_log_handler,
+        progress_handler=security_middleware.secure_progress_handler,
+    ), name=wrapper_server_name, version=__version__)
 
     # Add FastMCP's structured logging middleware (always enabled)
     # Use the log level passed from main.py
