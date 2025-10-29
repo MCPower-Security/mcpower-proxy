@@ -2,6 +2,7 @@
 FastMCP middleware for security policy enforcement
 Implements pre/post interception for all MCP operations
 """
+import asyncio
 import sys
 import time
 import urllib.parse
@@ -12,6 +13,8 @@ from typing import Any, Dict, List, Optional
 from fastmcp.exceptions import FastMCPError
 from fastmcp.server.middleware.middleware import Middleware, MiddlewareContext, CallNext
 from fastmcp.server.proxy import ProxyClient
+from httpx import HTTPStatusError
+from mcp import ErrorData
 
 from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
                                       InitRequest,
@@ -53,10 +56,7 @@ class MockContext:
 class SecurityMiddleware(Middleware):
     """FastMCP middleware for security policy enforcement"""
 
-    app_id: str = ""
     _TOOLS_INIT_DEBOUNCE_SECONDS = 60
-    _last_tools_init_time: Optional[float] = None
-    _last_workspace_root: Optional[str] = None
 
     def __init__(self,
                  wrapped_server_configs: dict,
@@ -72,6 +72,9 @@ class SecurityMiddleware(Middleware):
         self.audit_logger = audit_logger
         self.app_id = ""
         self._last_workspace_root = None
+        self._last_tools_init_time: Optional[float] = None
+        self._tools_list_in_progress: Optional[asyncio.Task] = None
+        self._tools_list_lock = asyncio.Lock()
 
         self.wrapped_server_name, self.wrapped_server_transport = (
             extract_wrapped_server_info(self.wrapper_server_name, self.logger, self.wrapped_server_configs)
@@ -96,13 +99,28 @@ class SecurityMiddleware(Middleware):
             workspace_roots = await self._extract_workspace_roots(context)
             current_workspace_root = workspace_roots[0] if workspace_roots else str(Path.home() / ".mcpower")
             if current_workspace_root != self._last_workspace_root:
-                self.logger.debug(f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
+                self.logger.debug(
+                    f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
                 self._last_workspace_root = current_workspace_root
                 self.app_id = read_app_uid(logger=self.logger, project_folder_path=current_workspace_root)
                 self.audit_logger.set_app_uid(self.app_id)
 
         operation_type = "message"
-        call_next_callback = call_next
+
+        async def call_next_wrapper(ctx):
+            try:
+                return await call_next(ctx)
+            except HTTPStatusError as e:
+                if e.response.status_code in (401, 403):
+                    raise FastMCPError(ErrorData(
+                        code=-32000,
+                        message="Authentication required",
+                        data={
+                            "type": "unauthorized",
+                            "details": "Please provide valid authentication credentials"
+                        }
+                    ))
+                raise e
 
         match context.type:
             case "request":
@@ -119,13 +137,13 @@ class SecurityMiddleware(Middleware):
                 operation_type = "prompt"
             case "tools/list":
                 # Special handling for tools/list - call /init instead of normal inspection
-                return await self._handle_tools_list(context, call_next)
+                return await self._handle_tools_list(context, call_next_wrapper)
             case "initialize" | "resources/list" | "resources/templates/list" | "prompts/list":
-                return await call_next_callback(context)
+                return await call_next_wrapper(context)
 
         return await self._handle_operation(
             context=context,
-            call_next=call_next_callback,
+            call_next=call_next_wrapper,
             error_class=FastMCPError,
             operation_type=operation_type
         )
@@ -185,7 +203,7 @@ class SecurityMiddleware(Middleware):
         return await ProxyClient.default_progress_handler(progress, total, message)
 
     async def secure_log_handler(self, log_message):
-        # FIXME: log_message should be redacted before logging, 
+        # FIXME: log_message should be redacted before logging,
         self.logger.info(f"secure_log_handler: {str(log_message)[:100]}...")
         # FIXME: log_message should be reviewed with policy before forwarding
 
@@ -226,7 +244,8 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_inspect_request_duration = time.time() - on_inspect_request_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} inspect_request duration: {on_inspect_request_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} inspect_request duration: {on_inspect_request_duration:.2f} seconds")
 
         await self._enforce_decision(
             decision=request_decision,
@@ -255,7 +274,8 @@ class SecurityMiddleware(Middleware):
         # Call wrapped MCP with cleaned context (e.g., no wrapper args)
         result = await call_next(cleaned_context)
         on_call_next_duration = time.time() - on_call_next_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} call_next duration: {on_call_next_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} call_next duration: {on_call_next_duration:.2f} seconds")
 
         response_content = self._extract_response_content(result)
 
@@ -280,7 +300,8 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_inspect_response_duration = time.time() - on_inspect_response_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} inspect_response duration: {on_inspect_response_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} inspect_response duration: {on_inspect_response_duration:.2f} seconds")
 
         await self._enforce_decision(
             decision=response_decision,
@@ -305,15 +326,30 @@ class SecurityMiddleware(Middleware):
             prompt_id=prompt_id
         )
         on_handle_operation_duration = time.time() - on_handle_operation_start_time
-        self.logger.info(f"PROFILE: {operation_type} id: {event_id} duration: {on_handle_operation_duration:.2f} seconds")
+        self.logger.debug(
+            f"PROFILE: {operation_type} id: {event_id} duration: {on_handle_operation_duration:.2f} seconds")
         return result
 
     async def _handle_tools_list(self, context: MiddlewareContext, call_next: CallNext) -> Any:
-        """Handle tools/list by calling /init API and modifying schemas"""
+        """Handle tools/list by calling /init API and modifying schemas with deduplication"""
         event_id = generate_event_id()
         on_handle_tools_list_start_time = time.time()
-        result = await call_next(context)
-        self.logger.info(f"PROFILE: tools/list call_next duration: {time.time() - on_handle_tools_list_start_time:.2f} seconds id: {event_id}")
+
+        async with self._tools_list_lock:
+            if not self._tools_list_in_progress or self._tools_list_in_progress.done():
+                self._tools_list_in_progress = asyncio.create_task(call_next(context))
+            shared_task = self._tools_list_in_progress
+
+        try:
+            result = await shared_task
+        except Exception as e:
+            async with self._tools_list_lock:
+                if self._tools_list_in_progress is shared_task:
+                    self._tools_list_in_progress = None
+            raise
+        self.logger.debug(
+            f"PROFILE: tools/list call_next duration: {time.time() - on_handle_tools_list_start_time:.2f} seconds id: {event_id}")
+
         tools_list = None
         if isinstance(result, list):
             tools_list = result
@@ -343,11 +379,13 @@ class SecurityMiddleware(Middleware):
                 enhanced_result = result
 
             on_handle_tools_list_duration = time.time() - on_handle_tools_list_start_time
-            self.logger.info(f"PROFILE: tools/list enhanced_result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
+            self.logger.debug(
+                f"PROFILE: tools/list enhanced_result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
             return enhanced_result
 
         on_handle_tools_list_duration = time.time() - on_handle_tools_list_start_time
-        self.logger.info(f"PROFILE: tools/list result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
+        self.logger.debug(
+            f"PROFILE: tools/list result duration: {on_handle_tools_list_duration:.2f} seconds id: {event_id}")
 
         return result
 
@@ -618,7 +656,6 @@ class SecurityMiddleware(Middleware):
             # Don't fail the operation if API call fails - just log the error
             self.logger.error(f"Failed to record user confirmation: {e}")
 
-
     @staticmethod
     def _create_security_api_failure_decision(error: Exception) -> Dict[str, Any]:
         """Create a standard failure decision when security API is unavailable/failing/unreachable"""
@@ -726,7 +763,7 @@ class SecurityMiddleware(Middleware):
             error_parts = [
                 f"SECURITY POLICY NEEDS MORE INFORMATION FOR REVIEWING {stage_title}:",
                 '\n'.join(reasons),
-                '' # newline
+                ''  # newline
             ]
 
             if need_fields:
@@ -752,7 +789,6 @@ class SecurityMiddleware(Middleware):
                 else:
                     error_parts.append("MISSING INFORMATION:")
                     error_parts.extend(need_fields)
-
 
             error_parts.append("\nMANDATORY ACTIONS:")
             error_parts.append("1. Add/Edit ALL affected fields according to the required information")

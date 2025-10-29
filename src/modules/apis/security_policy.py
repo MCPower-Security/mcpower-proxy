@@ -190,7 +190,7 @@ class SecurityPolicyClient:
                 raise SecurityAPIError(f"Unsupported HTTP method: {method}. Supported methods: POST, PUT")
 
             on_make_request_duration = time.time() - on_make_request_start_time
-            self.logger.info(f"PROFILE: {method} id: {id} make_request duration: {on_make_request_duration:.2f} seconds url: {url}")
+            self.logger.debug(f"PROFILE: {method} id: {id} make_request duration: {on_make_request_duration:.2f} seconds url: {url}")
 
             match response.status_code:
                 case 200:
