@@ -232,7 +232,7 @@ async function testWrapUnwrapCycle() {
 }
 
 /**
- * Test URL-based config with mcp-remote wrapping and __bak_configs
+ * Test URL-based config with @mcpower/mcp-remote wrapping and __bak_configs
  */
 async function testUrlConfigWithMcpRemote() {
     setupVscodeMock();
@@ -336,7 +336,7 @@ async function testUrlConfigWithMcpRemote() {
         }
         console.log("✓ __bak_configs contains original URL config");
 
-        // Check inner wrapped config (should be mcp-remote)
+        // Check inner wrapped config (should be @mcpower/mcp-remote)
         const wrappedConfigIndex = notionServer.args.indexOf("--wrapped-config");
         const innerConfigStr = notionServer.args[wrappedConfigIndex + 1];
         const innerConfig = JSON.parse(innerConfigStr);
@@ -344,8 +344,8 @@ async function testUrlConfigWithMcpRemote() {
         if (innerConfig.command !== "npx") {
             throw new Error(`Expected inner command 'npx', got '${innerConfig.command}'`);
         }
-        if (!innerConfig.args.includes("mcp-remote")) {
-            throw new Error("Missing mcp-remote in inner args");
+        if (!innerConfig.args.includes("@mcpower/mcp-remote")) {
+            throw new Error("Missing @mcpower/mcp-remote in inner args");
         }
         if (!innerConfig.args.includes("-y")) {
             throw new Error("Missing -y flag in inner args");
@@ -353,7 +353,19 @@ async function testUrlConfigWithMcpRemote() {
         if (!innerConfig.args.includes("https://mcp.notion.com/mcp")) {
             throw new Error("Missing URL in inner args");
         }
-        console.log("✓ Inner config uses mcp-remote with URL");
+        console.log("✓ Inner config uses @mcpower/mcp-remote with URL");
+
+        // Check --server-name flag
+        const serverNameFlagIndex = innerConfig.args.indexOf("--server-name");
+        if (serverNameFlagIndex === -1) {
+            throw new Error("Missing --server-name flag in inner args");
+        }
+        if (innerConfig.args[serverNameFlagIndex + 1] !== "notion") {
+            throw new Error(
+                `Expected --server-name 'notion', got '${innerConfig.args[serverNameFlagIndex + 1]}'`
+            );
+        }
+        console.log("✓ --server-name flag present with correct value");
 
         // Check headers are converted to --header flags
         const headerFlagIndex = innerConfig.args.indexOf("--header");
@@ -383,7 +395,7 @@ async function testUrlConfigWithMcpRemote() {
         }
         console.log("✓ env preserved in inner config");
 
-        // Check regular server is also wrapped (but not with mcp-remote)
+        // Check regular server is also wrapped (but not with @mcpower/mcp-remote)
         const regularServer = wrappedConfig.mcpServers["regular-server"];
         if (!regularServer.__bak_configs) {
             // Regular command-based server should NOT have __bak_configs
@@ -393,7 +405,7 @@ async function testUrlConfigWithMcpRemote() {
             if (regularInnerConfig.command !== "node") {
                 throw new Error("Regular server inner config incorrect");
             }
-            console.log("✓ Regular server wrapped without mcp-remote");
+            console.log("✓ Regular server wrapped without @mcpower/mcp-remote");
         } else {
             throw new Error("Regular server should not have __bak_configs");
         }
@@ -457,10 +469,10 @@ async function testUrlConfigWithMcpRemote() {
         if (restoredNotion.__bak_configs) {
             throw new Error("__bak_configs should be removed after unwrap");
         }
-        console.log("✓ URL config restored from __bak_configs (not mcp-remote)");
+        console.log("✓ URL config restored from __bak_configs (not @mcpower/mcp-remote)");
 
         console.log(
-            "\n✅ SUCCESS: URL-based config with mcp-remote wrapping/unwrapping works correctly"
+            "\n✅ SUCCESS: URL-based config with @mcpower/mcp-remote wrapping/unwrapping works correctly"
         );
     } finally {
         process.removeAllListeners("exit");

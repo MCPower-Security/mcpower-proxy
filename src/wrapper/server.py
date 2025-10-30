@@ -54,7 +54,7 @@ def create_wrapper_server(wrapper_server_name: str,
     # Create FastMCP server as proxy with our security-aware ProxyClient
     # Use StatefulProxyClient for remote servers (mcp-remote or url-based transports)
     config_str = safe_json_dumps(wrapped_server_configs)
-    is_remote = '"mcp-remote",' in config_str or '"url":' in config_str
+    is_remote = '"@mcpower/mcp-remote",' in config_str or '"url":' in config_str
     backend_class = StatefulProxyClient if is_remote else ProxyClient
     backend = backend_class(
         wrapped_server_configs,

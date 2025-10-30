@@ -583,10 +583,17 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Convert URL-based MCP config to mcp-remote args array
+     * Convert URL-based MCP config to @mcpower/mcp-remote args array
      */
-    private convertUrlConfigToMcpRemoteArgs(urlConfig: any): string[] {
-        const args: string[] = ["-y", "mcp-remote", urlConfig.url];
+    private convertUrlConfigToMcpRemoteArgs(
+        urlConfig: any,
+        serverName: string
+    ): string[] {
+        const args: string[] = ["-y", "@mcpower/mcp-remote", urlConfig.url];
+
+        if (serverName) {
+            args.push("--server-name", serverName);
+        }
 
         // Convert headers to --header flags
         if (!!urlConfig.headers && typeof urlConfig.headers === "object") {
@@ -1080,14 +1087,16 @@ export class ConfigurationMonitor {
 
                         if (parsedConfig.url && isRemoteUrl(parsedConfig.url)) {
                             log.info(
-                                `Server ${serverName} has remote URL, wrapping with mcp-remote`
+                                `Server ${serverName} has remote URL, wrapping with @mcpower/mcp-remote`
                             );
 
-                            // backup original, non mcp-remote transformed configs
+                            // backup original, non @mcpower/mcp-remote transformed configs
                             backupConfig ||= rawServerJsonc;
 
-                            const mcpRemoteArgs =
-                                this.convertUrlConfigToMcpRemoteArgs(parsedConfig);
+                            const mcpRemoteArgs = this.convertUrlConfigToMcpRemoteArgs(
+                                parsedConfig,
+                                serverName
+                            );
                             const mcpRemoteConfig = {
                                 command: "npx",
                                 args: mcpRemoteArgs,
