@@ -86,8 +86,8 @@ jobs:
           sed -i "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"$v\"/g" ../../server.json
           
           # Update IDE Tools hook scripts with new version
-          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/cursor-hook.sh
-          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/cursor-hook.bat
+          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/mcpower-cursor-hook.sh
+          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/mcpower-cursor-hook.bat
           
           echo "Bumped version to $v"
 
@@ -98,8 +98,8 @@ jobs:
           path: |
             targets/vsc-extension/package.json
             targets/vsc-extension/package-lock.json
-            targets/vsc-extension/scripts/cursor/hooks/cursor-hook.sh
-            targets/vsc-extension/scripts/cursor/hooks/cursor-hook.bat
+            targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.sh
+            targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.bat
             src/wrapper/__version__.py
             pyproject.toml
             server.json
@@ -155,7 +155,7 @@ jobs:
           v=$(node -p "require('./package.json').version")
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json package-lock.json scripts/cursor/hooks/cursor-hook.sh scripts/cursor/hooks/cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json
+          git add package.json package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json
           git commit -m "chore: bump version to $v [skip ci]"
           git pull --rebase origin main
           git push

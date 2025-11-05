@@ -41,7 +41,7 @@ const performInitialization = async (
     _state: Omit<ExtensionState, "configMonitor" | "cursorHooksMonitor">
 ): Promise<void> => {
     const ideType = detectIDEFromScriptPath();
-    
+
     state = {
         ..._state,
         configMonitor: new ConfigurationMonitor(),
@@ -64,7 +64,10 @@ const performInitialization = async (
     await state.configMonitor.startMonitoring(state.uvRunner);
 
     // Start Cursor hooks monitoring
-    await state.cursorHooksMonitor?.startMonitoring(state.context.extensionPath, state.uvRunner);
+    await state.cursorHooksMonitor?.startMonitoring(
+        state.context.extensionPath,
+        state.uvRunner
+    );
 
     const auditTrailView = new AuditTrailView(state.context);
     await auditTrailView.initialize();

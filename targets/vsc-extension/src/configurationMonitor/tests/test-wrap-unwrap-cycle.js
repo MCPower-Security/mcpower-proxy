@@ -8,31 +8,11 @@ const os = require("os");
 function setupVscodeMock() {
     const Module = require("module");
     const originalRequire = Module.prototype.require;
+    const vscodeMock = require("../../../__mocks__/vscode");
+    
     Module.prototype.require = function (id) {
         if (id === "vscode") {
-            return {
-                window: {
-                    showErrorMessage: () => {},
-                    showWarningMessage: () => {},
-                    createOutputChannel: () => ({
-                        appendLine: () => {},
-                        append: () => {},
-                        error: () => {},
-                        warn: () => {},
-                        info: () => {},
-                        debug: () => {},
-                        show: () => {},
-                        hide: () => {},
-                        dispose: () => {},
-                    }),
-                },
-                workspace: {
-                    workspaceFolders: null,
-                },
-                env: {
-                    appName: "Visual Studio Code",
-                },
-            };
+            return vscodeMock;
         }
         return originalRequire.apply(this, arguments);
     };
