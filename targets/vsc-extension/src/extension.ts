@@ -1,10 +1,12 @@
 import * as vscode from "vscode";
 import { ConfigurationMonitor } from "./configurationMonitor";
+import { CursorHooksMonitor } from "./cursorHooksMonitor";
 import { UvRunner } from "./uvRunner";
 import { AuditTrailView } from "./auditTrail";
 import { ExtensionState } from "./types";
 import log from "./log";
 import {
+    detectIDEFromScriptPath,
     getCurrentExtensionVersion,
     getLastStoredExtensionVersion,
     updateStoredExtensionVersion,
@@ -36,9 +38,15 @@ const showPersistentAction = async (
 };
 
 const performInitialization = async (
-    _state: Omit<ExtensionState, "configMonitor">
+    _state: Omit<ExtensionState, "configMonitor" | "cursorHooksMonitor">
 ): Promise<void> => {
-    state = { ..._state, configMonitor: new ConfigurationMonitor() };
+    const ideType = detectIDEFromScriptPath();
+    
+    state = {
+        ..._state,
+        configMonitor: new ConfigurationMonitor(),
+        cursorHooksMonitor: ideType === "cursor" ? new CursorHooksMonitor() : undefined,
+    };
     await state.uvRunner.initialize();
 
     // Listen for workspace folder changes
@@ -52,7 +60,11 @@ const performInitialization = async (
     );
     state.context.subscriptions.push(workspaceChangeListener);
 
+    // Start MCP configuration monitoring
     await state.configMonitor.startMonitoring(state.uvRunner);
+
+    // Start Cursor hooks monitoring
+    await state.cursorHooksMonitor?.startMonitoring(state.context.extensionPath, state.uvRunner);
 
     const auditTrailView = new AuditTrailView(state.context);
     await auditTrailView.initialize();
@@ -150,7 +162,12 @@ export async function deactivate() {
     if (state) {
         try {
             log.info("Extension deactivating...");
+
+            // Stop MCP configuration monitoring
             await state.configMonitor.stopMonitoring();
+
+            // Stop Cursor hooks monitoring (but keep hooks registered)
+            await state.cursorHooksMonitor?.stopMonitoring();
         } catch (error) {
             log.error("Error during extension deactivation", error);
         }

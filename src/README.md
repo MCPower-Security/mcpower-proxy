@@ -15,7 +15,8 @@ The extension automatically installs and protects all your MCP servers - no manu
 
 ## Architecture
 
-MCPower Proxy Server is built as a transparent 1:1 MCP wrapper that intercepts all communication between AI clients and MCP servers. The architecture includes:
+MCPower Proxy Server is built as a transparent 1:1 MCP wrapper that intercepts all communication between AI clients and
+MCP servers. The architecture includes:
 
 - **Transparent Proxy Layer**: 1:1 wrapper that directly intercepts and wraps MCP servers
 - **Security Middleware**: Intercepts all MCP operations

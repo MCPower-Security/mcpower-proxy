@@ -45,13 +45,20 @@ def main():
         logger.info('=' * 66)
         logger.info('')
 
-    # Start config monitoring
-    config.start_monitoring(logger)
-
     # Setup audit trail logging
     audit_logger = setup_audit_trail_logger(logger)
 
-    logger.info(f"Starting MCPower Proxy:\n{{'args': {args}, 'log_file': {log_file}, 'log_level': {log_level}, 'debug_mode': {debug_mode}}}")
+    if args.ide_tool:
+        from ide_tools.router import main as ide_tools_main
+        ide_tools_main(logger, audit_logger, args.ide, args.context)
+        return
+
+    # Continue with MCP wrapper mode
+    # Start config monitoring
+    config.start_monitoring(logger)
+
+    logger.info(
+        f"Starting MCPower Proxy:\n{{'args': {args}, 'log_file': {log_file}, 'log_level': {log_level}, 'debug_mode': {debug_mode}}}")
 
     try:
         # Parse JSON/JSONC config

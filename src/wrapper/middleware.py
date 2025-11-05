@@ -18,15 +18,14 @@ from mcp import ErrorData
 
 from mcpower_shared.mcp_types import (create_policy_request, create_policy_response, AgentContext, EnvironmentContext,
                                       InitRequest,
-                                      ServerRef, ToolRef, UserConfirmation)
+                                      ServerRef, ToolRef)
 from modules.apis.security_policy import SecurityPolicyClient
+from modules.decision_handler import DecisionHandler, DecisionEnforcementError
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
-from modules.ui.classes import ConfirmationRequest, DialogOptions, UserDecision
-from modules.ui.confirmation import UserConfirmationDialog, UserConfirmationError
 from modules.utils.copy import safe_copy
-from modules.utils.ids import generate_event_id, get_session_id, read_app_uid
+from modules.utils.ids import generate_event_id, get_session_id, read_app_uid, get_project_mcpower_dir
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
 from wrapper.schema import merge_input_schema_with_existing
@@ -97,7 +96,7 @@ class SecurityMiddleware(Middleware):
         if context.method != "initialize":
             # Check workspace roots and re-initialize app_uid if workspace changed
             workspace_roots = await self._extract_workspace_roots(context)
-            current_workspace_root = workspace_roots[0] if workspace_roots else str(Path.home() / ".mcpower")
+            current_workspace_root = get_project_mcpower_dir(workspace_roots[0] if workspace_roots else None)
             if current_workspace_root != self._last_workspace_root:
                 self.logger.debug(
                     f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")
@@ -247,17 +246,25 @@ class SecurityMiddleware(Middleware):
         self.logger.debug(
             f"PROFILE: {operation_type} id: {event_id} inspect_request duration: {on_inspect_request_duration:.2f} seconds")
 
-        await self._enforce_decision(
-            decision=request_decision,
-            error_class=error_class,
-            base_message=f"{operation_type.title()} request blocked by security policy",
-            is_request=True,
-            event_id=event_id,
-            tool_name=tool_name,
-            content_data=tool_args,
-            operation_type=operation_type,
-            prompt_id=prompt_id
-        )
+        try:
+            await DecisionHandler(
+                logger=self.logger,
+                audit_logger=self.audit_logger,
+                session_id=self.session_id,
+                app_id=self.app_id
+            ).enforce_decision(
+                decision=request_decision,
+                is_request=True,
+                event_id=event_id,
+                tool_name=tool_name,
+                content_data=tool_args,
+                operation_type=operation_type,
+                prompt_id=prompt_id,
+                server_name=self.wrapped_server_name,
+                error_message_prefix=f"{operation_type.title()} request blocked by security policy"
+            )
+        except DecisionEnforcementError as e:
+            raise error_class(str(e))
 
         self.audit_logger.log_event(
             "agent_request_forwarded",
@@ -303,17 +310,25 @@ class SecurityMiddleware(Middleware):
         self.logger.debug(
             f"PROFILE: {operation_type} id: {event_id} inspect_response duration: {on_inspect_response_duration:.2f} seconds")
 
-        await self._enforce_decision(
-            decision=response_decision,
-            error_class=error_class,
-            base_message=f"{operation_type.title()} response blocked by security policy",
-            is_request=False,
-            event_id=event_id,
-            tool_name=tool_name,
-            content_data=response_content,
-            operation_type=operation_type,
-            prompt_id=prompt_id
-        )
+        try:
+            await DecisionHandler(
+                logger=self.logger,
+                audit_logger=self.audit_logger,
+                session_id=self.session_id,
+                app_id=self.app_id
+            ).enforce_decision(
+                decision=response_decision,
+                is_request=False,
+                event_id=event_id,
+                tool_name=tool_name,
+                content_data=response_content,
+                operation_type=operation_type,
+                prompt_id=prompt_id,
+                server_name=self.wrapped_server_name,
+                error_message_prefix=f"{operation_type.title()} response blocked by security policy"
+            )
+        except DecisionEnforcementError as e:
+            raise error_class(str(e))
 
         self.audit_logger.log_event(
             "mcp_response_forwarded",
@@ -635,27 +650,6 @@ class SecurityMiddleware(Middleware):
             )
         }
 
-    async def _record_user_confirmation(self, event_id: str, is_request: bool, user_decision: UserDecision,
-                                        prompt_id: str, call_type: str = None):
-        """Record user confirmation decision with the security API"""
-        try:
-            direction = "request" if is_request else "response"
-
-            user_confirmation = UserConfirmation(
-                event_id=event_id,
-                direction=direction,
-                user_decision=user_decision,
-                call_type=call_type
-            )
-
-            async with SecurityPolicyClient(session_id=self.session_id, logger=self.logger,
-                                            audit_logger=self.audit_logger, app_id=self.app_id) as client:
-                result = await client.record_user_confirmation(user_confirmation, prompt_id=prompt_id)
-                self.logger.debug(f"User confirmation recorded: {result}")
-        except Exception as e:
-            # Don't fail the operation if API call fails - just log the error
-            self.logger.error(f"Failed to record user confirmation: {e}")
-
     @staticmethod
     def _create_security_api_failure_decision(error: Exception) -> Dict[str, Any]:
         """Create a standard failure decision when security API is unavailable/failing/unreachable"""
@@ -665,134 +659,3 @@ class SecurityMiddleware(Middleware):
             "reasons": [f"Security API unavailable: {error}"],
             "matched_rules": ["security_api.error"]
         }
-
-    async def _enforce_decision(self, decision: Dict[str, Any], error_class, base_message: str,
-                                is_request: bool, event_id: str, tool_name: str, content_data: Dict[str, Any],
-                                operation_type: str, prompt_id: str):
-        """Enforce security decision with user confirmation support"""
-        decision_type = decision.get("decision", "block")
-
-        if decision_type == "allow":
-            return
-
-        elif decision_type == "block":
-            policy_reasons = decision.get("reasons", ["Policy violation"])
-            severity = decision.get("severity", "unknown")
-            call_type = decision.get("call_type")
-
-            try:
-                # Show a blocking dialog and wait for user decision
-                confirmation_request = ConfirmationRequest(
-                    is_request=is_request,
-                    tool_name=tool_name,
-                    policy_reasons=policy_reasons,
-                    content_data=content_data,
-                    severity=severity,
-                    event_id=event_id,
-                    operation_type=operation_type,
-                    server_name=self.wrapped_server_name,
-                    timeout_seconds=60
-                )
-
-                response = UserConfirmationDialog(
-                    self.logger, self.audit_logger
-                ).request_blocking_confirmation(confirmation_request, prompt_id, call_type)
-
-                # If we got here, user chose "Allow Anyway"
-                self.logger.info(f"User chose to 'allow anyway' a blocked {confirmation_request.operation_type} "
-                                 f"operation for tool '{tool_name}' (event: {event_id})")
-
-                await self._record_user_confirmation(event_id, is_request, response.user_decision, prompt_id, call_type)
-                return
-
-            except UserConfirmationError as e:
-                # User chose to block or dialog failed
-                self.logger.warning(f"User blocking confirmation failed: {e}")
-                await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
-                reasons = "; ".join(policy_reasons)
-                raise error_class("Security Violation. User blocked the operation")
-
-        elif decision_type == "required_explicit_user_confirmation":
-            policy_reasons = decision.get("reasons", ["Security policy requires confirmation"])
-            severity = decision.get("severity", "unknown")
-            call_type = decision.get("call_type")
-
-            try:
-                confirmation_request = ConfirmationRequest(
-                    is_request=is_request,
-                    tool_name=tool_name,
-                    policy_reasons=policy_reasons,
-                    content_data=content_data,
-                    severity=severity,
-                    event_id=event_id,
-                    operation_type=operation_type,
-                    server_name=self.wrapped_server_name,
-                    timeout_seconds=60
-                )
-
-                # only show YES_ALWAYS if call_type exists
-                options = DialogOptions(
-                    show_always_allow=(call_type is not None),
-                    show_always_block=False
-                )
-
-                response = UserConfirmationDialog(
-                    self.logger, self.audit_logger
-                ).request_confirmation(confirmation_request, prompt_id, call_type, options)
-
-                # If we got here, user approved the operation
-                self.logger.info(f"User {response.user_decision.value} {confirmation_request.operation_type} "
-                                 f"operation for tool '{tool_name}' (event: {event_id})")
-
-                await self._record_user_confirmation(event_id, is_request, response.user_decision, prompt_id, call_type)
-                return
-
-            except UserConfirmationError as e:
-                # User denied confirmation or dialog failed
-                self.logger.warning(f"User confirmation failed: {e}")
-                await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
-                raise error_class("Security Violation. User blocked the operation")
-
-        elif decision_type == "need_more_info":
-            stage_title = 'CLIENT REQUEST' if is_request else 'TOOL RESPONSE'
-
-            # Create an actionable error message for the AI agent
-            reasons = decision.get("reasons", [])
-            need_fields = decision.get("need_fields", [])
-
-            error_parts = [
-                f"SECURITY POLICY NEEDS MORE INFORMATION FOR REVIEWING {stage_title}:",
-                '\n'.join(reasons),
-                ''  # newline
-            ]
-
-            if need_fields:
-                # Convert server field names to wrapper field names for the AI agent
-                wrapper_field_mapping = {
-                    "context.agent.intent": "__wrapper_modelIntent",
-                    "context.agent.plan": "__wrapper_modelPlan",
-                    "context.agent.expectedOutputs": "__wrapper_modelExpectedOutputs",
-                    "context.agent.user_prompt": "__wrapper_userPrompt",
-                    "context.agent.user_prompt_id": "__wrapper_userPromptId",
-                    "context.agent.context_summary": "__wrapper_contextSummary",
-                    "context.workspace.current_files": "__wrapper_currentFiles",
-                }
-
-                missing_wrapper_fields = []
-                for field in need_fields:
-                    wrapper_field = wrapper_field_mapping.get(field, field)
-                    missing_wrapper_fields.append(wrapper_field)
-
-                if missing_wrapper_fields:
-                    error_parts.append("AFFECTED FIELDS:")
-                    error_parts.extend(missing_wrapper_fields)
-                else:
-                    error_parts.append("MISSING INFORMATION:")
-                    error_parts.extend(need_fields)
-
-            error_parts.append("\nMANDATORY ACTIONS:")
-            error_parts.append("1. Add/Edit ALL affected fields according to the required information")
-            error_parts.append("2. Retry the tool call")
-
-            actionable_message = "\n".join(error_parts)
-            raise error_class(actionable_message)

@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { normalize, resolve } from "path";
 import * as os from "os";
 import * as JSONC from "jsonc-parser";
 import * as vscode from "vscode";
@@ -21,6 +22,52 @@ export async function writeFile(filePath: string, content: string): Promise<any>
         await fs.promises.writeFile(filePath, content, "utf8");
     } catch (error) {
         throw new Error(`Failed to write file: ${error}`);
+    }
+}
+
+/**
+ * Update JSONC file while preserving comments and formatting
+ * Uses jsonc-parser's modify API to preserve comments
+ */
+export async function updateJsoncFile(
+    filePath: string,
+    updater: (config: any) => any
+): Promise<void> {
+    try {
+        let originalContent = "";
+        let config: any;
+
+        // Read existing file if it exists
+        if (await fileExists(filePath)) {
+            originalContent = await fs.promises.readFile(filePath, "utf8");
+            config = parseJsonc(originalContent);
+        } else {
+            config = {};
+        }
+
+        // Apply updates
+        const updatedConfig = updater(config);
+
+        // Generate new content preserving comments
+        let newContent: string;
+        if (originalContent) {
+            // Use jsonc-parser to modify while preserving comments
+            const edits = JSONC.modify(originalContent, [], updatedConfig, {
+                formattingOptions: { tabSize: 2, insertSpaces: true },
+            });
+            newContent = JSONC.applyEdits(originalContent, edits);
+        } else {
+            // New file - just stringify
+            newContent = JSON.stringify(updatedConfig, null, 2);
+        }
+
+        if (newContent !== originalContent) {
+            await fs.promises.writeFile(filePath, newContent, "utf8");
+        }
+    } catch (error) {
+        throw new Error(
+            `Failed to update JSONC file: ${error instanceof Error ? error.message : String(error)}`
+        );
     }
 }
 
@@ -236,7 +283,10 @@ const normalizeIPv6 = (ip: string): string | null => {
 
         // Handle :: abbreviation
         const parts = ip.split("::");
-        if (parts.length > 2) return null; // Invalid
+        if (parts.length > 2) {
+            // Invalid
+            return null;
+        }
 
         const expandSection = (section: string): string[] => {
             return section ? section.split(":") : [];
@@ -255,7 +305,10 @@ const normalizeIPv6 = (ip: string): string | null => {
         const totalGroups = 8;
         const missingGroups = totalGroups - leftParts.length - rightParts.length;
 
-        if (missingGroups < 0) return null; // Too many groups
+        if (missingGroups < 0) {
+            // Too many groups
+            return null;
+        }
 
         const expanded = [
             ...leftParts,
@@ -316,12 +369,24 @@ const isPrivateIPv6 = (normalized: string): boolean => {
             .flat();
 
         const [a, b] = ipv4Parts;
-        if (a === 10) return true;
-        if (a === 172 && b >= 16 && b <= 31) return true;
-        if (a === 192 && b === 168) return true;
-        if (a === 169 && b === 254) return true;
-        if (a === 127) return true;
-        if (a === 0) return true;
+        if (a === 10) {
+            return true;
+        }
+        if (a === 172 && b >= 16 && b <= 31) {
+            return true;
+        }
+        if (a === 192 && b === 168) {
+            return true;
+        }
+        if (a === 169 && b === 254) {
+            return true;
+        }
+        if (a === 127) {
+            return true;
+        }
+        if (a === 0) {
+            return true;
+        }
     }
 
     return false;
@@ -364,18 +429,33 @@ export const isRemoteUrl = (url: string): boolean => {
             }
 
             // Private IP ranges
-            if (a === 10) return false; // 10.0.0.0/8
-            if (a === 172 && b >= 16 && b <= 31) return false; // 172.16.0.0/12
-            if (a === 192 && b === 168) return false; // 192.168.0.0/16
-            if (a === 169 && b === 254) return false; // 169.254.0.0/16 (link-local)
-            if (a === 127) return false; // 127.0.0.0/8 (loopback)
-            if (a === 0) return false; // 0.0.0.0/8
+            if (a === 10) {
+                return false;
+            } // 10.0.0.0/8
+            if (a === 172 && b >= 16 && b <= 31) {
+                return false;
+            } // 172.16.0.0/12
+            if (a === 192 && b === 168) {
+                return false;
+            } // 192.168.0.0/16
+            if (a === 169 && b === 254) {
+                return false;
+            } // 169.254.0.0/16 (link-local)
+            if (a === 127) {
+                return false;
+            } // 127.0.0.0/8 (loopback)
+            if (a === 0) {
+                return false;
+            } // 0.0.0.0/8
         }
 
         // IPv6 private address detection
         if (hostname.includes(":")) {
             const normalized = normalizeIPv6(hostname);
-            if (!normalized) return false; // Invalid IPv6
+            if (!normalized) {
+                // Invalid IPv6
+                return false;
+            }
 
             return !isPrivateIPv6(normalized);
         }
@@ -386,4 +466,18 @@ export const isRemoteUrl = (url: string): boolean => {
         // Invalid URL, treat as non-remote to avoid breaking
         return false;
     }
+};
+
+/**
+ * Compare two paths for equality, handling case sensitivity and path forms
+ */
+export const samePath = (a: string, b: string): boolean => {
+    const pa = normalize(resolve(a));
+    const pb = normalize(resolve(b));
+
+    if (mapOS() === "windows") {
+        // i.e. C: vs c:
+        return pa.toLowerCase() === pb.toLowerCase();
+    }
+    return pa === pb;
 };

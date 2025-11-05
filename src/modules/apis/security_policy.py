@@ -23,6 +23,7 @@ class SecurityAPIError(Exception):
 
 class RateLimitExhaustedError(SecurityAPIError):
     """Security API rate limit exhausted (429) error"""
+
     def __init__(self, message: str, retry_after: int = None):
         super().__init__(message)
         self.retry_after = retry_after
@@ -53,7 +54,7 @@ class SecurityPolicyClient:
         if self.client:
             await self.client.aclose()
 
-    async def inspect_policy_request(self, policy_request: PolicyRequest, 
+    async def inspect_policy_request(self, policy_request: PolicyRequest,
                                      prompt_id: str) -> InspectDecision:
         """Call inspect_policy_request API endpoint"""
         if not self.client:
@@ -156,7 +157,7 @@ class SecurityPolicyClient:
                 audit_payload = {"payload": {"server": payload_dict["server"], "tools": payload_dict["tools"]}}
             else:
                 audit_payload = {"payload": payload_dict}
-            
+
             self.audit_logger.log_event(
                 audit_event_type,
                 audit_payload,
@@ -190,7 +191,8 @@ class SecurityPolicyClient:
                 raise SecurityAPIError(f"Unsupported HTTP method: {method}. Supported methods: POST, PUT")
 
             on_make_request_duration = time.time() - on_make_request_start_time
-            self.logger.debug(f"PROFILE: {method} id: {id} make_request duration: {on_make_request_duration:.2f} seconds url: {url}")
+            self.logger.debug(
+                f"PROFILE: {method} id: {id} make_request duration: {on_make_request_duration:.2f} seconds url: {url}")
 
             match response.status_code:
                 case 200:
@@ -217,7 +219,7 @@ class SecurityPolicyClient:
                     else:
                         # Other responses (e.g., /init) - log entire response
                         audit_result = {"result": data_dict}
-                    
+
                     self.audit_logger.log_event(
                         f"{audit_event_type}_result",
                         audit_result,
@@ -280,7 +282,8 @@ class SecurityPolicyClient:
     def _handle_quota_restoration(self, endpoint: str):
         """Handle quota restoration (when non-429 response received)"""
         if self.session_id in self._session_notification_times:
-            self.logger.info(f"Quota restored - received successful response from {endpoint}. Session: {self.session_id}")
+            self.logger.info(
+                f"Quota restored - received successful response from {endpoint}. Session: {self.session_id}")
             del self._session_notification_times[self.session_id]
 
     def _send_throttled_quota_notification(self, retry_after: int, endpoint: str):
