@@ -18,7 +18,9 @@ export class UvRunner {
     }
 
     async initialize(cleanCache: boolean = false): Promise<void> {
-        if (this.uvxCommand) return;
+        if (this.uvxCommand) {
+            return;
+        }
 
         const scriptPath = await this.installUvx();
         await this.runScript(scriptPath, this.version, cleanCache);
@@ -59,7 +61,11 @@ export class UvRunner {
         }
     }
 
-    private async runScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
+    private async runScript(
+        scriptPath: string,
+        version: string,
+        cleanCache: boolean
+    ): Promise<void> {
         if (!(await fileExists(scriptPath))) {
             throw new Error(`uvx setup script missing: ${scriptPath}`);
         }
@@ -68,7 +74,9 @@ export class UvRunner {
             throw new Error("Version parameter is required for setup script");
         }
 
-        log.info(`Running uvx setup script: ${scriptPath} with version ${version}, cleanCache=${cleanCache}`);
+        log.info(
+            `Running uvx setup script: ${scriptPath} with version ${version}, cleanCache=${cleanCache}`
+        );
 
         if (mapOS() === "windows") {
             await this.runWindowsScript(scriptPath, version, cleanCache);
@@ -113,7 +121,11 @@ export class UvRunner {
         }
     }
 
-    private async runUnixScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
+    private async runUnixScript(
+        scriptPath: string,
+        version: string,
+        cleanCache: boolean
+    ): Promise<void> {
         await fs.promises.chmod(scriptPath, 0o755);
 
         const hasUvx = await this.findUvxBinary();
@@ -131,7 +143,11 @@ export class UvRunner {
         }
     }
 
-    private async runWindowsScript(scriptPath: string, version: string, cleanCache: boolean): Promise<void> {
+    private async runWindowsScript(
+        scriptPath: string,
+        version: string,
+        cleanCache: boolean
+    ): Promise<void> {
         const hasUvx = await this.findUvxBinary();
         const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath, version];
         if (cleanCache) {

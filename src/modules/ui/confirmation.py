@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from mcpower_shared.mcp_types import UserDecision
-
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from . import xdialog

@@ -164,6 +164,7 @@ async def run_test(command: list[str], test_name: str):
 
     # Capture stderr in a thread to see what's happening
     stderr_lines = []
+
     def capture_stderr():
         for line in iter(process.stderr.readline, b''):
             decoded = line.decode('utf-8', errors='replace').strip()
@@ -302,4 +303,3 @@ async def run_test(command: list[str], test_name: str):
         if process.poll() is None:
             process.kill()
         raise
-

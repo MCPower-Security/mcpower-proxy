@@ -24,6 +24,16 @@ def generate_event_id() -> str:
     return f"{timestamp}-{unique_part}"
 
 
+def generate_prompt_id() -> str:
+    """
+    Generate truly-random 8-character prompt ID for user request correlation
+    
+    Returns:
+        8-character random ID string
+    """
+    return str(uuid.uuid4())[:8]
+
+
 def get_session_id() -> str:
     """
     Get session ID for the current process. Returns the same value for all calls
@@ -109,18 +119,51 @@ def _get_or_create_uuid(uid_path: Path, logger, id_type: str) -> str:
                     time.sleep(0.1 * (2 ** attempt))
                     continue
                 raise
-        
+
         new_uid = str(uuid.uuid4())
-        
+
         if _atomic_write_uuid(uid_path, new_uid):
             logger.info(f"Generated {id_type}: {new_uid} at {uid_path}")
             return new_uid
-        
-        logger.debug(f"{id_type.title()} file created by another process, reading (attempt {attempt + 1}/{max_attempts})")
+
+        logger.debug(
+            f"{id_type.title()} file created by another process, reading (attempt {attempt + 1}/{max_attempts})")
         if attempt < max_attempts - 1:
             time.sleep(0.05)
-    
+
     raise RuntimeError(f"Failed to get or create {id_type} after {max_attempts} attempts")
+
+
+def get_home_mcpower_dir() -> Path:
+    """
+    Get the global MCPower directory path in user's home directory
+    
+    Returns:
+        Path to ~/.mcpower directory
+    """
+    return Path.home() / ".mcpower"
+
+
+def get_project_mcpower_dir(project_path: Optional[str] = None) -> str:
+    """
+    Get the MCPower directory path, with fallback to global ~/.mcpower
+
+    Args:
+        project_path: Optional project/workspace path. If None or invalid, falls back to ~/.mcpower
+
+    Returns:
+        Path to use for MCPower data (either project/.mcpower or ~/.mcpower)
+    """
+    if project_path:
+        try:
+            path = Path(project_path)
+            if path.exists() and path.is_dir():
+                return str(path)
+        except Exception:
+            pass
+
+    # Fallback to global ~/.mcpower
+    return str(get_home_mcpower_dir())
 
 
 def get_or_create_user_id(logger) -> str:
@@ -134,7 +177,7 @@ def get_or_create_user_id(logger) -> str:
     Returns:
         User ID string
     """
-    uid_path = Path.home() / ".mcpower" / "uid"
+    uid_path = get_home_mcpower_dir() / "uid"
     return _get_or_create_uuid(uid_path, logger, "user ID")
 
 
@@ -158,5 +201,5 @@ def read_app_uid(logger, project_folder_path: str) -> str:
     else:
         # Project-specific case
         uid_path = project_path / ".mcpower" / "app_uid"
-    
+
     return _get_or_create_uuid(uid_path, logger, "app UID")

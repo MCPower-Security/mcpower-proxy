@@ -52,7 +52,7 @@ def safe_json_dumps(obj: Any, **kwargs) -> str:
     # If it's a Pydantic BaseModel, use its built-in JSON serialization
     if isinstance(obj, BaseModel):
         return obj.model_dump_json(**kwargs)
-    
+
     # If it's a dict or list that might contain Pydantic objects, use custom serializer
     def default_serializer(o):
         if isinstance(o, BaseModel):
@@ -72,7 +72,7 @@ def safe_json_dumps(obj: Any, **kwargs) -> str:
             return o.__dict__
         # Fallback to string representation
         return str(o)
-    
+
     return json.dumps(obj, default=default_serializer, **kwargs)
 
 

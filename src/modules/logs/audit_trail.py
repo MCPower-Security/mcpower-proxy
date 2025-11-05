@@ -50,14 +50,14 @@ class AuditTrailLogger:
         Path(self.audit_file).parent.mkdir(parents=True, exist_ok=True)
 
     def log_event(
-        self, 
-        event_type: str, 
-        data: Dict[str, Any], 
-        event_id: Optional[str] = None,
-        prompt_id: Optional[str] = None,
-        user_prompt: Optional[str] = None,
-        ignored_keys: Optional[List[str]] = None,
-        include_keys: Optional[List[str]] = None
+            self,
+            event_type: str,
+            data: Dict[str, Any],
+            event_id: Optional[str] = None,
+            prompt_id: Optional[str] = None,
+            user_prompt: Optional[str] = None,
+            ignored_keys: Optional[List[str]] = None,
+            include_keys: Optional[List[str]] = None
     ):
         """
         Log a single audit event
@@ -74,19 +74,20 @@ class AuditTrailLogger:
         try:
             # Convert data to dict structure (handles nested objects, dataclasses, Pydantic models)
             data_dict = to_dict(data)
-            
+
             # Build event structure
             event = {
                 "session_id": self.session_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "event_type": event_type,
-                "data": redact(data_dict, ignored_keys=ignored_keys, include_keys=include_keys)  # Redaction with optional key filtering
+                "data": redact(data_dict, ignored_keys=ignored_keys, include_keys=include_keys)
+                # Redaction with optional key filtering
             }
 
             # Include prompt_id if provided (for grouping by user prompt)
             if prompt_id:
                 event["prompt_id"] = prompt_id
-                
+
             # Include user_prompt text if provided (only needed once per prompt_id)
             if user_prompt:
                 event["user_prompt"] = user_prompt
@@ -118,7 +119,7 @@ class AuditTrailLogger:
             "app_uid": self.app_uid,
             **{k: v for k, v in event.items() if k != "app_uid"}
         }
-        
+
         # Atomic append to audit trail file
         with open(self.audit_file, 'a', encoding='utf-8') as f:
             f.write(safe_json_dumps(event_with_app_uid) + '\n')
@@ -137,14 +138,14 @@ class AuditTrailLogger:
         """
         if self.app_uid == app_uid:
             return
-        
+
         if self.app_uid is not None:
             self.logger.info(f"app_uid changed from {self.app_uid} to {app_uid}")
         else:
             self.logger.debug(f"app_uid set to: {app_uid}")
-        
+
         self.app_uid = app_uid
-        
+
         # Flush all pending logs
         if self._pending_logs:
             self.logger.debug(f"Flushing {len(self._pending_logs)} queued audit logs")

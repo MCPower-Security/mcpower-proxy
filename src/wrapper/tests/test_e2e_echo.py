@@ -14,7 +14,8 @@ from test_e2e_echo_base import run_test
 
 async def run_main_py_test():
     test_dir = Path(__file__).parent
-    src_dir = test_dir.parent
+    wrapper_dir = test_dir.parent
+    src_dir = wrapper_dir.parent
     repo_root = src_dir.parent
 
     command = [
@@ -32,5 +33,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nTest failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

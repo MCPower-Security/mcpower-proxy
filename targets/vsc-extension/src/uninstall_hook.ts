@@ -1,11 +1,13 @@
 import { ConfigurationMonitor } from "./configurationMonitor";
+import { CursorHooksMonitor } from "./cursorHooksMonitor";
 import { constants, promises as fs } from "fs";
+import { detectIDEFromScriptPath } from "./utils";
 import { reportLifecycleEvent } from "./api";
 
 /**
  * Uninstall hook script for MCPower Security
  * This script runs when the extension is completely uninstalled from VS Code
- * It unwraps all MCP configurations that were wrapped by this specific IDE instance
+ * It unwraps all MCP configurations and unregisters IDE Tools hooks by this specific IDE instance
  */
 async function main() {
     console.log("Starting MCPower Security uninstall cleanup...");
@@ -26,7 +28,7 @@ async function main() {
 
         console.log(`Detected IDE from script path: ${detectedIDE}`);
 
-        // Get all files this IDE instance should unwrap (registry and current IDE system paths)
+        // 1. Unwrap MCP configurations
         const filesToUnwrap = await configMonitor.getAllWrappedFiles();
         console.log(`Found ${filesToUnwrap.length} files to check for unwrapping`);
 
@@ -64,22 +66,38 @@ async function main() {
             }
         }
 
-        console.log(`\nCleanup completed:`);
+        console.log(`\nMCP Configurations cleanup:`);
         console.log(`  ✅ Successfully unwrapped: ${successCount}`);
         console.log(`  ℹ️  No changes needed: ${skipCount}`);
         console.log(`  ❌ Errors encountered: ${errorCount}`);
 
+        // 2. Unregister Cursor hooks (if running in Cursor)
+        const ideType = detectIDEFromScriptPath();
+        switch (ideType) {
+            case "cursor":
+                console.log("\nCleaning up Cursor hooks...");
+                try {
+                    const cursorHooksMonitor = new CursorHooksMonitor();
+                    await cursorHooksMonitor.unregisterHook();
+                    console.log("✅ Cursor hooks unregistered");
+                } catch (error: any) {
+                    console.error("Failed to unregister Cursor hooks:", error.message);
+                    // Non-critical - continue with other cleanup
+                }
+                break;
+        }
+
+        // 3. Clean up registry directories
         try {
-            // Clean up current IDE's registry directory
             const mcpsDir = configMonitor.getMcpsDir();
             await fs.rmdir(mcpsDir);
+            console.log("✅ MCP registry cleaned up");
         } catch (e) {
-            console.error("IDE MCPs folder cleanup failed:", e);
+            console.error("MCP registry cleanup failed:", e);
             // ignore folder removal error; non-critical
         }
 
-        console.log("Registry cleanup completed");
-        console.log("MCPower Security uninstall cleanup finished!");
+        console.log("\nMCPower Security uninstall cleanup finished!");
     } catch (error) {
         console.error("❌ Uninstall cleanup failed:", error);
         process.exit(1);

@@ -138,8 +138,7 @@ function extractUserPrompt(entries: AuditEntry[]): string {
             return entry.user_prompt;
         }
     }
-    // This should never happen - if we have a prompt_id, we must have user_prompt
-    throw new Error(`Missing user_prompt for prompt_id: ${entries[0]?.prompt_id}`);
+    return "N/A";
 }
 
 /**
