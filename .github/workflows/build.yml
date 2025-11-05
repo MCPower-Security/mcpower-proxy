@@ -52,7 +52,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Run E2E test on ${{ matrix.os }}
-        run: uv run python src/tests/test_e2e_echo.py
+        run: uv run python src/wrapper/tests/test_e2e_echo.py
 
   bump-version:
     needs: [testing]
