@@ -1,8 +1,7 @@
-import { dirname, join, normalize } from "path";
+import { dirname, join, normalize, basename } from "path";
 import { promises as fs } from "fs";
 import { homedir } from "os";
 import { spawn } from "child_process";
-import * as vscode from "vscode";
 import chokidar from "chokidar";
 import { fileExists, mapOS, samePath, updateJsoncFile } from "../utils";
 import log from "../log";
@@ -21,8 +20,8 @@ export class CursorHooksMonitor {
     private pendingRegistration: NodeJS.Timeout | undefined;
     private extensionPath: string | undefined;
 
-    constructor() {
-        this.hooksFilePath = join(homedir(), ".cursor", "hooks.json");
+    constructor(hooksFilePath?: string) {
+        this.hooksFilePath = hooksFilePath || join(homedir(), ".cursor", "hooks.json");
     }
 
     /**
@@ -76,13 +75,15 @@ export class CursorHooksMonitor {
                 // Send common schema input via stdin immediately after spawn
                 if (proc.stdin) {
                     try {
+                        // Lazy import vscode only when needed (not available during uninstall)
+                        const vscode = require("vscode");
                         const input = JSON.stringify({
                             conversation_id: `${Date.now()}`.slice(-8),
                             generation_id: `${Date.now()}`.slice(-8),
                             hook_event_name: "init",
                             workspace_roots:
                                 vscode.workspace.workspaceFolders?.map(
-                                    folder => folder.uri.fsPath
+                                    (folder: any) => folder.uri.fsPath
                                 ) || [],
                         });
                         proc.stdin.write(input);
@@ -191,7 +192,8 @@ export class CursorHooksMonitor {
                     // (handles both quoted and unquoted paths)
                     config.hooks[hookName] = config.hooks[hookName].filter(
                         hook =>
-                            !this.normalizeCommandPath(hook.command).endsWith(scriptName)
+                            basename(this.normalizeCommandPath(hook.command)) !==
+                            scriptName
                     );
 
                     // Clean up empty arrays
@@ -218,15 +220,20 @@ export class CursorHooksMonitor {
     }
 
     private async getHookScriptPath(scriptName: string): Promise<string> {
+        // During uninstall, extensionPath may be undefined - return placeholder path
+        if (!this.extensionPath) {
+            return scriptName; // Only the name is needed for unregistration
+        }
+
         const scriptPath = join(
-            this.extensionPath!,
+            this.extensionPath,
             "scripts",
             "cursor",
             "hooks",
             scriptName
         );
         // Make script executable (Unix-like systems)
-        if (mapOS() !== "windows") {
+        if ((await fileExists(scriptPath)) && mapOS() !== "windows") {
             await fs.chmod(scriptPath, 0o755);
         }
         return scriptPath;
@@ -299,7 +306,7 @@ export class CursorHooksMonitor {
     private getScriptsMap = async (): Promise<
         Record<string, { path: string; name: string }>
     > => {
-        const consolidatedScriptName = `cursor-hook.${mapOS() === "windows" ? "bat" : "sh"}`;
+        const consolidatedScriptName = `mcpower-cursor-hook.${mapOS() === "windows" ? "bat" : "sh"}`;
         const consolidatedScriptPath =
             await this.getHookScriptPath(consolidatedScriptName);
 
@@ -328,7 +335,7 @@ export class CursorHooksMonitor {
     /**
      * Register Cursor hooks immediately (used during startup)
      */
-    private async registerHooks(): Promise<void> {
+    public async registerHooks(): Promise<void> {
         await fs.mkdir(dirname(this.hooksFilePath), { recursive: true });
         const scriptsMap = await this.getScriptsMap();
 
@@ -349,10 +356,11 @@ export class CursorHooksMonitor {
                 ] of Object.entries(scriptsMap)) {
                     const existingHooks = config.hooks[hookName] || [];
 
-                    // Clean stale entries by script name (handles extension path changes)
+                    // Clean stale entries by script name (handles version upgrades)
                     const cleaned = existingHooks.filter(
                         hook =>
-                            !this.normalizeCommandPath(hook.command).endsWith(scriptName)
+                            basename(this.normalizeCommandPath(hook.command)) !==
+                            scriptName
                     );
 
                     // Check if same full path is already there (handles quoted/unquoted)

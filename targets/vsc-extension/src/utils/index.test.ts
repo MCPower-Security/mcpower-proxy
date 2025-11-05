@@ -1,4 +1,4 @@
-import { isRemoteUrl } from "./utils";
+import { isRemoteUrl } from "./index";
 
 describe("isRemoteUrl", () => {
     describe("Invalid URLs", () => {

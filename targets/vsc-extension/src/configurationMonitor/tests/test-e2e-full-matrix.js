@@ -178,44 +178,14 @@ class E2ETestRunner {
             stdio: "pipe",
         });
 
-        // Mock the vscode module by using a mock file
-        // (path already imported at top)
-        const vscodeModulePath = path.join(__dirname, "mock-vscode.js");
-
-        // Create a temporary mock vscode module
-        const mockVscodeContent = `
-module.exports = {
-    window: {
-        showErrorMessage: (msg) => console.log('[MOCK] showErrorMessage:', msg),
-        showWarningMessage: (msg) => console.log('[MOCK] showWarningMessage:', msg),
-        createOutputChannel: (name) => ({
-            appendLine: (text) => console.log('[MOCK LOG]', text),
-            append: (text) => console.log('[MOCK LOG]', text),
-            error: (text) => console.log('[MOCK ERROR]', text),
-            warn: (text) => console.log('[MOCK WARN]', text),
-            info: (text) => console.log('[MOCK INFO]', text),
-            debug: (text) => console.log('[MOCK DEBUG]', text),
-            show: () => {},
-            hide: () => {},
-            dispose: () => {}
-        })
-    },
-    workspace: {
-        workspaceFolders: null
-    },
-    env: {
-        appName: 'Visual Studio Code'
-    }
-};`;
-
-        await fs.writeFile(vscodeModulePath, mockVscodeContent);
-
-        // Override require to use our mock for vscode
+        // Override require to use centralized vscode mock
         const Module = require("module");
         const originalRequire = Module.prototype.require;
+        const vscodeMock = require("../../../__mocks__/vscode");
+        
         Module.prototype.require = function (id) {
             if (id === "vscode") {
-                return require(vscodeModulePath);
+                return vscodeMock;
             }
             return originalRequire.apply(this, arguments);
         };
@@ -485,10 +455,6 @@ async function main() {
             // Clean up test configs directory
             const testDir = path.join(__dirname, "e2e-test-configs");
             await fs.rm(testDir, { recursive: true, force: true });
-
-            // Clean up mock vscode file
-            const mockVscodePath = path.join(__dirname, "mock-vscode.js");
-            await fs.unlink(mockVscodePath).catch(() => {}); // Ignore if doesn't exist
 
             console.log("\n🧹 Cleanup completed: removed temporary test files");
         } catch (cleanupError) {

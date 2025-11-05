@@ -158,7 +158,7 @@ export function mapOS(): "macos" | "windows" | "linux" | undefined {
  */
 export function getVersion(): string | null {
     try {
-        const packageJson = require("../package.json");
+        const packageJson = require("../../package.json");
         return packageJson.version || null;
     } catch {
         return null;
