@@ -1,3 +1,3 @@
 #!/bin/bash
-uvx mcpower-proxy==0.0.72 --ide-tool --ide cursor < /dev/stdin
+uvx mcpower-proxy==0.0.73 --ide-tool --ide cursor < /dev/stdin
 
