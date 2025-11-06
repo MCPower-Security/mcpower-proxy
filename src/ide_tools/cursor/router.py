@@ -4,17 +4,23 @@ Cursor Router
 Routes Cursor hook calls to appropriate handlers.
 """
 
+import asyncio
 import json
 import sys
 import uuid
 
+from ide_tools.common.hooks.init import handle_init
+from ide_tools.common.hooks.prompt_submit import handle_prompt_submit
+from ide_tools.common.hooks.read_file import handle_read_file
+from ide_tools.common.hooks.shell_execution import handle_shell_execution
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
+from .constants import CURSOR_HOOKS, CURSOR_CONFIG
 
 
 def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_input: str):
     """
-    Route Cursor hook to appropriate handler
+    Route Cursor hook to appropriate shared handler
     
     Args:
         logger: MCPLogger instance
@@ -58,20 +64,30 @@ def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_i
 
         # Route to appropriate handler
         if hook_event_name == "init":
-            from .init import main as init_main
-            init_main(logger, audit_logger, stdin_input, prompt_id, event_id, cwd)
+            asyncio.run(handle_init(
+                logger=logger,
+                audit_logger=audit_logger,
+                event_id=event_id,
+                cwd=cwd,
+                server_name=CURSOR_CONFIG.server_name,
+                client_name="cursor",
+                hooks=CURSOR_HOOKS
+            ))
         elif hook_event_name == "beforeShellExecution":
-            from .before_shell_execution import main as before_shell_execution_main
-            before_shell_execution_main(logger, audit_logger, stdin_input, prompt_id, event_id, cwd)
+            asyncio.run(
+                handle_shell_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                       hook_event_name, is_request=True))
         elif hook_event_name == "afterShellExecution":
-            from .after_shell_execution import main as after_shell_execution_main
-            after_shell_execution_main(logger, audit_logger, stdin_input, prompt_id, event_id, cwd)
+            asyncio.run(
+                handle_shell_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                       hook_event_name, is_request=False))
         elif hook_event_name == "beforeReadFile":
-            from .before_read_file import main as before_read_file_main
-            before_read_file_main(logger, audit_logger, stdin_input, prompt_id, event_id, cwd)
+            asyncio.run(handle_read_file(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                         hook_event_name))
         elif hook_event_name == "beforeSubmitPrompt":
-            from .before_submit_prompt import main as before_submit_prompt_main
-            before_submit_prompt_main(logger, audit_logger, stdin_input, prompt_id, event_id, cwd)
+            asyncio.run(
+                handle_prompt_submit(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                     hook_event_name))
         else:
             logger.error(f"Unknown hook_event_name: {hook_event_name}")
             sys.exit(1)
