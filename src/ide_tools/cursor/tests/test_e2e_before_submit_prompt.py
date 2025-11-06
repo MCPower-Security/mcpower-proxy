@@ -12,11 +12,10 @@ import tempfile
 import uuid
 
 from common import (
-    run_ide_tool_handler,
-    assert_json_output,
-    assert_failure,
     get_command
 )
+from ide_tools.common.tests.asserts import assert_json_output, assert_failure
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_before_submit_prompt_safe_content():
@@ -36,7 +35,7 @@ def test_before_submit_prompt_safe_content():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should allow without API call since no redactions
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -70,7 +69,7 @@ def test_before_submit_prompt_with_email():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should call API since email will be redacted
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -113,7 +112,7 @@ def test_before_submit_prompt_with_file_attachments():
             ]
         }
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+        result = run_handler(command, stdin_input, timeout=60)
 
         # Should call API since file contains redacted content
         output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -152,7 +151,7 @@ def test_before_submit_prompt_with_non_file_attachments():
         ]
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should allow without API call since non-file attachments are ignored
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -189,7 +188,7 @@ def test_before_submit_prompt_with_unreadable_file():
         ]
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should allow - unreadable files are logged but don't block
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -221,7 +220,7 @@ def test_before_submit_prompt_missing_prompt():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing prompt")
@@ -245,7 +244,7 @@ def test_before_submit_prompt_invalid_json():
     # Invalid JSON - use string instead of dict
     invalid_json = "not valid json at all"
 
-    result = run_ide_tool_handler(
+    result = run_handler(
         command,
         None,  # Don't let helper encode it
         timeout=60
@@ -293,7 +292,7 @@ def test_before_submit_prompt_empty_prompt():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should allow - empty prompt is valid, just no content to check
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -344,7 +343,7 @@ def test_before_submit_prompt_multiple_file_attachments():
             ]
         }
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+        result = run_handler(command, stdin_input, timeout=60)
 
         # Should call API since file2 contains redacted content
         output = assert_json_output(result, "Handler should produce valid JSON output")

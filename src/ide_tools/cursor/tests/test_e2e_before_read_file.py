@@ -15,11 +15,10 @@ import tempfile
 import uuid
 
 from common import (
-    run_ide_tool_handler,
-    assert_json_output,
-    assert_failure,
     get_command
 )
+from ide_tools.common.tests.asserts import assert_json_output, assert_failure
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_before_read_file_no_sensitive_content():
@@ -41,7 +40,7 @@ def test_before_read_file_no_sensitive_content():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should call API and allow
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -79,7 +78,7 @@ def test_before_read_file_large_content():
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should allow without API call due to size limit
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -113,7 +112,7 @@ def test_before_read_file_missing_file_path():
         "content": "some content"
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing file_path")
@@ -145,7 +144,7 @@ def test_before_read_file_missing_content():
         "file_path": "/tmp/test.txt"
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing content")
@@ -228,7 +227,7 @@ API_TOKEN = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -285,7 +284,7 @@ DATABASE_URL=postgresql://admin:MyPassword123@db.internal.com:5432/prod
             ]
         }
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+        result = run_handler(command, stdin_input, timeout=60)
 
         # Should produce valid JSON output
         output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -332,7 +331,7 @@ def test_before_read_file_unreadable_attachment():
         ]
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -381,7 +380,7 @@ PASSWORD2 = "SuperSecret123!"  # Same password
         "attachments": []
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")

@@ -11,11 +11,10 @@ import sys
 import uuid
 
 from common import (
-    run_ide_tool_handler,
-    assert_json_output,
-    assert_failure,
     get_command
 )
+from ide_tools.common.tests.asserts import assert_json_output, assert_failure
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_after_shell_execution_valid():
@@ -36,7 +35,7 @@ def test_after_shell_execution_valid():
         "output": "total 48\ndrwxr-xr-x  12 user  staff   384 Nov  3 10:00 .\ndrwxr-xr-x   8 user  staff   256 Nov  2 15:30 .."
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Output analysis might succeed or fail depending on security policy
     # We just verify the handler runs and produces valid JSON output
@@ -73,7 +72,7 @@ def test_after_shell_execution_missing_command():
         "output": "some output"
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing command")
@@ -105,7 +104,7 @@ def test_after_shell_execution_missing_output():
         "command": "echo 'test'"
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing output")
@@ -192,7 +191,7 @@ stripe_key: sk_live_51H7yxyz1234567890abcdefghijklmnop
 """
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -241,7 +240,7 @@ DATABASE_URL=postgresql://admin:MyPassword123@db.internal.com:5432/prod
 """
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -283,7 +282,7 @@ WXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 -----END RSA PRIVATE KEY-----"""
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
