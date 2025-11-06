@@ -30,7 +30,7 @@ def main(logger: MCPLogger, audit_logger: AuditTrailLogger, ide: str, context: O
 
     sys.exit = logged_exit
 
-    logger.info(f"IDE Tools router: ide={ide}, context=${context}")
+    logger.info(f"IDE Tools router: ide={ide}, context={context}")
 
     # Read stdin input once at the top level (raw string)
     # Each handler will parse it according to its own schema
@@ -40,6 +40,9 @@ def main(logger: MCPLogger, audit_logger: AuditTrailLogger, ide: str, context: O
     if ide == "cursor":
         from ide_tools.cursor import route_cursor_hook
         route_cursor_hook(logger, audit_logger, stdin_input)
+    elif ide == "claude-code":
+        from ide_tools.claude_code import route_claude_code_hook
+        route_claude_code_hook(logger, audit_logger, stdin_input)
     else:
         logger.error(f"Unknown IDE: {ide}")
         sys.exit(1)
