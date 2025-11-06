@@ -10,11 +10,10 @@ import sys
 import uuid
 
 from common import (
-    run_ide_tool_handler,
-    assert_success,
-    assert_json_output, get_command,
-    assert_failure
+    assert_success, get_command
 )
+from ide_tools.common.tests.asserts import assert_json_output, assert_failure
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_init_handler():
@@ -31,7 +30,7 @@ def test_init_handler():
         "workspace_roots": [str(repo_root)]
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should succeed
     assert_success(result, "Init handler should succeed")
@@ -55,7 +54,7 @@ def test_init_handler_no_stdin():
     command, repo_root = get_command()
 
     # No stdin input - should fail with missing fields error
-    result = run_ide_tool_handler(command, stdin_input=None, timeout=60)
+    result = run_handler(command, stdin_input=None, timeout=60)
 
     # Should fail because required fields are missing
     assert_failure(result, "Init handler should fail without required fields")

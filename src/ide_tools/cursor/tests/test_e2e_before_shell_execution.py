@@ -11,10 +11,10 @@ import sys
 import uuid
 
 from common import (
-    run_ide_tool_handler,
-    assert_json_output,
-    assert_failure, get_command
+    get_command
 )
+from ide_tools.common.tests.asserts import assert_json_output, assert_failure
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_before_shell_execution_valid():
@@ -35,7 +35,7 @@ def test_before_shell_execution_valid():
         "cwd": str(repo_root)
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Command analysis might succeed or fail depending on security policy
     # We just verify the handler runs and produces valid JSON output
@@ -72,7 +72,7 @@ def test_before_shell_execution_missing_command():
         "cwd": str(repo_root)
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to validation error
     assert_failure(result, "Handler should fail with missing command")
@@ -104,7 +104,7 @@ def test_before_shell_execution_missing_cwd():
         "command": "echo 'test'"
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should fail due to missing cwd
     assert_failure(result, "Handler should fail with missing cwd")
@@ -179,7 +179,7 @@ def test_before_shell_execution_complex_command():
         "cwd": str(repo_root)
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
@@ -211,7 +211,7 @@ def test_before_shell_execution_dangerous_command():
         "cwd": str(repo_root)
     }
 
-    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_handler(command, stdin_input, timeout=60)
 
     # Should produce valid JSON output
     output = assert_json_output(result, "Handler should produce valid JSON output")
