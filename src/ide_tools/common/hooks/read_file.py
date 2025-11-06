@@ -12,10 +12,6 @@ from .output import output_result, output_error
 from .types import HookConfig
 from .utils import create_validator, process_attachments_for_redaction, inspect_and_enforce
 
-# TODO set the correct value dynamically
-# Maximum content length before skipping API call
-MAX_CONTENT_LENGTH = 100000
-
 
 async def handle_read_file(
         logger: MCPLogger,
@@ -74,8 +70,8 @@ async def handle_read_file(
         )
 
         # Check content length - skip API if too large
-        if len(provided_content) > MAX_CONTENT_LENGTH:
-            logger.info(f"Content length ({len(provided_content)} chars) exceeds max ({MAX_CONTENT_LENGTH}) - "
+        if len(provided_content) > config.max_content_length:
+            logger.info(f"Content length ({len(provided_content)} chars) exceeds max ({config.max_content_length}) - "
                         f"skipping API call")
 
             audit_logger.log_event(
