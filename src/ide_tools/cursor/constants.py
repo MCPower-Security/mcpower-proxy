@@ -25,7 +25,8 @@ CURSOR_CONFIG = HookConfig(
         formatter=cursor_output_formatter
     ),
     server_name="mcpower_cursor",
-    client_name="cursor"
+    client_name="cursor",
+    max_content_length=100000
 )
 
 # Hook descriptions from https://cursor.com/docs/agent/hooks#hook-events

@@ -31,4 +31,5 @@ class HookConfig:
     output_format: OutputFormat
     server_name: str  # IDE-specific tool server name
     client_name: str  # IDE-specific client name (e.g. "cursor", "claude-code")
+    max_content_length: int  # Maximum content length before skipping API call
 

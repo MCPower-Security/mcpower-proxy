@@ -2,8 +2,10 @@
 """
 E2E Test: Cursor beforeReadFile Handler
 
-Tests the beforeReadFile hook, which redacts sensitive content from files
-and analyzes them for security issues.
+Tests the beforeReadFile hook, which:
+- Uses provided content directly (no file system reads)
+- Always calls API with redacted content (unless > max_content_length)
+- Processes attachments for redaction status
 """
 
 import json
@@ -41,7 +43,7 @@ def test_before_read_file_no_sensitive_content():
 
     result = run_ide_tool_handler(command, stdin_input, timeout=60)
 
-    # Should allow without API call since no redactions
+    # Should call API and allow
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "permission" in output:
@@ -49,9 +51,47 @@ def test_before_read_file_no_sensitive_content():
         print(f"✓ Handler returned permission: {permission}")
 
         if permission == "allow":
-            print(f"  ✓ Safe file was correctly allowed (no API call)")
+            print(f"  ✓ Safe file was correctly allowed (API call was made)")
         else:
             print(f"  ⚠ Warning: Safe file was denied")
+    else:
+        raise AssertionError(f"Output missing 'permission' field: {output}")
+
+
+def test_before_read_file_large_content():
+    """Test beforeReadFile with content > max_content_length - should skip API"""
+    print("\nTesting beforeReadFile with large content (>100K chars)...")
+
+    command, repo_root = get_command()
+
+    # Create content > 100,000 characters
+    large_content = "x" * 100001
+
+    stdin_input = {
+        # Common fields
+        "conversation_id": str(uuid.uuid4()),
+        "generation_id": str(uuid.uuid4()),
+        "hook_event_name": "beforeReadFile",
+        "workspace_roots": [str(repo_root)],
+        # Hook-specific fields
+        "file_path": "/tmp/large_file.txt",
+        "content": large_content,
+        "attachments": []
+    }
+
+    result = run_ide_tool_handler(command, stdin_input, timeout=60)
+
+    # Should allow without API call due to size limit
+    output = assert_json_output(result, "Handler should produce valid JSON output")
+
+    if "permission" in output:
+        permission = output["permission"]
+        print(f"✓ Handler returned permission: {permission}")
+
+        if permission == "allow":
+            print(f"  ✓ Large file was correctly allowed without API call")
+        else:
+            raise AssertionError(f"Large file should be allowed, got: {permission}")
     else:
         raise AssertionError(f"Output missing 'permission' field: {output}")
 
@@ -162,62 +202,54 @@ def test_before_read_file_invalid_json():
 
 
 def test_before_read_file_with_secrets():
-    """Test beforeReadFile with file containing secrets"""
-    print("\nTesting beforeReadFile with secrets in file...")
+    """Test beforeReadFile with content containing secrets - uses provided content, not file read"""
+    print("\nTesting beforeReadFile with secrets in content...")
 
     command, repo_root = get_command()
 
-    # Create a temporary file with secrets
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        temp_file_path = f.name
-        f.write("""
+    # Content with secrets (provided directly, not read from file)
+    content_with_secrets = """
 # Configuration file
 AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
 AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 DATABASE_PASSWORD = "SuperSecret123!"
 API_TOKEN = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"
-""")
+"""
 
-    try:
-        stdin_input = {
-            # Common fields
-            "conversation_id": str(uuid.uuid4()),
-            "generation_id": str(uuid.uuid4()),
-            "hook_event_name": "beforeReadFile",
-            "workspace_roots": [str(repo_root)],
-            # Hook-specific fields
-            "file_path": temp_file_path,
-            "content": "",  # Will be read from disk
-            "attachments": []
-        }
+    stdin_input = {
+        # Common fields
+        "conversation_id": str(uuid.uuid4()),
+        "generation_id": str(uuid.uuid4()),
+        "hook_event_name": "beforeReadFile",
+        "workspace_roots": [str(repo_root)],
+        # Hook-specific fields
+        "file_path": "/tmp/config.py",
+        "content": content_with_secrets,
+        "attachments": []
+    }
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_ide_tool_handler(command, stdin_input, timeout=60)
 
-        # Should produce valid JSON output
-        output = assert_json_output(result, "Handler should produce valid JSON output")
+    # Should produce valid JSON output
+    output = assert_json_output(result, "Handler should produce valid JSON output")
 
-        # Check for permission field
-        if "permission" in output:
-            permission = output["permission"]
-            print(f"✓ Handler analyzed file with secrets, permission: {permission}")
+    # Check for permission field
+    if "permission" in output:
+        permission = output["permission"]
+        print(f"✓ Handler analyzed content with secrets, permission: {permission}")
 
-            # This file should likely be blocked or require confirmation
-            if permission == "deny":
-                print(f"  ✓ File with secrets was correctly blocked")
-                if "user_message" in output:
-                    print(f"  User message: {output['user_message']}")
-                if "agent_message" in output:
-                    print(f"  Agent message: {output['agent_message'][:100]}...")
-            elif permission == "allow":
-                print(f"  ⚠ Warning: File with secrets was allowed (security policy may need tuning)")
+        # This file should likely be blocked or require confirmation
+        if permission == "deny":
+            print(f"  ✓ Content with secrets was correctly blocked")
+            if "user_message" in output:
+                print(f"  User message: {output['user_message']}")
+            if "agent_message" in output:
+                print(f"  Agent message: {output['agent_message'][:100]}...")
+        elif permission == "allow":
+            print(f"  ⚠ Warning: Content with secrets was allowed (security policy may need tuning)")
 
-        else:
-            raise AssertionError(f"Output missing 'permission' field: {output}")
-
-    finally:
-        # Cleanup temp file
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+    else:
+        raise AssertionError(f"Output missing 'permission' field: {output}")
 
 
 def test_before_read_file_with_attachment():
@@ -225,11 +257,6 @@ def test_before_read_file_with_attachment():
     print("\nTesting beforeReadFile with attachment containing secrets...")
 
     command, repo_root = get_command()
-
-    # Create temporary main file (safe)
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        main_file_path = f.name
-        f.write("# Safe main file\nprint('Hello World')\n")
 
     # Create temporary attachment file (with secrets)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
@@ -248,8 +275,8 @@ DATABASE_URL=postgresql://admin:MyPassword123@db.internal.com:5432/prod
             "hook_event_name": "beforeReadFile",
             "workspace_roots": [str(repo_root)],
             # Hook-specific fields
-            "file_path": main_file_path,
-            "content": "",  # Will be read from disk
+            "file_path": "/tmp/main.py",
+            "content": "# Safe main file\nprint('Hello World')\n",
             "attachments": [
                 {
                     "type": "file",
@@ -278,64 +305,51 @@ DATABASE_URL=postgresql://admin:MyPassword123@db.internal.com:5432/prod
 
     finally:
         # Cleanup temp files
-        if os.path.exists(main_file_path):
-            os.unlink(main_file_path)
         if os.path.exists(attachment_file_path):
             os.unlink(attachment_file_path)
 
 
 def test_before_read_file_unreadable_attachment():
-    """Test beforeReadFile with unreadable attachment (should allow with error log)"""
+    """Test beforeReadFile with unreadable attachment (should log warning and continue)"""
     print("\nTesting beforeReadFile with unreadable attachment...")
 
     command, repo_root = get_command()
 
-    # Create temporary main file (safe)
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        main_file_path = f.name
-        f.write("# Safe main file\nprint('Hello World')\n")
+    stdin_input = {
+        # Common fields
+        "conversation_id": str(uuid.uuid4()),
+        "generation_id": str(uuid.uuid4()),
+        "hook_event_name": "beforeReadFile",
+        "workspace_roots": [str(repo_root)],
+        # Hook-specific fields
+        "file_path": "/tmp/main.py",
+        "content": "# Safe main file\nprint('Hello World')\n",
+        "attachments": [
+            {
+                "type": "file",
+                "file_path": "/nonexistent/path/to/file.txt"
+            }
+        ]
+    }
 
-    try:
-        stdin_input = {
-            # Common fields
-            "conversation_id": str(uuid.uuid4()),
-            "generation_id": str(uuid.uuid4()),
-            "hook_event_name": "beforeReadFile",
-            "workspace_roots": [str(repo_root)],
-            # Hook-specific fields
-            "file_path": main_file_path,
-            "content": "",  # Will be read from disk
-            "attachments": [
-                {
-                    "type": "file",
-                    "file_path": "/nonexistent/path/to/file.txt"
-                }
-            ]
-        }
+    result = run_ide_tool_handler(command, stdin_input, timeout=60)
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    # Should produce valid JSON output
+    output = assert_json_output(result, "Handler should produce valid JSON output")
 
-        # Should produce valid JSON output
-        output = assert_json_output(result, "Handler should produce valid JSON output")
+    # Check for permission field
+    if "permission" in output:
+        permission = output["permission"]
+        print(f"✓ Handler processed file with unreadable attachment, permission: {permission}")
 
-        # Check for permission field
-        if "permission" in output:
-            permission = output["permission"]
-            print(f"✓ Handler processed file with unreadable attachment, permission: {permission}")
-
-            # Should allow since main file is safe and attachment error doesn't block
-            if permission == "allow":
-                print(f"  ✓ Correctly allowed despite unreadable attachment")
-            else:
-                print(f"  ⚠ File was denied despite only attachment being unreadable")
-
+        # Should allow since main content is safe and attachment error doesn't block
+        if permission == "allow":
+            print(f"  ✓ Correctly allowed despite unreadable attachment")
         else:
-            raise AssertionError(f"Output missing 'permission' field: {output}")
+            print(f"  ⚠ File was denied despite only attachment being unreadable")
 
-    finally:
-        # Cleanup temp file
-        if os.path.exists(main_file_path):
-            os.unlink(main_file_path)
+    else:
+        raise AssertionError(f"Output missing 'permission' field: {output}")
 
 
 def test_before_read_file_multiple_redaction_patterns():
@@ -344,10 +358,8 @@ def test_before_read_file_multiple_redaction_patterns():
 
     command, repo_root = get_command()
 
-    # Create a temporary file with repeated secrets
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        temp_file_path = f.name
-        f.write("""
+    # Content with repeated secrets
+    content_with_repeated_secrets = """
 # Configuration with repeated secrets
 PRIMARY_KEY = "AKIAIOSFODNN7EXAMPLE"
 BACKUP_KEY = "AKIAIOSFODNN7EXAMPLE"  # Same key repeated
@@ -355,44 +367,39 @@ FALLBACK_KEY = "AKIAIOSFODNN7EXAMPLE"  # Same key again
 
 PASSWORD1 = "SuperSecret123!"
 PASSWORD2 = "SuperSecret123!"  # Same password
-""")
+"""
 
-    try:
-        stdin_input = {
-            # Common fields
-            "conversation_id": str(uuid.uuid4()),
-            "generation_id": str(uuid.uuid4()),
-            "hook_event_name": "beforeReadFile",
-            "workspace_roots": [str(repo_root)],
-            # Hook-specific fields
-            "file_path": temp_file_path,
-            "content": "",  # Will be read from disk
-            "attachments": []
-        }
+    stdin_input = {
+        # Common fields
+        "conversation_id": str(uuid.uuid4()),
+        "generation_id": str(uuid.uuid4()),
+        "hook_event_name": "beforeReadFile",
+        "workspace_roots": [str(repo_root)],
+        # Hook-specific fields
+        "file_path": "/tmp/config.py",
+        "content": content_with_repeated_secrets,
+        "attachments": []
+    }
 
-        result = run_ide_tool_handler(command, stdin_input, timeout=60)
+    result = run_ide_tool_handler(command, stdin_input, timeout=60)
 
-        # Should produce valid JSON output
-        output = assert_json_output(result, "Handler should produce valid JSON output")
+    # Should produce valid JSON output
+    output = assert_json_output(result, "Handler should produce valid JSON output")
 
-        # Check for permission field
-        if "permission" in output:
-            permission = output["permission"]
-            print(f"✓ Handler analyzed file with repeated patterns, permission: {permission}")
-            print(f"  Handler should have counted multiple occurrences of same redaction pattern")
+    # Check for permission field
+    if "permission" in output:
+        permission = output["permission"]
+        print(f"✓ Handler analyzed content with repeated patterns, permission: {permission}")
+        print(f"  Handler should have sent redacted content to API")
 
-        else:
-            raise AssertionError(f"Output missing 'permission' field: {output}")
-
-    finally:
-        # Cleanup temp file
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+    else:
+        raise AssertionError(f"Output missing 'permission' field: {output}")
 
 
 if __name__ == "__main__":
     try:
         test_before_read_file_no_sensitive_content()
+        test_before_read_file_large_content()
         test_before_read_file_missing_file_path()
         test_before_read_file_missing_content()
         test_before_read_file_invalid_json()
