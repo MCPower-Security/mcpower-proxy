@@ -17,6 +17,7 @@ dependencies = [
   "jsonpath-ng>=1.7.0",
   "pydantic>=2.8.0",
   "mcpower-shared==0.1.4",
+  "bashlex>=0.18",
 ]
 
 [project.license]
