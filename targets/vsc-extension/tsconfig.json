@@ -2,8 +2,9 @@
     "extends": "../tsconfig.base.json",
     "compilerOptions": {
         "outDir": "out",
-        "sourceMap": true
+        "sourceMap": true,
+        "moduleResolution": "node"
     },
     "include": ["src/**/*"],
-    "exclude": ["node_modules", ".vscode-test"]
+    "exclude": ["node_modules", ".vscode-test", "**/*.test.ts"]
 }

@@ -140,12 +140,12 @@ jobs:
           name: version-files
           path: ./
 
-      - name: Compile TypeScript and package extension
+      - name: Bundle and package extension
         working-directory: targets/vsc-extension
         run: |
-          echo "Running VSC Extension building..."
-          npm run build:vsc-extension
-          echo "Building and packaging completed successfully"
+          echo "Running VSC Extension packaging..."
+          npm run package:vsc-extension
+          echo "Packaging completed successfully"
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4

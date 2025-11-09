@@ -82,16 +82,15 @@
     }
   },
   "scripts": {
-    "vscode:uninstall": "node ./dist/uninstall_hook.js",
-    "compile:vsc-extension": "cp ../scripts/* scripts/ && tsc -p ./",
     "bundle:vsc-extension": "webpack --mode production",
-    "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "package:vsc-extension": "vsce package --allow-star-activation",
-    "build:vsc-extension": "npm run compile:vsc-extension && npm run bundle:vsc-extension && npm run package:vsc-extension"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "vscode:prepublish": "npm run bundle:vsc-extension",
+    "vscode:uninstall": "node ./dist/uninstall_hook.js",
+    "watch": "webpack --watch"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.1",
