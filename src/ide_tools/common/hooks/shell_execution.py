@@ -4,6 +4,7 @@ Common shell execution handler - IDE-agnostic
 Handles both request (before) and response (after) inspection for shell commands.
 """
 
+import os
 from typing import Optional, Dict, List
 
 from modules.logs.audit_trail import AuditTrailLogger
@@ -11,8 +12,74 @@ from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
 from .output import output_result, output_error
+from .shell_parser_bashlex import parse_shell_command
 from .types import HookConfig
 from .utils import create_validator, inspect_and_enforce
+
+
+def extract_and_redact_command_files(
+        command: str,
+        cwd: Optional[str],
+        logger: MCPLogger
+) -> Dict[str, str]:
+    """
+    Extract input files from a shell command and return their redacted contents.
+
+    Args:
+        command: The shell command to parse
+        cwd: Current working directory (for resolving relative paths)
+        logger: Logger instance for warnings/errors
+
+    Returns:
+        Dictionary mapping filename to redacted file content
+        Format: {filename: redacted_content}
+    """
+    files_dict = {}
+
+    try:
+        # Parse command to extract input files
+        _, input_files = parse_shell_command(command)
+
+        logger.info(f"Extracted {len(input_files)} input files from command: {input_files}")
+
+        # Process each file
+        for filename in input_files:
+            try:
+                # Resolve absolute path
+                if os.path.isabs(filename):
+                    filepath = filename
+                elif cwd:
+                    filepath = os.path.join(cwd, filename)
+                else:
+                    filepath = filename
+
+                # Read file content
+                if os.path.exists(filepath) and os.path.isfile(filepath):
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            content = f.read()
+
+                        # Redact sensitive content
+                        redacted_content = redact(content)
+
+                        # Add to dict (use original filename, not resolved path)
+                        files_dict[filename] = redacted_content
+                        logger.info(f"Successfully read and redacted file: {filename}")
+
+                    except UnicodeDecodeError:
+                        logger.warning(f"File {filename} is not a text file, skipping")
+                    except Exception as e:
+                        logger.warning(f"Failed to read file {filename}: {e}")
+                else:
+                    logger.warning(f"File {filename} does not exist or is not a file, skipping")
+
+            except Exception as e:
+                logger.warning(f"Error processing file {filename}: {e}")
+
+    except Exception as e:
+        logger.warning(f"Failed to parse command for file extraction: {e}")
+
+    return files_dict
 
 
 async def handle_shell_execution(
@@ -103,39 +170,47 @@ async def _handle_shell_operation(
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
-        # Redact sensitive data for logging
         redacted_data = {}
         for k, v in input_data.items():
             if k in required_fields:
                 redacted_data[k] = redact(v) if k in redact_fields else v
 
-        logger.info(f"Analyzing {tool_name}: {redacted_data}")
+        # Extract and redact input files for request inspection
+        files_dict = {}
+        if is_request and "command" in input_data:
+            command = input_data["command"]
+            files_dict = extract_and_redact_command_files(command, cwd, logger)
+            if files_dict:
+                logger.info(f"Extracted and redacted {len(files_dict)} files from command")
 
-        # Use different structure for request vs response events
-        # Requests: params nested, Responses: unpacked at root
-        if is_request:
-            audit_data = {
-                "server": config.server_name,
-                "tool": tool_name,
-                "params": redacted_data
-            }
-        else:
-            audit_data = {
-                "server": config.server_name,
-                "tool": tool_name,
-                **redacted_data
-            }
+        def get_audit_data():
+            # Use different structure for request vs response events
+            # Requests: params nested, Responses: unpacked at root
+            if is_request:
+                return {
+                    "server": config.server_name,
+                    "tool": tool_name,
+                    "params": redacted_data,
+                    "files": list(files_dict.keys()) if files_dict else None
+                }
+            else:
+                return {
+                    "server": config.server_name,
+                    "tool": tool_name,
+                    **redacted_data
+                }
 
         audit_logger.log_event(
             audit_event_type,
-            audit_data,
+            get_audit_data(),
             event_id=event_id
         )
 
-        # Build content_data with redacted fields
-        content_data = redacted_data
+        # Build content_data with redacted fields and files
+        content_data = redacted_data.copy()
+        if files_dict:
+            content_data["files"] = files_dict
 
-        # Call security API and enforce decision
         try:
             decision = await inspect_and_enforce(
                 is_request=is_request,
@@ -152,23 +227,9 @@ async def _handle_shell_operation(
                 client_name=config.client_name
             )
 
-            # Use different structure for request vs response
-            if is_request:
-                forwarded_data = {
-                    "server": config.server_name,
-                    "tool": tool_name,
-                    "params": redacted_data
-                }
-            else:
-                forwarded_data = {
-                    "server": config.server_name,
-                    "tool": tool_name,
-                    **redacted_data
-                }
-
             audit_logger.log_event(
                 audit_forwarded_event_type,
-                forwarded_data,
+                get_audit_data(),
                 event_id=event_id
             )
 

@@ -37,7 +37,7 @@ def test_before_submit_prompt_safe_content():
 
     result = run_handler(command, stdin_input, timeout=60)
 
-    # Should allow without API call since no redactions
+    # All prompts are sent to API
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "continue" in output:
@@ -45,7 +45,7 @@ def test_before_submit_prompt_safe_content():
         print(f"✓ Handler returned continue: {continue_value}")
 
         if continue_value is True:
-            print(f"  ✓ Safe prompt was correctly allowed (no API call)")
+            print(f"  ✓ Safe prompt was correctly allowed")
         else:
             print(f"  ⚠ Warning: Safe prompt was blocked")
     else:
@@ -71,7 +71,7 @@ def test_before_submit_prompt_with_email():
 
     result = run_handler(command, stdin_input, timeout=60)
 
-    # Should call API since email will be redacted
+    # Should send redacted content to API
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "continue" in output:
@@ -114,7 +114,7 @@ def test_before_submit_prompt_with_file_attachments():
 
         result = run_handler(command, stdin_input, timeout=60)
 
-        # Should call API since file contains redacted content
+        # Should send to API with file containing redacted content
         output = assert_json_output(result, "Handler should produce valid JSON output")
 
         if "continue" in output:
@@ -153,7 +153,7 @@ def test_before_submit_prompt_with_non_file_attachments():
 
     result = run_handler(command, stdin_input, timeout=60)
 
-    # Should allow without API call since non-file attachments are ignored
+    # Should send to API (non-file attachments are ignored for redaction check)
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "continue" in output:
@@ -161,7 +161,7 @@ def test_before_submit_prompt_with_non_file_attachments():
         print(f"✓ Handler returned continue: {continue_value}")
 
         if continue_value is True:
-            print(f"  ✓ Non-file attachments correctly ignored (no API call)")
+            print(f"  ✓ Non-file attachments correctly ignored")
     else:
         raise AssertionError(f"Output missing 'continue' field: {output}")
 
@@ -190,7 +190,7 @@ def test_before_submit_prompt_with_unreadable_file():
 
     result = run_handler(command, stdin_input, timeout=60)
 
-    # Should allow - unreadable files are logged but don't block
+    # Should send to API - unreadable files are logged but don't block
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "continue" in output:
@@ -198,7 +198,7 @@ def test_before_submit_prompt_with_unreadable_file():
         print(f"✓ Handler returned continue: {continue_value}")
 
         if continue_value is True:
-            print(f"  ✓ Unreadable file handled gracefully (no API call)")
+            print(f"  ✓ Unreadable file handled gracefully")
     else:
         raise AssertionError(f"Output missing 'continue' field: {output}")
 
@@ -294,7 +294,7 @@ def test_before_submit_prompt_empty_prompt():
 
     result = run_handler(command, stdin_input, timeout=60)
 
-    # Should allow - empty prompt is valid, just no content to check
+    # Should send to API - empty prompt is valid, sent for policy evaluation
     output = assert_json_output(result, "Handler should produce valid JSON output")
 
     if "continue" in output:
@@ -302,7 +302,7 @@ def test_before_submit_prompt_empty_prompt():
         print(f"✓ Handler returned continue: {continue_value}")
 
         if continue_value is True:
-            print(f"  ✓ Empty prompt handled correctly (no API call)")
+            print(f"  ✓ Empty prompt handled correctly")
     else:
         raise AssertionError(f"Output missing 'continue' field: {output}")
 
@@ -345,7 +345,7 @@ def test_before_submit_prompt_multiple_file_attachments():
 
         result = run_handler(command, stdin_input, timeout=60)
 
-        # Should call API since file2 contains redacted content
+        # Should send to API with file2 containing redacted content
         output = assert_json_output(result, "Handler should produce valid JSON output")
 
         if "continue" in output:
