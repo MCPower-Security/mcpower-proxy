@@ -97,7 +97,7 @@ jobs:
           name: version-files
           path: |
             targets/vsc-extension/package.json
-            targets/vsc-extension/package-lock.json
+            targets/package-lock.json
             targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.sh
             targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.bat
             src/wrapper/__version__.py
@@ -121,10 +121,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: |
-            targets/package-lock.json
-            targets/common-ts/package-lock.json
-            targets/vsc-extension/package-lock.json
+          cache-dependency-path: targets/package-lock.json
 
       - name: Install dependencies
         working-directory: targets
@@ -156,7 +153,7 @@ jobs:
           v=$(node -p "require('./package.json').version")
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json
+          git add package.json ../package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json
           git commit -m "chore: bump version to $v [skip ci]"
           git pull --rebase origin main
           git push
