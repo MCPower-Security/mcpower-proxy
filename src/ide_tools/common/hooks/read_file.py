@@ -43,7 +43,6 @@ async def handle_read_file(
     audit_logger.set_app_uid(app_uid)
 
     try:
-        # Validate input
         try:
             validator = create_validator(
                 required_fields={"file_path": str, "content": str},
@@ -58,7 +57,6 @@ async def handle_read_file(
             output_error(logger, config.output_format, "permission", str(e))
             return
 
-        # Log audit event
         audit_logger.log_event(
             "agent_request",
             {
@@ -136,7 +134,6 @@ async def handle_read_file(
                 client_name=config.client_name
             )
 
-            # Log audit event for forwarding
             audit_logger.log_event(
                 "agent_request_forwarded",
                 {
@@ -150,7 +147,6 @@ async def handle_read_file(
                 event_id=event_id
             )
 
-            # Output success
             reasons = decision.get("reasons", [])
             agent_message = "File read approved: " + "; ".join(reasons) if reasons else "File read approved by security policy"
             output_result(logger, config.output_format, "permission", True, "File read approved", agent_message)

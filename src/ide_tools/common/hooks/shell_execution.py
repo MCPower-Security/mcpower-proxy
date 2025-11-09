@@ -92,7 +92,6 @@ async def _handle_shell_operation(
     logger.info(f"{tool_name} handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
     
     try:
-        # Validate input
         try:
             validator = create_validator(required_fields=required_fields)
             input_data = validator(stdin_input)
@@ -153,7 +152,6 @@ async def _handle_shell_operation(
                 client_name=config.client_name
             )
             
-            # Log audit event for forwarding
             # Use different structure for request vs response
             if is_request:
                 forwarded_data = {
