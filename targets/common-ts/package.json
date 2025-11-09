@@ -3,20 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "description": "Shared utilities and types for MCPower targets",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     "./types": {
-      "types": "./types.d.ts",
-      "default": "./types.js"
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
     },
     "./utils": {
-      "types": "./utils/index.d.ts",
-      "default": "./utils/index.js"
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
     },
     "./watcher": {
-      "types": "./watcher/index.d.ts",
-      "default": "./watcher/index.js"
+      "types": "./dist/watcher/index.d.ts",
+      "default": "./dist/watcher/index.js"
     }
   },
   "scripts": {
