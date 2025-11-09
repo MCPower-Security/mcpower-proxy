@@ -568,9 +568,13 @@ class SecurityMiddleware(Middleware):
             base_dict = await self._build_baseline_policy_dict(event_id, context, wrapper_args, tool_args)
             policy_request = create_policy_request(
                 event_id=event_id,
-                server_name=base_dict["server"]["name"],
-                server_transport=base_dict["server"]["transport"],
-                tool_name=base_dict["tool"]["name"] or base_dict["tool"]["method"],
+                server=ServerRef(
+                    name=base_dict["server"]["name"],
+                    transport=base_dict["server"]["transport"]
+                ),
+                tool=ToolRef(
+                    name=base_dict["tool"]["name"] or base_dict["tool"]["method"]
+                ),
                 agent_context=base_dict["agent_context"],
                 env_context=base_dict["environment_context"],
                 arguments=tool_args,
@@ -596,9 +600,13 @@ class SecurityMiddleware(Middleware):
             base_dict = await self._build_baseline_policy_dict(event_id, context, wrapper_args, tool_args)
             policy_response = create_policy_response(
                 event_id=event_id,
-                server_name=base_dict["server"]["name"],
-                server_transport=base_dict["server"]["transport"],
-                tool_name=base_dict["tool"]["name"] or base_dict["tool"]["method"],
+                server=ServerRef(
+                    name=base_dict["server"]["name"],
+                    transport=base_dict["server"]["transport"]
+                ),
+                tool=ToolRef(
+                    name=base_dict["tool"]["name"] or base_dict["tool"]["method"]
+                ),
                 response_content=safe_json_dumps(result),
                 agent_context=base_dict["agent_context"],
                 env_context=base_dict["environment_context"],

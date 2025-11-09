@@ -293,7 +293,7 @@ async function updateGitleaksRules() {
             "# Source: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml"
         );
         pythonLines.push(
-            "# Generation script: targets/vsc-extension/scripts/update-gitleaks-rules.mjs"
+            "# Generation script: targets/scripts/update-gitleaks-rules.mjs"
         );
         pythonLines.push("");
         pythonLines.push(

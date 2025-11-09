@@ -33,13 +33,13 @@ def output_init_result(success: bool, message: str):
 
 
 async def handle_init(
-    logger: MCPLogger,
-    audit_logger: AuditTrailLogger,
-    event_id: str,
-    cwd: Optional[str],
-    server_name: str,
-    client_name: str,
-    hooks: Dict[str, Dict[str, str]]
+        logger: MCPLogger,
+        audit_logger: AuditTrailLogger,
+        event_id: str,
+        cwd: Optional[str],
+        server_name: str,
+        client_name: str,
+        hooks: Dict[str, Dict[str, str]]
 ) -> None:
     """
     Generic init handler - registers hooks with security API
@@ -56,19 +56,19 @@ async def handle_init(
     Outputs result and exits with appropriate code.
     """
     session_id = get_session_id()
-    
+
     logger.info(f"Init handler started (client={client_name}, event_id={event_id}, cwd={cwd})")
-    
+
     try:
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
-        
+
         audit_logger.log_event("mcpower_start", {
             "wrapper_version": __version__,
             "wrapped_server_name": server_name,
             "client": client_name
         })
-        
+
         try:
             tools = [
                 ToolRef(
@@ -78,7 +78,7 @@ async def handle_init(
                 )
                 for hook_info in hooks.values()
             ]
-            
+
             init_request = InitRequest(
                 environment=EnvironmentContext(
                     session_id=session_id,
@@ -98,7 +98,7 @@ async def handle_init(
                 ),
                 tools=tools
             )
-            
+
             async with SecurityPolicyClient(
                     session_id=session_id,
                     logger=logger,
@@ -106,20 +106,19 @@ async def handle_init(
                     app_id=app_uid
             ) as client:
                 await client.init_tools(init_request, event_id=event_id)
-            
+
             logger.info(f"Hooks registered successfully for {client_name}")
-            
+
             # Success - output result and exit
             output_init_result(True, f"{client_name.title()} hooks registered successfully")
             sys.exit(0)
-            
+
         except Exception as e:
             logger.error(f"API initialization failed: {e}")
             output_init_result(False, f"Error: {str(e)}")
             sys.exit(1)
-    
+
     except Exception as e:
         logger.error(f"Unexpected error in init handler: {e}", exc_info=True)
         output_init_result(False, f"Initialization failed: {str(e)}")
         sys.exit(1)
-

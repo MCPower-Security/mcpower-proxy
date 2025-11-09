@@ -16,7 +16,7 @@ dependencies = [
   "jsonc-parser>=1.1.5",
   "jsonpath-ng>=1.7.0",
   "pydantic>=2.8.0",
-  "mcpower-shared==0.1.3",
+  "mcpower-shared==0.1.4",
 ]
 
 [project.license]

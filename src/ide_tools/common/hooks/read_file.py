@@ -37,13 +37,13 @@ async def handle_read_file(
         tool_name: IDE-specific tool name (e.g., "beforeReadFile", "PreToolUse")
     """
     session_id = get_session_id()
-    logger.info(f"Read file handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
+    logger.info(
+        f"Read file handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
 
     app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
     audit_logger.set_app_uid(app_uid)
 
     try:
-        # Validate input
         try:
             validator = create_validator(
                 required_fields={"file_path": str, "content": str},
@@ -58,7 +58,6 @@ async def handle_read_file(
             output_error(logger, config.output_format, "permission", str(e))
             return
 
-        # Log audit event
         audit_logger.log_event(
             "agent_request",
             {
@@ -93,11 +92,11 @@ async def handle_read_file(
 
         # Redact the main content
         redacted_content = redact(provided_content)
-        
+
         # Process attachments for redaction status
         files_with_redactions = process_attachments_for_redaction(attachments, logger)
         files_with_redactions_paths = {f["file_path"] for f in files_with_redactions}
-        
+
         # Build attachments info with redaction status
         attachments_info = []
         for attachment in attachments:
@@ -107,10 +106,10 @@ async def handle_read_file(
                     "file_path": att_path,
                     "has_redactions": att_path in files_with_redactions_paths
                 })
-        
+
         logger.info(f"Processed file and {len(attachments)} attachment(s), found redactions in "
                     f"{len(files_with_redactions)} attachment(s)")
-        
+
         # Build content_data with file_path, redacted content, and attachments
         content_data = {
             "file_path": file_path,
@@ -136,7 +135,6 @@ async def handle_read_file(
                 client_name=config.client_name
             )
 
-            # Log audit event for forwarding
             audit_logger.log_event(
                 "agent_request_forwarded",
                 {
@@ -150,9 +148,9 @@ async def handle_read_file(
                 event_id=event_id
             )
 
-            # Output success
             reasons = decision.get("reasons", [])
-            agent_message = "File read approved: " + "; ".join(reasons) if reasons else "File read approved by security policy"
+            agent_message = "File read approved: " + "; ".join(
+                reasons) if reasons else "File read approved by security policy"
             output_result(logger, config.output_format, "permission", True, "File read approved", agent_message)
 
         except Exception as e:
@@ -167,4 +165,3 @@ async def handle_read_file(
     except Exception as e:
         logger.error(f"Unexpected error in read file handler: {e}", exc_info=True)
         output_error(logger, config.output_format, "permission", f"Unexpected error: {str(e)}")
-

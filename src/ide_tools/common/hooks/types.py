@@ -16,12 +16,12 @@ class OutputFormat:
     allow_exit_code: int
     deny_exit_code: int
     error_exit_code: int
-    
+
     # Output formatter function
     # Args: (hook_type: str, allowed: bool, user_msg: Optional[str], agent_msg: Optional[str]) -> str
     formatter: Callable[[str, bool, Optional[str], Optional[str]], str]
-    
-    
+
+
 @dataclass
 class HookConfig:
     """
@@ -32,4 +32,3 @@ class HookConfig:
     server_name: str  # IDE-specific tool server name
     client_name: str  # IDE-specific client name (e.g. "cursor", "claude-code")
     max_content_length: int  # Maximum content length before skipping API call
-

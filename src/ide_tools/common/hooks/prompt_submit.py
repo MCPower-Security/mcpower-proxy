@@ -10,8 +10,7 @@ from modules.redaction import redact
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
 from .output import output_result, output_error
 from .types import HookConfig
-from .utils import create_validator, extract_redaction_patterns, build_sensitive_data_types, \
-    process_attachments_for_redaction, inspect_and_enforce
+from .utils import create_validator, extract_redaction_patterns, process_attachments_for_redaction, inspect_and_enforce
 
 
 async def handle_prompt_submit(
@@ -46,7 +45,6 @@ async def handle_prompt_submit(
     audit_logger.set_app_uid(app_uid)
 
     try:
-        # Validate input
         try:
             validator = create_validator(
                 required_fields={"prompt": str},
@@ -60,9 +58,8 @@ async def handle_prompt_submit(
             output_error(logger, config.output_format, "continue", str(e))
             return
 
-        # Check for redactions in prompt
         redacted_prompt = redact(prompt)
-        # Log audit event
+
         audit_logger.log_event(
             "prompt_submission",
             {
@@ -83,59 +80,11 @@ async def handle_prompt_submit(
 
         has_any_redactions = bool(prompt_patterns) or len(files_with_redactions) > 0
 
-        # If no redactions found, allow immediately without API call
-        if not has_any_redactions:
-            logger.info("No sensitive data found in prompt or attachments - allowing without API call")
-
-            audit_logger.log_event(
-                "prompt_submission_forwarded",
-                {
-                    "server": config.server_name,
-                    "tool": tool_name,
-                    "params": {"redactions_found": has_any_redactions}
-                },
-                event_id=event_id
-            )
-
-            output_result(logger, config.output_format, "continue", True)
-            return
-
-        logger.info(f"Found redactions in prompt or {len(files_with_redactions)} file(s) - calling API for inspection")
-
-        # Build explicit content_data structure showing security risk
         content_data: Dict[str, Any] = {
-            "security_alert": "Sensitive data detected in user prompt submission"
+            "prompt": redacted_prompt,
+            "is_redacted": has_any_redactions,
+            "redacted_files": files_with_redactions,
         }
-
-        # Add prompt analysis if sensitive data found in prompt text
-        if prompt_patterns:
-            sensitive_data_types = build_sensitive_data_types(prompt_patterns, "prompt text")
-
-            total_prompt_items = sum(prompt_patterns.values())
-            content_data["user_prompt_analysis"] = {
-                "contains_sensitive_data": True,
-                "sensitive_data_types": sensitive_data_types,
-                "risk_summary": f"Prompt contains {total_prompt_items} sensitive data item(s) across {len(prompt_patterns)} type(s)"
-            }
-
-        # Add file analysis if sensitive data found in attachments
-        if files_with_redactions:
-            total_file_items = sum(
-                sum(f["sensitive_data_types"][dt]["occurrences"] for dt in f["sensitive_data_types"])
-                for f in files_with_redactions
-            )
-            content_data["attached_files_with_secrets_or_pii"] = files_with_redactions
-            content_data["files_summary"] = \
-                f"{len(files_with_redactions)} file(s) contain {total_file_items} sensitive data item(s)"
-
-        # Calculate overall risk level
-        total_sensitive_items = sum(prompt_patterns.values()) if prompt_patterns else 0
-        if files_with_redactions:
-            total_sensitive_items += sum(
-                sum(f["sensitive_data_types"][dt]["occurrences"] for dt in f["sensitive_data_types"])
-                for f in files_with_redactions
-            )
-        content_data["overall_summary"] = f"Total: {total_sensitive_items} sensitive data item(s) detected"
 
         # Call security API and enforce decision
         try:
@@ -154,7 +103,6 @@ async def handle_prompt_submit(
                 client_name=config.client_name
             )
 
-            # Log audit event for forwarding
             audit_logger.log_event(
                 "prompt_submission_forwarded",
                 {
@@ -165,10 +113,9 @@ async def handle_prompt_submit(
                 event_id=event_id
             )
 
-            # Output success
             reasons = decision.get("reasons", [])
-            agent_message = "Prompt submission approved: " + "; ".join(
-                reasons) if reasons else "Prompt submission approved by security policy"
+            agent_message = "Prompt submission approved: {0}".format("; ".join(
+                reasons)) if reasons else "Prompt submission approved by security policy"
             output_result(logger, config.output_format, "continue", True,
                           "Prompt approved", agent_message)
 

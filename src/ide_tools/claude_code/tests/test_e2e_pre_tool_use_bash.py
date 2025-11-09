@@ -30,8 +30,8 @@ from common import (
     get_command,
     assert_exit_code
 )
-from ide_tools.common.tests.runner import run_handler
 from ide_tools.common.tests.asserts import assert_json_output
+from ide_tools.common.tests.runner import run_handler
 
 
 def test_pre_tool_use_bash_safe_command():
@@ -215,6 +215,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nTest failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
-

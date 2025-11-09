@@ -7,7 +7,8 @@ import re
 from collections import Counter
 from typing import Dict, Any, List, Callable, Optional
 
-from mcpower_shared.mcp_types import create_policy_request, create_policy_response, AgentContext, EnvironmentContext
+from mcpower_shared.mcp_types import create_policy_request, create_policy_response, AgentContext, EnvironmentContext, \
+    ServerRef, ToolRef
 from modules.apis.security_policy import SecurityPolicyClient
 from modules.decision_handler import DecisionHandler
 from modules.logs.audit_trail import AuditTrailLogger
@@ -229,9 +230,14 @@ async def inspect_and_enforce(
         if is_request:
             policy_request = create_policy_request(
                 event_id=event_id,
-                server_name=server_name,
-                server_transport="stdio",
-                tool_name=tool_name,
+                server=ServerRef(
+                    name=server_name,
+                    transport="stdio",
+                    context="ide"
+                ),
+                tool=ToolRef(
+                    name=tool_name
+                ),
                 agent_context=agent_context,
                 env_context=env_context,
                 arguments=content_data
@@ -243,9 +249,14 @@ async def inspect_and_enforce(
         else:
             policy_response = create_policy_response(
                 event_id=event_id,
-                server_name=server_name,
-                server_transport="stdio",
-                tool_name=tool_name,
+                server=ServerRef(
+                    name=server_name,
+                    transport="stdio",
+                    context="ide"
+                ),
+                tool=ToolRef(
+                    name=tool_name
+                ),
                 response_content=safe_json_dumps(content_data),
                 agent_context=agent_context,
                 env_context=env_context
@@ -273,4 +284,3 @@ async def inspect_and_enforce(
     )
 
     return decision
-

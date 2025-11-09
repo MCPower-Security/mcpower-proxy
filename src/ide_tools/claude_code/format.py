@@ -8,7 +8,8 @@ from typing import Optional
 from ide_tools.common.hooks.types import OutputFormat
 
 
-def claude_code_output_formatter(hook_type: str, allowed: bool, user_msg: Optional[str], agent_msg: Optional[str]) -> str:
+def claude_code_output_formatter(hook_type: str, allowed: bool, user_msg: Optional[str],
+                                 agent_msg: Optional[str]) -> str:
     """
     Format output for Claude Code
     
@@ -31,7 +32,7 @@ def claude_code_output_formatter(hook_type: str, allowed: bool, user_msg: Option
             result["decision"] = "block"
             result["reason"] = agent_msg or user_msg or "Blocked by security policy"
         # If allowed, return empty dict (allows prompt)
-            
+
     return json.dumps(result)
 
 
@@ -42,4 +43,3 @@ CLAUDE_CODE_OUTPUT = OutputFormat(
     error_exit_code=1,  # Exit 1 unexpected errors
     formatter=claude_code_output_formatter
 )
-

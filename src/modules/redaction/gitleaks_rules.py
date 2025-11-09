@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 # This file is auto-generated from Gitleaks rules. Do not edit manually.
 # Source: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
-# Generation script: targets/vsc-extension/scripts/update-gitleaks-rules.mjs
+# Generation script: targets/scripts/update-gitleaks-rules.mjs
 
 COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
     (

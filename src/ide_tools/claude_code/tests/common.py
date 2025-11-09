@@ -54,4 +54,3 @@ def get_command():
         "--ide", "claude-code",
     ]
     return command, repo_root
-

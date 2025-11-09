@@ -1,12 +1,20 @@
 # Development files
 .vscode/**
 .vscode-test/**
-out/test/**
+out/**
 src/**
-**/*.map
 .gitignore
 tsconfig.json
 .eslintrc.json
+__mocks__/**
+jest.config.js
+webpack.config.js
+
+# Dependencies (bundled by webpack)
+node_modules/**
+
+# Exclude parent directory files
+../**
 
 # Include bundled proxy
 !proxy-bundled/
@@ -16,3 +24,4 @@ tsconfig.json
 **/Thumbs.db
 **/*.log
 .idea/**
+.claude/**
