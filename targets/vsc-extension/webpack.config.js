@@ -1,5 +1,6 @@
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const webpack = require("webpack");
 
 /** @type {import('webpack').Configuration} */
 module.exports = {
@@ -16,6 +17,7 @@ module.exports = {
     },
     externals: {
         vscode: "commonjs vscode",
+        fsevents: "commonjs fsevents",
     },
     resolve: {
         extensions: [".ts", ".js"],
