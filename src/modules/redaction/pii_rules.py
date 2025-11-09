@@ -60,15 +60,8 @@ class PIIDetector:
     """Lightweight PII detector using only regex patterns."""
 
     def __init__(self):
-        # URL detector with intelligent boundary detection
-        self.url_detector = URLDetector()
-
         # Compile regex patterns for better performance
         self.patterns = {
-            'EMAIL_ADDRESS': re.compile(
-                r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-                re.IGNORECASE
-            ),
             'CREDIT_CARD': re.compile(
                 r'\b(?:'
                 r'4[0-9]{3}[-\s]?[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}(?:[0-9]{3})?|'  # Visa with formatting
@@ -79,40 +72,6 @@ class PIIDetector:
                 r'3[47][0-9]{13}|'  # American Express without formatting
                 r'3[0-9]{13}|'  # Diners Club
                 r'6(?:011|5[0-9]{2})[0-9]{12}'  # Discover
-                r')\b'
-            ),
-            'IP_ADDRESS': re.compile(
-                r'(?:'
-                # IPv4
-                r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
-                r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
-                r'|'
-                # IPv6 - comprehensive pattern
-                r'(?:'
-                # Full IPv6 or with :: compression
-                r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|'  # Full: 1:2:3:4:5:6:7:8
-                r'(?:[0-9a-fA-F]{1,4}:){1,7}:|'  # Compressed trailing: 1:: or 1:2:3:4:5:6:7::
-                r'(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|'  # Compressed middle: 1::8 or 1:2:3:4:5:6::8
-                r'(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|'  # 1::7:8 or 1:2:3:4:5::7:8
-                r'(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|'  # 1::6:7:8 or 1:2:3:4::6:7:8
-                r'(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|'  # 1::5:6:7:8 or 1:2:3::5:6:7:8
-                r'(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|'  # 1::4:5:6:7:8 or 1:2::4:5:6:7:8
-                r'[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|'  # 1::3:4:5:6:7:8
-                r':(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|'  # ::2:3:4:5:6:7:8 or ::
-                # IPv4-mapped IPv6: ::ffff:192.0.2.1
-                r'(?:[0-9a-fA-F]{1,4}:){1,4}:'
-                r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
-                r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
-                r')'
-                r')',
-                re.IGNORECASE
-            ),
-            # Common crypto addresses
-            'CRYPTO_ADDRESS': re.compile(
-                r'\b(?:'
-                r'[13][a-km-zA-HJ-NP-Z1-9]{25,34}|'  # Bitcoin
-                r'0x[a-fA-F0-9]{40}|'  # Ethereum
-                r'[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}'  # Litecoin
                 r')\b'
             ),
             # IBAN (International Bank Account Number)
@@ -176,9 +135,6 @@ class PIIDetector:
         """
         matches = []
 
-        # Extract URLs using URLDetector
-        matches.extend(self.url_detector.extract(text))
-
         # Extract other PII using regex patterns
         for entity_type, pattern in self.patterns.items():
             for match in pattern.finditer(text):
@@ -212,11 +168,7 @@ class PIIDetector:
         """Calculate confidence score based on entity type and matched text."""
         # Base confidence scores
         base_scores = {
-            'EMAIL_ADDRESS': 0.95,
             'CREDIT_CARD': 0.85,  # Will be 0.99 after Luhn validation
-            'IP_ADDRESS': 0.90,
-            'URL': 0.80,
-            'CRYPTO_ADDRESS': 0.95,
             'IBAN': 0.85,  # Will be 0.99 after MOD-97 validation
         }
 
