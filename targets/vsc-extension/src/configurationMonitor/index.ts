@@ -3,12 +3,12 @@ import { promises as fs } from "fs";
 import { homedir } from "os";
 import { createHash } from "crypto";
 import { UvRunner } from "../uvRunner";
-import { MCPConfig, MCPServerConfig } from "../types";
 import { detectIDEFromScriptPath } from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
 import { fileExists, isRemoteUrl, parseJsonc, writeFile } from "@mcpower/common-ts/utils";
 import { FileWatcher } from "@mcpower/common-ts/watcher";
+import { MCPConfig, MCPServerConfig } from "@mcpower/common-ts/types";
 
 export class ConfigurationMonitor {
     private uvRunner: UvRunner | undefined;

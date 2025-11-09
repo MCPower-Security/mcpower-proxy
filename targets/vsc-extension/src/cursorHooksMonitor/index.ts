@@ -244,7 +244,6 @@ export class CursorHooksMonitor {
         return scriptPath;
     }
 
-
     private getScriptsMap = async (): Promise<
         Record<string, { path: string; name: string }>
     > => {

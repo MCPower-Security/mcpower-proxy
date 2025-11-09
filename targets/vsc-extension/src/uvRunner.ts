@@ -5,7 +5,7 @@ import * as os from "os";
 import { spawn } from "child_process";
 import log from "./log";
 import { getCurrentExtensionVersion } from "./utils";
-import { UvCommand } from "./types";
+import { UvCommand } from "@mcpower/common-ts/types";
 import { fileExists, mapOS } from "@mcpower/common-ts/utils";
 
 export class UvRunner {
