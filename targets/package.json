@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "clean:build": "node scripts/clean-build.js",
-    "prepare": "cd common-ts && npm i"
+    "prepare": "cd common-ts && npm i && cd ../vsc-extension && npm i"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
