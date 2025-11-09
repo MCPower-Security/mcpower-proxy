@@ -5,7 +5,6 @@ Handles both request (before) and response (after) inspection for shell commands
 """
 
 import os
-import sys
 from typing import Optional, Dict, List
 
 from modules.logs.audit_trail import AuditTrailLogger
@@ -13,15 +12,15 @@ from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
 from .output import output_result, output_error
+from .shell_parser_bashlex import parse_shell_command
 from .types import HookConfig
 from .utils import create_validator, inspect_and_enforce
-from .shell_parser_bashlex import parse_shell_command
 
 
 def extract_and_redact_command_files(
-    command: str,
-    cwd: Optional[str],
-    logger: MCPLogger
+        command: str,
+        cwd: Optional[str],
+        logger: MCPLogger
 ) -> Dict[str, str]:
     """
     Extract input files from a shell command and return their redacted contents.
@@ -171,13 +170,10 @@ async def _handle_shell_operation(
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
-        # Redact sensitive data for logging
         redacted_data = {}
         for k, v in input_data.items():
             if k in required_fields:
                 redacted_data[k] = redact(v) if k in redact_fields else v
-
-        logger.info(f"Analyzing {tool_name}: {redacted_data}")
 
         # Extract and redact input files for request inspection
         files_dict = {}
@@ -187,24 +183,26 @@ async def _handle_shell_operation(
             if files_dict:
                 logger.info(f"Extracted and redacted {len(files_dict)} files from command")
 
-        # Use different structure for request vs response events
-        # Requests: params nested, Responses: unpacked at root
-        if is_request:
-            audit_data = {
-                "server": config.server_name,
-                "tool": tool_name,
-                "params": redacted_data
-            }
-        else:
-            audit_data = {
-                "server": config.server_name,
-                "tool": tool_name,
-                **redacted_data
-            }
+        def get_audit_data():
+            # Use different structure for request vs response events
+            # Requests: params nested, Responses: unpacked at root
+            if is_request:
+                return {
+                    "server": config.server_name,
+                    "tool": tool_name,
+                    "params": redacted_data,
+                    "files": list(files_dict.keys()) if files_dict else None
+                }
+            else:
+                return {
+                    "server": config.server_name,
+                    "tool": tool_name,
+                    **redacted_data
+                }
 
         audit_logger.log_event(
             audit_event_type,
-            audit_data,
+            get_audit_data(),
             event_id=event_id
         )
 
@@ -212,7 +210,7 @@ async def _handle_shell_operation(
         content_data = redacted_data.copy()
         if files_dict:
             content_data["files"] = files_dict
-        # Call security API and enforce decision
+
         try:
             decision = await inspect_and_enforce(
                 is_request=is_request,
@@ -229,23 +227,9 @@ async def _handle_shell_operation(
                 client_name=config.client_name
             )
 
-            # Use different structure for request vs response
-            if is_request:
-                forwarded_data = {
-                    "server": config.server_name,
-                    "tool": tool_name,
-                    "params": redacted_data
-                }
-            else:
-                forwarded_data = {
-                    "server": config.server_name,
-                    "tool": tool_name,
-                    **redacted_data
-                }
-
             audit_logger.log_event(
                 audit_forwarded_event_type,
-                forwarded_data,
+                get_audit_data(),
                 event_id=event_id
             )
 
