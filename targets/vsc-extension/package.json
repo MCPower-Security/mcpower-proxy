@@ -82,7 +82,7 @@
     }
   },
   "scripts": {
-    "bundle:vsc-extension": "webpack --mode production",
+    "bundle:vsc-extension": "webpack",
     "lint": "eslint src --ext ts",
     "package:vsc-extension": "vsce package --allow-star-activation",
     "test": "jest",

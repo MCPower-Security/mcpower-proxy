@@ -1,11 +1,11 @@
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const webpack = require("webpack");
+const TerserPlugin = require("terser-webpack-plugin");
 
 /** @type {import('webpack').Configuration} */
 module.exports = {
     target: "node",
-    mode: "none",
+    mode: "production",
     entry: {
         extension: "./src/extension.ts",
         uninstall_hook: "./src/uninstall_hook.ts",
@@ -45,6 +45,19 @@ module.exports = {
             },
         ],
     },
+    optimization: {
+        minimize: true,
+        minimizer: [
+            new TerserPlugin({
+                extractComments: false,
+                terserOptions: {
+                    format: {
+                        comments: false,
+                    },
+                },
+            }),
+        ],
+    },
     plugins: [
         new CopyWebpackPlugin({
             patterns: [
@@ -55,7 +68,7 @@ module.exports = {
             ],
         }),
     ],
-    devtool: "nosources-source-map",
+    devtool: false,
     infrastructureLogging: {
         level: "log",
     },
