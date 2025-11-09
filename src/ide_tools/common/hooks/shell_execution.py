@@ -4,28 +4,27 @@ Common shell execution handler - IDE-agnostic
 Handles both request (before) and response (after) inspection for shell commands.
 """
 
-import sys
 from typing import Optional, Dict, List
 
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
-from .types import HookConfig
 from .output import output_result, output_error
+from .types import HookConfig
 from .utils import create_validator, inspect_and_enforce
 
 
 async def handle_shell_execution(
-    logger: MCPLogger,
-    audit_logger: AuditTrailLogger,
-    stdin_input: str,
-    prompt_id: str,
-    event_id: str,
-    cwd: Optional[str],
-    config: HookConfig,
-    tool_name: str,
-    is_request: bool = True
+        logger: MCPLogger,
+        audit_logger: AuditTrailLogger,
+        stdin_input: str,
+        prompt_id: str,
+        event_id: str,
+        cwd: Optional[str],
+        config: HookConfig,
+        tool_name: str,
+        is_request: bool = True
 ):
     """
     Generic shell execution handler - handles both request and response
@@ -60,20 +59,20 @@ async def handle_shell_execution(
 
 
 async def _handle_shell_operation(
-    logger: MCPLogger,
-    audit_logger: AuditTrailLogger,
-    stdin_input: str,
-    prompt_id: str,
-    event_id: str,
-    cwd: Optional[str],
-    config: HookConfig,
-    is_request: bool,
-    required_fields: Dict[str, type],
-    redact_fields: List[str],
-    tool_name: str,
-    operation_name: str,
-    audit_event_type: str,
-    audit_forwarded_event_type: str
+        logger: MCPLogger,
+        audit_logger: AuditTrailLogger,
+        stdin_input: str,
+        prompt_id: str,
+        event_id: str,
+        cwd: Optional[str],
+        config: HookConfig,
+        is_request: bool,
+        required_fields: Dict[str, type],
+        redact_fields: List[str],
+        tool_name: str,
+        operation_name: str,
+        audit_event_type: str,
+        audit_forwarded_event_type: str
 ):
     """
     Internal shell operation handler - shared logic for request and response
@@ -88,9 +87,10 @@ async def _handle_shell_operation(
         audit_forwarded_event_type: Audit event name for forwarded operation
     """
     session_id = get_session_id()
-    
-    logger.info(f"{tool_name} handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
-    
+
+    logger.info(
+        f"{tool_name} handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
+
     try:
         try:
             validator = create_validator(required_fields=required_fields)
@@ -99,18 +99,18 @@ async def _handle_shell_operation(
             logger.error(f"Input validation error: {e}")
             output_error(logger, config.output_format, "permission", str(e))
             return
-        
+
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
-        
+
         # Redact sensitive data for logging
         redacted_data = {}
         for k, v in input_data.items():
             if k in required_fields:
                 redacted_data[k] = redact(v) if k in redact_fields else v
-        
+
         logger.info(f"Analyzing {tool_name}: {redacted_data}")
-        
+
         # Use different structure for request vs response events
         # Requests: params nested, Responses: unpacked at root
         if is_request:
@@ -125,16 +125,16 @@ async def _handle_shell_operation(
                 "tool": tool_name,
                 **redacted_data
             }
-        
+
         audit_logger.log_event(
             audit_event_type,
             audit_data,
             event_id=event_id
         )
-        
+
         # Build content_data with redacted fields
         content_data = redacted_data
-        
+
         # Call security API and enforce decision
         try:
             decision = await inspect_and_enforce(
@@ -151,7 +151,7 @@ async def _handle_shell_operation(
                 cwd=cwd,
                 client_name=config.client_name
             )
-            
+
             # Use different structure for request vs response
             if is_request:
                 forwarded_data = {
@@ -165,13 +165,13 @@ async def _handle_shell_operation(
                     "tool": tool_name,
                     **redacted_data
                 }
-            
+
             audit_logger.log_event(
                 audit_forwarded_event_type,
                 forwarded_data,
                 event_id=event_id
             )
-            
+
             reasons = decision.get("reasons", [])
             user_message = f"{operation_name} approved"
             if not reasons:
@@ -179,16 +179,16 @@ async def _handle_shell_operation(
             else:
                 agent_message = f"{operation_name} approved: {'; '.join(reasons)}"
             output_result(logger, config.output_format, "permission", True, user_message, agent_message)
-            
+
         except Exception as e:
             # Decision enforcement failed - block
             error_msg = str(e)
             user_message = f"{operation_name} blocked by security policy"
             if "User blocked" in error_msg or "User denied" in error_msg:
                 user_message = f"{operation_name} blocked by user"
-            
+
             output_result(logger, config.output_format, "permission", False, user_message, error_msg)
-    
+
     except Exception as e:
         logger.error(f"Unexpected error in {tool_name} handler: {e}", exc_info=True)
         output_error(logger, config.output_format, "permission", f"Unexpected error: {str(e)}")

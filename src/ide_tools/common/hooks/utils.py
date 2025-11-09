@@ -284,4 +284,3 @@ async def inspect_and_enforce(
     )
 
     return decision
-
