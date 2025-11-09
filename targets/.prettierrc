@@ -17,6 +17,12 @@
         "options": {
           "printWidth": 120
         }
+      },
+      {
+        "files": "*.json",
+        "options": {
+          "tabWidth": 2
+        }
       }
     ]
 }

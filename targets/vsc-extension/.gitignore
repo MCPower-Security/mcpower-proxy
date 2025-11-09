@@ -25,3 +25,10 @@ Desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# Shared scripts copied from targets/scripts/
+scripts/clean-build.js
+scripts/setup-uvx-linux.sh
+scripts/setup-uvx-macos.sh
+scripts/setup-uvx-windows.ps1
+scripts/update-gitleaks-rules.mjs

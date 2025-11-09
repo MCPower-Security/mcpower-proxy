@@ -1,11 +1,6 @@
-import {
-    detectIDEFromScriptPath,
-    getApiUrl,
-    getUserUid,
-    getVersion,
-    mapOS,
-} from "./utils";
+import { detectIDEFromScriptPath, getVersion } from "./utils";
 import log from "./log";
+import { getApiUrl, getUserUid, mapOS } from "@mcpower/common-ts/utils";
 
 /**
  * Report lifecycle event to backend API

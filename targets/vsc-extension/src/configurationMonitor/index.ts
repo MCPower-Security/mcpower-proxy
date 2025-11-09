@@ -2,53 +2,34 @@ import { basename, dirname, join, normalize, resolve } from "path";
 import { promises as fs } from "fs";
 import { homedir } from "os";
 import { createHash } from "crypto";
-import chokidar from "chokidar";
 import { UvRunner } from "../uvRunner";
 import { MCPConfig, MCPServerConfig } from "../types";
-import {
-    detectIDEFromScriptPath,
-    fileExists,
-    isRemoteUrl,
-    parseJsonc,
-    writeFile,
-} from "../utils";
+import { detectIDEFromScriptPath } from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
+import { fileExists, isRemoteUrl, parseJsonc, writeFile } from "@mcpower/common-ts/utils";
+import { FileWatcher } from "@mcpower/common-ts/watcher";
 
 export class ConfigurationMonitor {
     private uvRunner: UvRunner | undefined;
     private vscode: typeof import("vscode") | undefined;
-    private chokidarWatcher: chokidar.FSWatcher | undefined;
+    private fileWatcher: FileWatcher;
     private isMonitoring: boolean = false;
-
-    // Separate concerns: concurrency vs loop prevention
-    private processingFiles: Set<string> = new Set(); // For concurrency control
-    private recentWrites: Map<string, number> = new Map(); // For loop prevention
-    private readonly pollingInterval = 2000; // Poll every 2 seconds
-    private readonly writeIgnoreWindow = this.pollingInterval + 1500; // >= interval
-
-    private watchedFiles: Set<string> = new Set();
-    private reconnectAttempts: number = 0;
-    private readonly maxReconnectAttempts: number = 3;
-    private readonly reconnectDelay: number = 2000;
-
-    // Improved circuit breaker
-    private processingCounts: Map<string, number> = new Map();
-    private circuitBreakerExpiry: Map<string, number> = new Map();
-    private readonly maxProcessingPerFile = 3;
-    private readonly circuitBreakerCooldown = 60000; // 1 minute
-
-    // Watcher recreation protection
-    private isRecreatingWatcher = false;
-    private recoveryTimeout: NodeJS.Timeout | undefined;
-
-    // Debouncing for rapid changes
-    private pendingChanges: Map<string, NodeJS.Timeout> = new Map();
-    private readonly debounceDelay = 300; // 300ms debounce
     private readonly currentIDE: string | undefined;
 
     constructor() {
         this.currentIDE = detectIDEFromScriptPath();
+
+        // Create file watcher with callbacks
+        this.fileWatcher = new FileWatcher({
+            onFileProcess: async (filePath: string) => {
+                await this.processConfigurationFile(filePath);
+            },
+            onShowError: (message: string) => {
+                this.vscode?.window.showErrorMessage(message);
+            },
+            logger: log,
+        });
     }
 
     /**
@@ -185,66 +166,6 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Clean up all state for a specific file path
-     */
-    private cleanupFileState(
-        normalizedPath: string,
-        options: {
-            clearProcessing?: boolean;
-            clearPending?: boolean;
-            clearWatched?: boolean;
-        } = {}
-    ): void {
-        const {
-            clearProcessing = true,
-            clearPending = true,
-            clearWatched = false,
-        } = options;
-
-        if (clearProcessing) {
-            this.processingFiles.delete(normalizedPath);
-        }
-
-        this.processingCounts.delete(normalizedPath);
-        this.circuitBreakerExpiry.delete(normalizedPath);
-        this.recentWrites.delete(normalizedPath);
-
-        if (clearWatched) {
-            this.watchedFiles.delete(normalizedPath);
-        }
-
-        if (clearPending) {
-            const pending = this.pendingChanges.get(normalizedPath);
-            if (pending) {
-                clearTimeout(pending);
-                this.pendingChanges.delete(normalizedPath);
-            }
-        }
-    }
-
-    /**
-     * Clean up all global state
-     */
-    private cleanupAllState(): void {
-        this.processingFiles.clear();
-        this.recentWrites.clear();
-        this.processingCounts.clear();
-        this.circuitBreakerExpiry.clear();
-
-        // Clear all pending timeouts
-        for (const timeout of this.pendingChanges.values()) {
-            clearTimeout(timeout);
-        }
-        this.pendingChanges.clear();
-
-        // Clear recovery timeout if active
-        if (this.recoveryTimeout) {
-            clearTimeout(this.recoveryTimeout);
-            this.recoveryTimeout = undefined;
-        }
-    }
-
-    /**
      * Check multiple file paths in parallel and return existing ones
      */
     private async findExistingFiles(
@@ -300,36 +221,6 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Check if circuit breaker should block processing for a file
-     */
-    private isCircuitBreakerActive(normalizedPath: string): boolean {
-        const now = Date.now();
-
-        // Check if in cooldown period
-        const expiry = this.circuitBreakerExpiry.get(normalizedPath);
-        if (expiry && now < expiry) {
-            log.debug(
-                `Circuit breaker active until ${new Date(expiry)} for: ${normalizedPath}`
-            );
-            return true;
-        }
-
-        // Check if too many processing attempts
-        const count = this.processingCounts.get(normalizedPath) || 0;
-        if (count >= this.maxProcessingPerFile) {
-            log.warn(`Circuit breaker triggered for ${normalizedPath}`);
-            this.circuitBreakerExpiry.set(
-                normalizedPath,
-                now + this.circuitBreakerCooldown
-            );
-            this.processingCounts.delete(normalizedPath);
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Start monitoring MCP configuration files
      */
     async startMonitoring(uvRunner: UvRunner): Promise<void> {
@@ -348,13 +239,13 @@ export class ConfigurationMonitor {
             // Discover configuration files
             const configFiles = await this.discoverConfigurationFiles();
 
-            // Monitor configuration files
-            await this.setupFileWatchers(configFiles);
+            // Start file watcher
+            await this.fileWatcher.startWatching(configFiles);
 
             // Process existing configuration files on startup with tracking
             for (const configFile of configFiles) {
                 const normalizedPath = normalize(resolve(configFile));
-                if (!this.processingFiles.has(normalizedPath)) {
+                if (!this.fileWatcher.isProcessing(normalizedPath)) {
                     await this.processConfigurationFile(configFile);
                 }
             }
@@ -374,8 +265,8 @@ export class ConfigurationMonitor {
 
         log.info("Stopping MCP configuration monitoring...");
 
-        await this.closeConfigFileWatcher();
-        this.cleanupAllState();
+        await this.fileWatcher.stopWatching();
+        this.fileWatcher.cleanupAllState();
 
         this.isMonitoring = false;
         log.info("Configuration monitoring stopped");
@@ -390,20 +281,10 @@ export class ConfigurationMonitor {
         try {
             // Wait for all processing to complete with timeout
             log.debug("Waiting for all processing to complete...");
-            const maxWaitTime = 30000; // 30 seconds
             const startTime = Date.now();
 
-            while (this.processingFiles.size > 0) {
-                if (Date.now() - startTime > maxWaitTime) {
-                    log.error("Timeout waiting for processing to complete");
-                    this.cleanupAllState(); // Force clear all state
-                    break;
-                }
-                log.debug(
-                    `Waiting for ${this.processingFiles.size} files to complete processing`
-                );
-                await this.sleep(100);
-            }
+            // Wait for fileWatcher to finish processing (checking if any files are being processed)
+            await this.sleep(3000);
 
             // Stop current monitoring
             await this.stopMonitoring();
@@ -641,6 +522,8 @@ export class ConfigurationMonitor {
             // Write modified content if changes were made
             if (result.hasChanges) {
                 await writeFile(configPath, result.modifiedContent);
+                // Record write to prevent processing loop
+                this.fileWatcher.recordWrite(configPath);
                 log.info(`${result.successMessage}: ${configPath}`);
             }
 
@@ -728,227 +611,25 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Setup file system watchers for discovered configuration files
-     */
-    private async setupFileWatchers(configFiles: string[]): Promise<void> {
-        if (configFiles.length === 0) {
-            log.warn("No configuration files to watch");
-            return;
-        }
-
-        // Close any existing watcher FIRST
-        await this.closeConfigFileWatcher();
-
-        // Clean up all state when recreating watcher
-        this.cleanupAllState();
-
-        // Now record what we plan to watch
-        this.watchedFiles = new Set(configFiles);
-
-        try {
-            log.info(
-                `Setting up Config files watcher for ${configFiles.length} configuration files:\n${configFiles.join("\n")}`
-            );
-
-            // Create watcher with polling for reliable detection of locked files
-            this.chokidarWatcher = chokidar.watch(configFiles, {
-                persistent: true,
-                ignoreInitial: true,
-                usePolling: true,
-                interval: this.pollingInterval,
-                binaryInterval: this.pollingInterval,
-                awaitWriteFinish: { stabilityThreshold: 800, pollInterval: 200 },
-                ignorePermissionErrors: true,
-                followSymlinks: false,
-                disableGlobbing: true,
-                depth: 0,
-            });
-
-            // Add debug logging for all events
-            this.chokidarWatcher.on("all", (event, filePath) => {
-                log.debug(`Chokidar event: ${event} for ${filePath}`);
-            });
-
-            this.chokidarWatcher.on("raw", (event, path, details) => {
-                log.debug(`Raw event: ${event} for ${path}`, details);
-            });
-
-            // Handle file change events with debouncing
-            this.chokidarWatcher.on("change", (filePath: string) => {
-                const normalizedPath = normalize(resolve(filePath));
-                this.handleFileChange(normalizedPath, "change");
-            });
-
-            this.chokidarWatcher.on("add", (filePath: string) => {
-                const normalizedPath = normalize(resolve(filePath));
-                this.handleFileChange(normalizedPath, "add");
-            });
-
-            this.chokidarWatcher.on("unlink", (filePath: string) => {
-                const normalizedPath = normalize(resolve(filePath));
-                log.info(`📄 Configuration file deleted: ${normalizedPath}`);
-                this.cleanupFileState(normalizedPath, { clearWatched: true });
-            });
-
-            this.chokidarWatcher.on("error", async (error: Error) => {
-                log.error("🚨 Config files watcher error occurred:", error);
-
-                // Retry logic with proper flag management
-                if (
-                    !this.isRecreatingWatcher &&
-                    this.reconnectAttempts < this.maxReconnectAttempts
-                ) {
-                    this.reconnectAttempts++;
-                    log.info(
-                        `🔄 Attempting to recover file watcher (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
-                    );
-
-                    // Clear any existing recovery timeout
-                    if (this.recoveryTimeout) {
-                        clearTimeout(this.recoveryTimeout);
-                    }
-
-                    this.recoveryTimeout = setTimeout(async () => {
-                        try {
-                            this.isRecreatingWatcher = true;
-                            await this.setupFileWatchers(Array.from(this.watchedFiles));
-                            log.info("✅ File watcher recovered successfully");
-                            this.reconnectAttempts = 0;
-                        } catch (recoveryError) {
-                            log.error("❌ File watcher recovery failed:", recoveryError);
-                        } finally {
-                            this.isRecreatingWatcher = false;
-                            this.recoveryTimeout = undefined;
-                        }
-                    }, this.reconnectDelay * this.reconnectAttempts);
-                } else if (!this.isRecreatingWatcher) {
-                    log.error(
-                        "❌ Max reconnection attempts reached. File watching disabled."
-                    );
-                    this.vscode?.window.showErrorMessage(
-                        "MCPower Security: File watching failed. Please reload the window or restart VS Code."
-                    );
-                }
-            });
-
-            this.chokidarWatcher.on("ready", () => {
-                log.info("✅ Config files watcher is ready and monitoring files");
-                this.reconnectAttempts = 0;
-            });
-
-            log.info(`✅ Config files watcher created successfully`);
-        } catch (error) {
-            log.error("Failed to setup Config files watcher:", error);
-            this.vscode?.window.showWarningMessage(
-                "MCPower Security: File watching failed to start. Manual reload may be required for config changes."
-            );
-        }
-    }
-
-    /**
-     * Handle file change events with debouncing and loop prevention
-     */
-    private handleFileChange(normalizedPath: string, eventType: string): void {
-        // Check if this is from a recent write (loop prevention)
-        const lastWrite = this.recentWrites.get(normalizedPath);
-        if (lastWrite && Date.now() - lastWrite < this.writeIgnoreWindow) {
-            log.debug(`Ignoring ${eventType} event from recent write: ${normalizedPath}`);
-            return;
-        }
-
-        // Check if already processing (concurrency control)
-        if (this.processingFiles.has(normalizedPath)) {
-            log.debug(`Already processing, ignoring ${eventType}: ${normalizedPath}`);
-            return;
-        }
-
-        // Cancel any pending debounced change
-        const existing = this.pendingChanges.get(normalizedPath);
-        if (existing) {
-            clearTimeout(existing);
-            log.debug(`Debouncing ${eventType} for: ${normalizedPath}`);
-        }
-
-        // Debounce the change
-        const timeout = setTimeout(async () => {
-            this.pendingChanges.delete(normalizedPath);
-
-            // Check file exists before processing
-            try {
-                await fs.access(normalizedPath);
-            } catch {
-                log.debug(`📄 File no longer exists, skipping: ${normalizedPath}`);
-                return;
-            }
-
-            log.info(`📝 Configuration file ${eventType}: ${normalizedPath}`);
-            this.processConfigurationFile(normalizedPath).catch(error => {
-                log.error(`Failed to process file ${eventType}:`, error);
-            });
-        }, this.debounceDelay);
-
-        this.pendingChanges.set(normalizedPath, timeout);
-    }
-
-    /**
      * Process a single configuration file
+     * Note: Circuit breaker and concurrency control are handled by FileWatcher
      */
     private async processConfigurationFile(configPath: string): Promise<void> {
-        const normalizedPath = normalize(resolve(configPath));
+        log.info(`Processing configuration file:\n${configPath}`);
 
-        // Check circuit breaker before processing
-        if (this.isCircuitBreakerActive(normalizedPath)) {
+        // Read and parse configuration
+        const config = await this.readConfiguration(configPath);
+        if (!config) {
             return;
         }
 
-        // Check if we're already processing this specific file
-        if (this.processingFiles.has(normalizedPath)) {
-            log.debug(`Already processing ${normalizedPath}, skipping`);
-            return;
+        // Wrap MCP servers with MCPower proxy using JSONC tree manipulation
+        const hasChanges = await this.wrapConfigurationInFile(configPath);
+        if (!hasChanges) {
+            log.debug(`✅ All servers already wrapped in: ${configPath}`);
         }
 
-        // Increment processing count now that we're committed to processing
-        const count = this.processingCounts.get(normalizedPath) || 0;
-        this.processingCounts.set(normalizedPath, count + 1);
-
-        // Mark as processing
-        this.processingFiles.add(normalizedPath);
-
-        try {
-            log.info(`Processing configuration file:\n${configPath}`);
-
-            // Read and parse configuration
-            const config = await this.readConfiguration(configPath);
-            if (!config) {
-                // Clean up state on read failure (but keep processing flag until finally block)
-                this.cleanupFileState(normalizedPath, { clearProcessing: false });
-                return;
-            }
-
-            // Wrap MCP servers with MCPower proxy using JSONC tree manipulation
-            const hasChanges = await this.wrapConfigurationInFile(configPath);
-            if (!hasChanges) {
-                log.debug(`✅ All servers already wrapped in: ${configPath}`);
-            }
-
-            log.info(`Successfully processed configuration: ${configPath}`);
-
-            // Reset processing counter after successful completion
-            this.processingCounts.delete(normalizedPath);
-        } catch (error) {
-            log.error(`Failed to process configuration:\n${configPath}\n`, error);
-            this.vscode?.window.showErrorMessage(
-                `Failed to wrap MCP configuration: ${error}`
-            );
-
-            // Clear count after max attempts to prevent memory leak
-            if (count >= this.maxProcessingPerFile - 1) {
-                this.processingCounts.delete(normalizedPath);
-            }
-        } finally {
-            // Always clear processing flag
-            this.processingFiles.delete(normalizedPath);
-        }
+        log.info(`Successfully processed configuration: ${configPath}`);
     }
 
     /**
@@ -1153,21 +834,5 @@ export class ConfigurationMonitor {
         }
 
         return result;
-    }
-
-    /**
-     * Close Config files watcher safely - DRY method used in multiple places
-     */
-    private async closeConfigFileWatcher(): Promise<void> {
-        if (this.chokidarWatcher) {
-            try {
-                // Always remove event listeners before closing to prevent hanging
-                this.chokidarWatcher.removeAllListeners();
-                await this.chokidarWatcher.close();
-            } catch (error) {
-                log.error("Error closing Config files watcher:", error);
-            }
-            this.chokidarWatcher = undefined;
-        }
     }
 }

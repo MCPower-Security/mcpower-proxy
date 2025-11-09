@@ -6,7 +6,7 @@
 import { promises as fs } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import chokidar from "chokidar";
+import { FileWatcher } from "@mcpower/common-ts/watcher";
 import { AuditEntry } from "./types";
 import { parseAuditTrail } from "./utils";
 import log from "../log";
@@ -14,13 +14,15 @@ import log from "../log";
 export class AuditTrailWatcher {
     private readonly auditFilePath: string;
     private currentAppUid: string | null = null;
-    private watcher: chokidar.FSWatcher | undefined;
+    private fileWatcher: FileWatcher;
     private onChangeCallback: ((entries: AuditEntry[]) => void) | undefined;
-    private debounceTimer: NodeJS.Timeout | null = null;
-    private readonly debounceDelay = 500;
 
     constructor() {
         this.auditFilePath = join(homedir(), ".mcpower", "audit_trail.log");
+        this.fileWatcher = new FileWatcher({
+            onFileProcess: async () => this.handleFileChange(),
+            logger: log,
+        });
     }
 
     async start(
@@ -35,8 +37,8 @@ export class AuditTrailWatcher {
         onChange(entries);
 
         // Start watching if not already
-        if (!this.watcher) {
-            await this.startWatcher();
+        if (!this.fileWatcher.isActive()) {
+            await this.fileWatcher.startWatching([this.auditFilePath]);
         }
     }
 
@@ -55,46 +57,11 @@ export class AuditTrailWatcher {
         }
     }
 
-    private async startWatcher(): Promise<void> {
-        try {
-            log.info(`Starting audit trail watcher: ${this.auditFilePath}`);
-
-            this.watcher = chokidar.watch(this.auditFilePath, {
-                persistent: true,
-                ignoreInitial: true,
-                usePolling: true,
-                interval: 2000,
-                binaryInterval: 2000,
-                awaitWriteFinish: { stabilityThreshold: 800, pollInterval: 200 },
-                ignorePermissionErrors: true,
-                followSymlinks: false,
-                disableGlobbing: true,
-            });
-
-            this.watcher.on("change", () => this.handleFileChange());
-            this.watcher.on("add", () => this.handleFileChange());
-            this.watcher.on("error", (error: Error) => {
-                log.error(`Audit trail watcher error: ${error}`);
-            });
-
-            log.info("Audit trail watcher started");
-        } catch (error) {
-            log.error(`Failed to start audit trail watcher: ${error}`);
+    private async handleFileChange(): Promise<void> {
+        if (this.currentAppUid && this.onChangeCallback) {
+            const entries = await this.loadEntries(this.currentAppUid);
+            this.onChangeCallback(entries);
         }
-    }
-
-    private handleFileChange(): void {
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-        }
-
-        this.debounceTimer = setTimeout(async () => {
-            if (this.currentAppUid && this.onChangeCallback) {
-                const entries = await this.loadEntries(this.currentAppUid);
-                this.onChangeCallback(entries);
-            }
-            this.debounceTimer = null;
-        }, this.debounceDelay);
     }
 
     private async loadEntries(appUid: string): Promise<AuditEntry[]> {
@@ -111,15 +78,7 @@ export class AuditTrailWatcher {
     }
 
     async dispose(): Promise<void> {
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = null;
-        }
-
-        if (this.watcher) {
-            log.info("Stopping audit trail watcher");
-            await this.watcher.close();
-            this.watcher = undefined;
-        }
+        log.info("Stopping audit trail watcher");
+        await this.fileWatcher.stopWatching();
     }
 }

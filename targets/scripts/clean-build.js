@@ -10,8 +10,8 @@ const path = require("path");
 
 class BuildCleaner {
     constructor() {
-        this.extensionRoot = path.dirname(__dirname);
-        this.projectRoot = path.dirname(path.dirname(this.extensionRoot));
+        this.projectRoot = path.dirname(path.dirname(__dirname));
+        this.extensionRoot = path.join(this.projectRoot, "targets", "vsc-extension");
         this.srcRoot = path.join(this.projectRoot, "src");
     }
 
@@ -24,6 +24,7 @@ class BuildCleaner {
         totalCleaned += await this.cleanExtensionFiles();
         totalCleaned += await this.cleanSrcFiles();
         totalCleaned += await this.cleanProjectFiles();
+        totalCleaned += await this.cleanNodeModules();
 
         console.log(
             `\n✅ Build clean complete! Removed ${totalCleaned} files/directories.`
@@ -37,6 +38,7 @@ class BuildCleaner {
         const extensionPaths = [
             // TypeScript compilation output
             path.join(this.extensionRoot, "out"),
+            path.join(this.extensionRoot, "dist"),
 
             // Bundled Python source
             path.join(this.extensionRoot, "proxy-bundled"),
@@ -102,6 +104,27 @@ class BuildCleaner {
         ];
 
         for (const filePath of projectPaths) {
+            if (await this.removeIfExists(filePath)) {
+                cleaned++;
+            }
+        }
+
+        return cleaned;
+    }
+
+    async cleanNodeModules() {
+        console.log("\n📦 Cleaning node_modules across targets...");
+        let cleaned = 0;
+
+        const targetsDir = path.join(this.projectRoot, "targets");
+        const nodeModulesPaths = [
+            path.join(targetsDir, "node_modules"),
+            path.join(targetsDir, "vsc-extension", "node_modules"),
+            path.join(targetsDir, "claude-code-plugin", "node_modules"),
+            path.join(targetsDir, "common-ts", "node_modules"),
+        ];
+
+        for (const filePath of nodeModulesPaths) {
             if (await this.removeIfExists(filePath)) {
                 cleaned++;
             }

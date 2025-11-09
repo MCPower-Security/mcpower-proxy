@@ -4,8 +4,9 @@ import * as fs from "fs";
 import * as os from "os";
 import { spawn } from "child_process";
 import log from "./log";
-import { fileExists, getCurrentExtensionVersion, mapOS } from "./utils";
+import { getCurrentExtensionVersion } from "./utils";
 import { UvCommand } from "./types";
+import { fileExists, mapOS } from "@mcpower/common-ts/utils";
 
 export class UvRunner {
     private context: vscode.ExtensionContext;

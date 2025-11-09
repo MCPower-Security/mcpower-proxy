@@ -9,7 +9,7 @@ function setupVscodeMock() {
     const Module = require("module");
     const originalRequire = Module.prototype.require;
     const vscodeMock = require("../../../__mocks__/vscode");
-    
+
     Module.prototype.require = function (id) {
         if (id === "vscode") {
             return vscodeMock;

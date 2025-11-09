@@ -1,12 +1,12 @@
-import { dirname, join, normalize, basename } from "path";
+import { basename, dirname, join, normalize } from "path";
 import { promises as fs } from "fs";
 import { homedir } from "os";
 import { spawn } from "child_process";
-import chokidar from "chokidar";
-import { fileExists, mapOS, samePath, updateJsoncFile } from "../utils";
 import log from "../log";
 import { UvRunner } from "../uvRunner";
 import { HooksConfig } from "./types";
+import { fileExists, mapOS, samePath, updateJsoncFile } from "@mcpower/common-ts/utils";
+import { FileWatcher } from "@mcpower/common-ts/watcher";
 
 /**
  * Cursor hooks monitor
@@ -14,14 +14,27 @@ import { HooksConfig } from "./types";
  */
 export class CursorHooksMonitor {
     private readonly hooksFilePath: string;
-
-    private chokidarWatcher: chokidar.FSWatcher | undefined;
+    private fileWatcher: FileWatcher;
     private isMonitoring: boolean = false;
-    private pendingRegistration: NodeJS.Timeout | undefined;
     private extensionPath: string | undefined;
 
     constructor(hooksFilePath?: string) {
         this.hooksFilePath = hooksFilePath || join(homedir(), ".cursor", "hooks.json");
+
+        // Create file watcher with callbacks
+        this.fileWatcher = new FileWatcher({
+            onFileProcess: async (filePath: string) => {
+                // Process hook registration whenever file changes
+                log.info("Cursor Hooks: hooks.json changed, re-registering hooks");
+                await this.registerHooks();
+            },
+            onFileDelete: async (filePath: string) => {
+                // Recreate file when deleted (auto-registration)
+                log.info("Cursor Hooks: hooks.json deleted, recreating with hooks");
+                await this.registerHooks();
+            },
+            logger: log,
+        });
     }
 
     /**
@@ -47,9 +60,11 @@ export class CursorHooksMonitor {
             // Initialize Cursor's "hooks MCP"
             await this.initializeHooks(uvRunner);
 
+            // Register hooks initially
             await this.registerHooks();
 
-            await this.setupFileWatcher();
+            // Start watching the hooks file for changes
+            await this.fileWatcher.startWatching([this.hooksFilePath]);
         } catch (error) {
             log.error("Cursor Hooks: Failed to start hooks monitoring", error);
             await this.stopMonitoring();
@@ -148,21 +163,8 @@ export class CursorHooksMonitor {
 
         log.info("Cursor Hooks: Stopping hooks monitoring");
 
-        // Clear any pending registration
-        if (this.pendingRegistration) {
-            clearTimeout(this.pendingRegistration);
-            this.pendingRegistration = undefined;
-        }
-
-        if (this.chokidarWatcher) {
-            try {
-                this.chokidarWatcher.removeAllListeners();
-                await this.chokidarWatcher.close();
-            } catch (error) {
-                log.error("Cursor Hooks: Error closing hooks watcher", error);
-            }
-            this.chokidarWatcher = undefined;
-        }
+        await this.fileWatcher.stopWatching();
+        this.fileWatcher.cleanupAllState();
 
         this.isMonitoring = false;
         log.info("Cursor Hooks: Hooks monitoring stopped");
@@ -205,6 +207,9 @@ export class CursorHooksMonitor {
                 return config;
             });
 
+            // Record write to prevent processing loop (if watcher is still active)
+            this.fileWatcher.recordWrite(this.hooksFilePath);
+
             log.info("Cursor Hooks: Unregistered hooks");
         } catch (error) {
             log.error("Cursor Hooks: Failed to unregister hook", error);
@@ -239,69 +244,6 @@ export class CursorHooksMonitor {
         return scriptPath;
     }
 
-    /**
-     * Setup file watcher for Cursor's hooks.json
-     * Watch the parent directory to catch file creation after deletion
-     */
-    private async setupFileWatcher(): Promise<void> {
-        try {
-            const hooksDir = dirname(this.hooksFilePath);
-            log.info(`Cursor Hooks: Setting up watcher for ${hooksDir}`);
-
-            this.chokidarWatcher = chokidar.watch(hooksDir, {
-                persistent: true,
-                ignoreInitial: true,
-                usePolling: true,
-                interval: 2000,
-                awaitWriteFinish: { stabilityThreshold: 800, pollInterval: 200 },
-                ignorePermissionErrors: true,
-                followSymlinks: false,
-            });
-
-            const handleHooksChange = (changedPath: string) => {
-                // Filter events to only handle hooks.json
-                if (samePath(changedPath, this.hooksFilePath)) {
-                    log.info("Cursor Hooks: hooks.json changed");
-
-                    // Schedule hook registration with debouncing
-                    // Multiple rapid calls will be coalesced into a single registration
-
-                    // Clear any pending registration
-                    clearTimeout(this.pendingRegistration);
-
-                    // Schedule new registration with debouncing
-                    this.pendingRegistration = setTimeout(
-                        () =>
-                            this.registerHooks()
-                                .catch(error => {
-                                    log.error(
-                                        `Cursor Hooks: Failed to register hooks:`,
-                                        error
-                                    );
-                                })
-                                .finally(() => {
-                                    this.pendingRegistration = undefined;
-                                }),
-                        500
-                    );
-                }
-            };
-
-            this.chokidarWatcher.on("change", handleHooksChange);
-            this.chokidarWatcher.on("add", handleHooksChange);
-            this.chokidarWatcher.on("unlink", handleHooksChange);
-
-            this.chokidarWatcher.on("error", (error: Error) => {
-                log.error("Cursor Hooks: Hooks watcher error", error);
-            });
-
-            this.chokidarWatcher.on("ready", () => {
-                log.debug("Cursor Hooks: Hooks watcher ready");
-            });
-        } catch (error) {
-            log.error("Cursor Hooks: Failed to setup hooks watcher", error);
-        }
-    }
 
     private getScriptsMap = async (): Promise<
         Record<string, { path: string; name: string }>
@@ -381,6 +323,9 @@ export class CursorHooksMonitor {
 
                 return config;
             });
+
+            // Record write to prevent processing loop
+            this.fileWatcher.recordWrite(this.hooksFilePath);
 
             log.info(
                 `Cursor Hooks: Registered ${Object.keys(scriptsMap).join(", ")} in ${this.hooksFilePath}`
