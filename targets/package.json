@@ -2,9 +2,12 @@
   "name": "mcpower-targets",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "common-ts",
+    "vsc-extension"
+  ],
   "scripts": {
-    "clean:build": "node scripts/clean-build.js",
-    "prepare": "cd common-ts && npm i && cd ../vsc-extension && npm i"
+    "clean:build": "node scripts/clean-build.js"
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
@@ -13,7 +16,7 @@
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
     "copy-webpack-plugin": "^13.0.1",
-    "eslint": "^9.39.1",
+    "eslint": "^8.57.0",
     "jest": "^30.2.0",
     "node-loader": "^2.1.0",
     "prettier": "^3.6.2",
