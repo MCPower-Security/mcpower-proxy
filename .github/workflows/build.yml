@@ -12,7 +12,7 @@ on:
     branches: [ main ]
     paths:
       - 'src/**'
-      - 'targets/vsc-extension/**'
+      - 'targets/**'
       - '.github/workflows/**'
 
 jobs:
@@ -33,20 +33,20 @@ jobs:
       - name: Run setup script (macOS)
         if: runner.os == 'macOS'
         run: |
-          chmod +x targets/vsc-extension/scripts/setup-uvx-macos.sh
-          targets/vsc-extension/scripts/setup-uvx-macos.sh
+          chmod +x targets/scripts/setup-uvx-macos.sh
+          targets/scripts/setup-uvx-macos.sh
 
       - name: Run setup script (Linux)
         if: runner.os == 'Linux'
         run: |
-          chmod +x targets/vsc-extension/scripts/setup-uvx-linux.sh
-          targets/vsc-extension/scripts/setup-uvx-linux.sh
+          chmod +x targets/scripts/setup-uvx-linux.sh
+          targets/scripts/setup-uvx-linux.sh
 
       - name: Run setup script (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          targets/vsc-extension/scripts/setup-uvx-windows.ps1
+          targets/scripts/setup-uvx-windows.ps1
 
       - name: Sync Python dependencies
         run: uv sync --frozen
@@ -121,9 +121,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: targets/vsc-extension/package-lock.json
+          cache-dependency-path: |
+            targets/package-lock.json
+            targets/common-ts/package-lock.json
+            targets/vsc-extension/package-lock.json
 
-      - name: Install Node.js dependencies (for compile/package)
+      - name: Install targets dependencies
+        working-directory: targets
+        run: npm ci
+
+      - name: Install vsc-extension dependencies
         working-directory: targets/vsc-extension
         run: npm ci
 
@@ -136,11 +143,9 @@ jobs:
       - name: Compile TypeScript and package extension
         working-directory: targets/vsc-extension
         run: |
-          echo "Running TypeScript compilation..."
-          npm run compile:vsc-extension
-          echo "TypeScript compilation successful, starting packaging..."
-          npm run package:vsc-extension
-          echo "Packaging completed successfully"
+          echo "Running VSC Extension building..."
+          npm run build:vsc-extension
+          echo "Building and packaging completed successfully"
 
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
