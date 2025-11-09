@@ -48,6 +48,12 @@ packages = [
 ]
 py-modules = ["main"]
 
+[dependency-groups]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-anyio>=0.0.0",
+]
+
 [tool.uv]
 
 [tool.pytest.ini_options]
