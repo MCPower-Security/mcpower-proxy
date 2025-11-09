@@ -126,12 +126,8 @@ jobs:
             targets/common-ts/package-lock.json
             targets/vsc-extension/package-lock.json
 
-      - name: Install targets dependencies
+      - name: Install dependencies
         working-directory: targets
-        run: npm ci
-
-      - name: Install vsc-extension dependencies
-        working-directory: targets/vsc-extension
         run: npm ci
 
       - name: Download version files
