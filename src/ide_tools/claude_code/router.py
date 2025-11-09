@@ -94,7 +94,8 @@ def route_claude_code_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, st
                     "content": tool_input.get("content")
                 }
                 asyncio.run(handle_read_file(
-                    logger, audit_logger, json.dumps(unwrapped), prompt_id, event_id, cwd, CLAUDE_CODE_CONFIG, f"PreToolUse({tool_name})"))
+                    logger, audit_logger, json.dumps(unwrapped), prompt_id, event_id, cwd, CLAUDE_CODE_CONFIG,
+                    f"PreToolUse({tool_name})"))
 
             elif tool_name == "Bash":
                 # Handler expects {command, cwd}
