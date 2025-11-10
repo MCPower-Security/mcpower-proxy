@@ -433,7 +433,8 @@ class SecurityMiddleware(Middleware):
             for tool in tools:
                 tool_ref = ToolRef(
                     name=getattr(tool, 'name', 'unknown'),
-                    description=getattr(tool, 'description', ''),
+                    description=f"Description:\n{getattr(tool, 'description', '')}\n\n"
+                                f"inputSchema:\n{safe_json_dumps(getattr(tool, 'parameters', {}))}",
                     version=getattr(tool, 'version', None)
                 )
                 tool_refs.append(tool_ref)
