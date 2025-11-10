@@ -103,6 +103,18 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["asana"],
     ),
     (
+        "atlassian-api-token",
+        re.compile(r'[\w.-]{0,50}?(?:ATLASSIAN|[Aa]tlassian|CONFLUENCE|[Cc]onfluence|JIRA|[Jj]ira)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{20}[a-f0-9]{4})(?:[\x60\'"\s;]|\\[nr]|$)|\b(ATATT3[AZaz09_\=-]{186})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["atlassian", "confluence", "jira", "atatt3"],
+    ),
+    (
+        "authress-service-client-access-key",
+        re.compile(r'\b((?:sc|ext|scauth|authress)_[a-z0-9]{5,30}\.[a-z0-9]{4,6}\.acc[_-][a-z0-9-]{10,32}\.[az09+/_=-]{30,120})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["sc_", "ext_", "scauth_", "authress_"],
+    ),
+    (
         "aws-access-token",
         re.compile(r'\b((?:A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z2-7]{16})\b', 0),
         1,
@@ -157,6 +169,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["bittrex"],
     ),
     (
+        "cisco-meraki-api-key",
+        re.compile(r'[\w.-]{0,50}?[\w.-]{0,50}?(?:[Mm]eraki|MERAKI(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([0-9a-f]{40})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["meraki"],
+    ),
+    (
         "clickhouse-cloud-api-secret-key",
         re.compile(r'\b(4b1d[A-Za-z0-9]{38})\b', 0),
         1,
@@ -191,6 +209,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'[\w.-]{0,50}?(?:codecov)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{32})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
         ["codecov"],
+    ),
+    (
+        "cohere-api-token",
+        re.compile(r'[\w.-]{0,50}?[\w.-]{0,50}?(?:cohere|CO_API_KEY(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-zA-Z0-9]{40})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["cohere", "co_api_key"],
     ),
     (
         "coinbase-access-token",
@@ -337,6 +361,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["eztk"],
     ),
     (
+        "etsy-access-token",
+        re.compile(r'[\w.-]{0,50}?(?:ETSY|[Ee]tsy)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{24})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["etsy"],
+    ),
+    (
         "facebook-access-token",
         re.compile(r'\b(\d{15,16}(\||%)[0-9a-z\-_]{27,40})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
@@ -431,6 +461,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'\b(AIza[\w-]{35})(?:[\x60\'"\s;]|\\[nr]|$)', 0),
         1,
         ["aiza", "aizasyabcdefghijklmnopqrstuvwxyz1234567", "aizasyanla7nfelquw1tjfpx_eqcxox-oo6yyis", "aizasyckehvjf3pdurdt6d1ykomitrueke8agem", "aizasydmascliylx7f0npdeji1qmycghiaodrlu", "aizasyd3asb-2pezvqmkml6m9n6nhzrr_znhrh0", "aizaydnsxibfmlxbie6mczdlqaqityefhixbx4a", "aizasyados2zb6ncsk1pcdz4-p6gbdi_uupwx7c", "aizasyaswm6hmtmdywpgmnjrbjxcq9ckctwmld4", "aizasyanuvh9h9bsuccjsu2pcmekopjjaxedqgy", "aizasya5_ivawfq8abutznudcwerljv_a_p4wtm", "aizasya4urcgxgwqftfai3no3t7lt1sjmdnp5sq", "aizasydsb51jiicb6ojpwwmicsekrhhroq1cs7g", "aizasybf2rraim4a0mo64eshqfqfd2afnzavvuu", "aizasybce-ooibhjyr83gm4r2mfcu4mjmprnxsw", "aizasyb8qgxt4ec15vitgn44duc5ucxaoi4fmqe", "aizasya8vmapnrhnfe0bapf4hoz11srvl_n0nvy"],
+    ),
+    (
+        "generic-api-key",
+        re.compile(r'[\w.-]{0,50}?(?:access|auth|[Aa]pi|API|credential|creds|key|passw(?:or)?d|secret|token)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([\w.=-]{10,150}|[a-z0-9][a-z0-9+/]{11,}={0,3})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["access", "api", "auth", "key", "credential", "creds", "passwd", "password", "secret", "token"],
     ),
     (
         "github-app-token",
@@ -589,6 +625,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["pat.", "sat."],
     ),
     (
+        "hashicorp-tf-api-token",
+        re.compile(r'[a-z0-9]{14}\.atlasv1\.[az09\_=-]{60,70}', re.IGNORECASE),
+        1,
+        ["atlasv1"],
+    ),
+    (
         "hashicorp-tf-password",
         re.compile(r'[\w.-]{0,50}?(?:administrator_login_password|password)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}("[az09=_\-]{8,20}")(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
@@ -611,6 +653,18 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'[\w.-]{0,50}?(?:hubspot)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
         ["hubspot"],
+    ),
+    (
+        "huggingface-access-token",
+        re.compile(r'\b(hf_[a-z]{34})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["hf_"],
+    ),
+    (
+        "huggingface-organization-api-token",
+        re.compile(r'\b(api_org_[a-z]{34})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["api_org_"],
     ),
     (
         "infracost-api-token",
@@ -650,7 +704,7 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
     ),
     (
         "jwt-base64",
-        re.compile(r'\bZXlK(?:(aGJHY2lPaU)|(aGNIVWlPaU)|(aGNIWWlPaU)|(aGRXUWlPaU)|(aU5qUWlP)|(amNtbDBJanBi)|(amRIa2lPaU)|(bGNHc2lPbn)|(bGJtTWlPaU)|(cWEzVWlPaU)|(cWQyc2lPb)|(cGMzTWlPaU)|(cGRpSTZJ)|(cmFXUWlP)|(clpYbGZiM0J6SWpwY)|(cmRIa2lPaUp)|(dWIyNWpaU0k2)|(d01tTWlP)|(d01uTWlPaU)|(d2NIUWlPaU)|(emRXSWlPaU)|(emRuUWlP)|(MFlXY2lPaU)|(MGVYQWlPaUp)|(MWNtd2l)|(MWMyVWlPaUp)|(MlpYSWlPaU)|(MlpYSnphVzl1SWpv)|(NElqb2)|(NE5XTWlP)|(NE5YUWlPaU)|(NE5YUWpVekkxTmlJNkl)|(NE5YVWlPaU)|(NmFYQWlPaU))[a-zA-Z0-9\/\\_+\-\r\n]{40,}={0,2}', 0),
+        re.compile(r'\bZXlK(?:(?<alg>aGJHY2lPaU)|(?<apu>aGNIVWlPaU)|(?<apv>aGNIWWlPaU)|(?<aud>aGRXUWlPaU)|(?<b64>aU5qUWlP)|(?<crit>amNtbDBJanBi)|(?<cty>amRIa2lPaU)|(?<epk>bGNHc2lPbn)|(?<enc>bGJtTWlPaU)|(?<jku>cWEzVWlPaU)|(?<jwk>cWQyc2lPb)|(?<iss>cGMzTWlPaU)|(?<iv>cGRpSTZJ)|(?<kid>cmFXUWlP)|(?<key_ops>clpYbGZiM0J6SWpwY)|(?<kty>cmRIa2lPaUp)|(?<nonce>dWIyNWpaU0k2)|(?<p2c>d01tTWlP)|(?<p2s>d01uTWlPaU)|(?<ppt>d2NIUWlPaU)|(?<sub>emRXSWlPaU)|(?<svt>emRuUWlP)|(?<tag>MFlXY2lPaU)|(?<typ>MGVYQWlPaUp)|(?<url>MWNtd2l)|(?<use>MWMyVWlPaUp)|(?<ver>MlpYSWlPaU)|(?<version>MlpYSnphVzl1SWpv)|(?<x>NElqb2)|(?<x5c>NE5XTWlP)|(?<x5t>NE5YUWlPaU)|(?<x5ts256>NE5YUWpVekkxTmlJNkl)|(?<x5u>NE5YVWlPaU)|(?<zip>NmFYQWlPaU))[a-zA-Z0-9\/\\_+\-\r\n]{40,}={0,2}', 0),
         1,
         ["zxlk"],
     ),
@@ -659,6 +713,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'[\w.-]{0,50}?(?:kraken)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([az09\/=_\+\-]{80,90})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
         ["kraken"],
+    ),
+    (
+        "kubernetes-secret-yaml",
+        re.compile(r'(?:\bkind:[ \t]*["\']?\bsecret\b["\']?.{0,200}?\bdata:.{0,100}?\s+([\w.-]+:(?:[ \t]*(?:\||>[-+]?)\s+)?[ \t]*(?:["\']?[a-z0-9+/]{10,}={0,3}["\']?|\{\{[ \t\w"|$:=,.-]+}}|""|\'\'))|\bdata:.{0,100}?\s+([\w.-]+:(?:[ \t]*(?:\||>[-+]?)\s+)?[ \t]*(?:["\']?[a-z0-9+/]{10,}={0,3}["\']?|\{\{[ \t\w"|$:=,.-]+}}|""|\'\')).{0,200}?\bkind:[ \t]*["\']?\bsecret\b["\']?)', re.IGNORECASE),
+        1,
+        ["secret", "[\\w.-]+:(?:[ \\t]*(?:\\||>[-+]?)\\s+)?[ \\t]*(?:\\{\\{[ \\t\\w"],
     ),
     (
         "kucoin-access-token",
@@ -835,6 +895,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["api-"],
     ),
     (
+        "okta-access-token",
+        re.compile(r'[\w.-]{0,50}?[\w.-]{0,50}?(?:[Oo]kta|OKTA(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(00[\w=\-]{40})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["okta"],
+    ),
+    (
         "openai-api-key",
         re.compile(r'\b(sk-(?:proj|svcacct|admin)-(?:[A-Za-z0-9_-]{74}|[A-Za-z0-9_-]{58})T3BlbkFJ(?:[A-Za-z0-9_-]{74}|[A-Za-z0-9_-]{58})\b|sk-[a-zA-Z0-9]{20}T3BlbkFJ[a-zA-Z0-9]{20})(?:[\x60\'"\s;]|\\[nr]|$)', 0),
         1,
@@ -905,6 +971,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'-----BEGIN[ A-Z0-9_-]{0,100}PRIVATE KEY(?: BLOCK)?-----[\s\S-]{64,}?KEY(?: BLOCK)?-----', re.IGNORECASE),
         1,
         ["-----begin"],
+    ),
+    (
+        "privateai-api-token",
+        re.compile(r'[\w.-]{0,50}?[\w.-]{0,50}?(?:private[_-]?ai(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{32})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["privateai", "private_ai", "private-ai"],
     ),
     (
         "pulumi-api-token",
@@ -1135,6 +1207,24 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         ["sk_test", "sk_live", "sk_prod", "rk_test", "rk_live", "rk_prod"],
     ),
     (
+        "sumologic-access-id",
+        re.compile(r'[\w.-]{0,50}?[\w.-]{0,50}?(?:[Ss]umo|SUMO(?:[ \t\w.-]{0,20})[\s\'"]{0,3})(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}(su[a-zA-Z0-9]{12})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["sumo"],
+    ),
+    (
+        "sumologic-access-token",
+        re.compile(r'[\w.-]{0,50}?(?:[Ss]umo|SUMO)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{64})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["sumo"],
+    ),
+    (
+        "telegram-bot-api-token",
+        re.compile(r'[\w.-]{0,50}?(?:telegr)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([0-9]{5,16}:A[a-z0-9_\-]{34})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["telegr"],
+    ),
+    (
         "travisci-access-token",
         re.compile(r'[\w.-]{0,50}?(?:travis)(?:[ \t\w.-]{0,20})[\s\'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60\'"\s=]{0,5}([a-z0-9]{22})(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
         1,
@@ -1193,6 +1283,12 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
         re.compile(r'\b(hvb\.[\w-]{138,300})(?:[\x60\'"\s;]|\\[nr]|$)', 0),
         1,
         ["hvb."],
+    ),
+    (
+        "vault-service-token",
+        re.compile(r'\b((?:hvs\.[\w-]{90,120}|s\.[a-z0-9]{24}))(?:[\x60\'"\s;]|\\[nr]|$)', re.IGNORECASE),
+        1,
+        ["hvs.", "s."],
     ),
     (
         "yandex-access-token",

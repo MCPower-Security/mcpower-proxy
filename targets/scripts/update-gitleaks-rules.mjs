@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { writeFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import {writeFileSync} from "fs";
+import {dirname, join} from "path";
+import {fileURLToPath} from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..", "..");
@@ -120,17 +120,106 @@ function parseTomlSimple(tomlContent) {
     return { rules };
 }
 
+/**
+ * Converts PCRE regex patterns to JavaScript-compatible regex.
+ *
+ * Note: This is a pragmatic converter for Gitleaks patterns, not a full PCRE parser.
+ * Known limitations:
+ * - Nested inline modifiers may not work correctly
+ * - (?s:...) removes the wrapper but doesn't convert . to [\s\S]
+ * - (?-i:...) case-sensitive blocks are removed but can't be truly emulated in JS
+ * - Atomic groups converted to non-capturing (different backtracking behavior)
+ * - Possessive quantifiers converted to greedy (different backtracking behavior)
+ *
+ * For complex patterns, a proper PCRE parser would be needed.
+ */
+function convertPCREtoJavaScript(pattern) {
+    if (typeof pattern !== 'string') {
+        throw new TypeError('Pattern must be a string');
+    }
+
+    // Use a private Unicode character as escape marker (unlikely to appear in patterns)
+    const ESCAPE_MARKER = '\uFFF0';
+
+    // Temporarily replace escaped characters to avoid confusion during parsing
+    let processed = pattern.replace(/\\(.)/g, ESCAPE_MARKER + '$1');
+    let globalCaseInsensitive = false;
+
+    // Process in order from most specific to most general
+
+    // 1. Extract global case-insensitive flag at start
+    if (processed.startsWith("(?i)")) {
+        globalCaseInsensitive = true;
+        processed = processed.substring(4);
+    }
+
+    // 2. Handle inline case-insensitive groups: (?i:text) -> text (use global flag)
+    // Note: This doesn't handle nested parens correctly, but works for Gitleaks patterns
+    processed = processed.replace(/\(\?i:([^)]+)\)/g, (match, content) => {
+        globalCaseInsensitive = true;
+        return content;
+    });
+
+    // 3. Handle case-sensitive toggle: (?-i:text) -> text
+    // Note: Can't truly emulate this in JS - just removes wrapper
+    processed = processed.replace(/\(\?-i:([^)]+)\)/g, "$1");
+
+    // 4. Convert standalone (?i) in middle of pattern
+    if (processed.includes("(?i)")) {
+        globalCaseInsensitive = true;
+        processed = processed.replace(/\(\?i\)/g, "");
+    }
+
+    // 5. Handle single-line mode (?s:...)
+    // For now, just remove wrapper (proper conversion would need . -> [\s\S])
+    processed = processed.replace(/\(\?s:([^)]+)\)/g, "$1");
+
+    // 6. Remove other inline flags (combined replacement)
+    processed = processed.replace(/\(\?[imsux-]+(?::([^)]+))?\)/g, "$1");
+
+    // 7. Convert PCRE-specific constructs to JS equivalents
+    // PCRE named groups: (?P<name>...) -> (?<name>...) (JS syntax)
+    processed = processed.replace(/\(\?P</g, "(?<");
+
+    // Atomic groups: (?>) -> non-capturing group (different semantics, but close)
+    processed = processed.replace(/\(\?>/g, "(?:");
+
+    // Possessive quantifiers: *+, ++, ?+ -> *, +, ? (different backtracking, but functional)
+    // Avoid matching C++ by only replacing after quantifier characters
+    processed = processed.replace(/(^|[^\\])([*+?])\+/g, "$1$2");
+
+    // Common PCRE character classes to JS equivalents
+    processed = processed.replace(/\\h/g, '[ \\t]');      // Horizontal whitespace
+    processed = processed.replace(/\\H/g, '[^ \\t]');     // Not horizontal whitespace
+    processed = processed.replace(/\\v/g, '[\\r\\n\\f]'); // Vertical whitespace
+    processed = processed.replace(/\\V/g, '[^\\r\\n\\f]');// Not vertical whitespace
+
+    // Restore escaped characters
+    processed = processed.replace(new RegExp(ESCAPE_MARKER + '(.)', 'gu'), '\\$1');
+
+    // Validate result is valid JavaScript regex
+    try {
+        new RegExp(processed, globalCaseInsensitive ? 'i' : '');
+    } catch (e) {
+        throw new Error(`Conversion resulted in invalid regex: ${e.message}\nPattern: ${pattern}`);
+    }
+
+    return {pattern: processed, caseInsensitive: globalCaseInsensitive};
+}
+
 function processRegexForPython(pattern, rule) {
-    let processedPattern = pattern;
+    // First convert PCRE syntax to JavaScript-compatible syntax
+    const { pattern: jsPattern, caseInsensitive } = convertPCREtoJavaScript(pattern);
+    let processedPattern = jsPattern;
     let flags = [];
 
     // Handle case insensitive flag
-    if (rule["regex_case_insensitive"] || processedPattern.includes("(?i)")) {
+    if (rule["regex_case_insensitive"] || caseInsensitive || processedPattern.includes("(?i)")) {
         flags.push("re.IGNORECASE");
         processedPattern = processedPattern.replace(/\(\?i\)/g, "");
     }
 
-    // Remove other problematic inline flags
+    // Remove other problematic inline flags (should be already handled, but just in case)
     processedPattern = processedPattern.replace(/\(\?-?[imsux]+\)/g, "");
     processedPattern = processedPattern.replace(/\(\?P<[^>]+>/g, "(");
 
