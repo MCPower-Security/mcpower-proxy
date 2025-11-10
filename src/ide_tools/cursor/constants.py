@@ -35,24 +35,127 @@ CURSOR_HOOKS = {
         "name": "beforeShellExecution",
         "description": "Triggered before a shell command is executed by the agent. "
                        "Allows inspection and potential blocking of shell commands.",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "parameters": """
+            {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Full terminal command"
+                },
+                "cwd": {
+                  "type": "string",
+                  "description": "Current working directory"
+                }
+              },
+              "required": ["command", "cwd"],
+              "additionalProperties": false
+            }
+        """
     },
     "afterShellExecution": {
         "name": "afterShellExecution",
         "description": "Triggered after a shell command completes execution. "
                        "Provides access to command output and exit status.",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "parameters": """
+            {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Full terminal command"
+                },
+                "output": {
+                  "type": "string",
+                  "description": "Full terminal output"
+                }
+              },
+              "required": ["command", "output"],
+              "additionalProperties": false
+            }
+        """
     },
     "beforeReadFile": {
         "name": "beforeReadFile",
         "description": "Triggered before the agent reads a file. "
                        "Allows inspection and potential blocking of file read operations.",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "parameters": """
+            {
+              "type": "object",
+              "properties": {
+                "file_path": {
+                  "type": "string",
+                  "description": "Absolute path to the file being read"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "File contents"
+                },
+                "attachments": {
+                  "type": "array",
+                  "description": "Additional related attachments",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "description": "Attachment type"
+                      },
+                      "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the attachment"
+                      }
+                    },
+                    "required": ["type", "file_path"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["file_path", "content"],
+              "additionalProperties": false
+            }
+        """
     },
     "beforeSubmitPrompt": {
         "name": "beforeSubmitPrompt",
         "description": "Triggered before a prompt is submitted to the AI model. "
                        "Allows inspection and modification of prompts.",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "parameters": """
+            {
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "User prompt text"
+                },
+                "attachments": {
+                  "type": "array",
+                  "description": "Attachments associated with the prompt",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["file", "rule"],
+                        "description": "Attachment type"
+                      },
+                      "filePath": {
+                        "type": "string",
+                        "description": "Absolute path to the attached file or rule"
+                      }
+                    },
+                    "required": ["type", "filePath"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["prompt"],
+              "additionalProperties": false
+            }
+        """
     }
 }
