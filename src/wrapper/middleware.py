@@ -28,6 +28,7 @@ from modules.utils.copy import safe_copy
 from modules.utils.ids import generate_event_id, get_session_id, read_app_uid, get_project_mcpower_dir
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
+from modules.utils.platform import get_client_os
 from modules.utils.string import truncate_at
 from wrapper.schema import merge_input_schema_with_existing
 
@@ -655,7 +656,9 @@ class SecurityMiddleware(Middleware):
                     "current_files": wrapper_args.get('__wrapper_currentFiles')
                 },
                 client=self.wrapper_server_name,
-                client_version=self.wrapper_server_version
+                client_version=self.wrapper_server_version,
+                client_os=get_client_os(),
+                app_id=self.app_id,
             )
         }
 
