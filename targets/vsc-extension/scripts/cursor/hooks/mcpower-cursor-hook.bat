@@ -1,3 +1,3 @@
 @echo off
-uvx mcpower-proxy==0.0.77 --ide-tool --ide cursor
+uvx mcpower-proxy==0.0.78 --ide-tool --ide cursor
 
