@@ -37,7 +37,6 @@ module.exports = {
         Notification: 15,
     },
     Uri: {
-        file: (path) => ({ fsPath: path }),
+        file: path => ({ fsPath: path }),
     },
 };
-

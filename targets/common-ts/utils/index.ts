@@ -1,6 +1,6 @@
 import * as JSONC from "jsonc-parser";
 import fs from "fs";
-import path, {normalize, resolve} from "path";
+import path, { normalize, resolve } from "path";
 import os from "os";
 
 /**
@@ -298,7 +298,7 @@ export async function updateJsoncFile(
         if (originalContent) {
             // Use jsonc-parser to modify while preserving comments
             const edits = JSONC.modify(originalContent, [], updatedConfig, {
-                formattingOptions: {tabSize: 2, insertSpaces: true},
+                formattingOptions: { tabSize: 2, insertSpaces: true },
             });
             newContent = JSONC.applyEdits(originalContent, edits);
         } else {

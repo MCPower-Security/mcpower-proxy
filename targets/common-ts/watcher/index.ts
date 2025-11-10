@@ -216,7 +216,6 @@ export class FileWatcher {
                 depth: 0,
             });
 
-
             // Handle file change events with debouncing
             // Filter to only process files we're watching
             this.chokidarWatcher.on("change", (filePath: string) => {

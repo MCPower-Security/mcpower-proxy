@@ -5,13 +5,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..", "..", "..");
-const outputPath = join(
-    projectRoot,
-    "src",
-    "modules",
-    "redaction",
-    "gitleaks_rules.py"
-);
+const outputPath = join(projectRoot, "src", "modules", "redaction", "gitleaks_rules.py");
 
 // Download and process Gitleaks rules
 async function downloadGitleaksRules() {

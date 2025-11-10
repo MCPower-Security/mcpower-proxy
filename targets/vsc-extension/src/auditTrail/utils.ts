@@ -13,7 +13,10 @@ export function generateEventTitle(eventType: string, data: any): string {
     // Customize title for mcpower_start
     if (eventType === "mcpower_start") {
         // Server name is mandatory in mcpower_start data
-        const serverName = data.wrapped_server_name;
+        let serverName = data.wrapped_server_name;
+        if (serverName === "mcpower_cursor") {
+            serverName = "Cursor Hooks";
+        }
         return `MCPower Started for ${serverName}`;
     }
 
@@ -130,15 +133,29 @@ function extractServerName(entry: AuditEntry): string | undefined {
 
 /**
  * Extract user prompt from entries with the same prompt_id
- * Returns the user_prompt field from the first entry that has it
+ * Returns the user_prompt field from the first entry that has it,
+ * or extracts prompt from prompt_submission event params if available
  */
 function extractUserPrompt(entries: AuditEntry[]): string {
+    // First, check for explicit user_prompt field
     for (const entry of entries) {
         if (entry.user_prompt) {
             return entry.user_prompt;
         }
     }
-    return "N/A";
+
+    // Fallback: check if first entry is prompt_submission with prompt in params
+    if (entries.length > 0) {
+        const firstEntry = entries[0];
+        if (firstEntry.event_type === "prompt_submission") {
+            const prompt = firstEntry.data?.params?.prompt;
+            if (prompt && typeof prompt === "string" && prompt.trim()) {
+                return prompt;
+            }
+        }
+    }
+
+    return "Prompt N/A";
 }
 
 /**
@@ -207,7 +224,11 @@ export function groupByEventId(entries: AuditEntry[]): import("./types").EventId
 
         const firstEntry = groupEntries[0];
         const toolName = extractToolName(firstEntry);
-        const serverName = extractServerName(firstEntry);
+
+        let serverName = extractServerName(firstEntry);
+        if (serverName === "mcpower_cursor") {
+            serverName = "Cursor Hooks";
+        }
 
         // Determine title based on event type
         let title = "";
@@ -216,14 +237,19 @@ export function groupByEventId(entries: AuditEntry[]): import("./types").EventId
         } else if (firstEntry.event_type === "init_tools") {
             // Server name is mandatory in init_tools payload
             const initServerName = firstEntry.data.payload.server.name;
-            title = `Tools Initialization called on ${initServerName}`;
+            switch (initServerName) {
+                case "mcpower_cursor":
+                    title = "Cursor Hooks Initialization";
+                    break;
+                default:
+                    title = `Tools Initialization called on ${initServerName}`;
+                    break;
+            }
         } else if (firstEntry.event_type === "record_user_confirmation") {
             title = "User Confirmation";
         } else {
             // Use event title from mapping
-            const eventTitle =
-                EVENT_TITLES[firstEntry.event_type] || firstEntry.event_type;
-            title = eventTitle;
+            title = EVENT_TITLES[firstEntry.event_type] || firstEntry.event_type;
         }
 
         eventGroups.push({
