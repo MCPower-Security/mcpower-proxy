@@ -548,7 +548,7 @@ wheels = [
 
 [[package]]
 name = "mcpower-proxy"
-version = "0.0.74"
+version = "0.0.75"
 source = { editable = "." }
 dependencies = [
     { name = "bashlex" },
@@ -576,7 +576,7 @@ requires-dist = [
     { name = "jsonc-parser", specifier = ">=1.1.5" },
     { name = "jsonpath-ng", specifier = ">=1.7.0" },
     { name = "mcp", specifier = ">=1.0.0" },
-    { name = "mcpower-shared", specifier = "==0.1.4" },
+    { name = "mcpower-shared", specifier = "==0.1.5" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "watchdog", specifier = ">=3.0.0" },
 ]
@@ -589,11 +589,11 @@ dev = [
 
 [[package]]
 name = "mcpower-shared"
-version = "0.1.4"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/27/b4/0bcb1f326bbb2a3562a9913a1db50e39b656b0739b6639db71d38dde4bfc/mcpower_shared-0.1.4.tar.gz", hash = "sha256:d9185a6d335acdbe910206fe3c2c3f21bb6baf4d2e8a5a247efda92bc7f63581", size = 8594, upload-time = "2025-11-07T12:38:58.31Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/71/18b25ed945ce77de08f63fa38210e2b7d5b57831a306a2e8bcbe0fe98de5/mcpower_shared-0.1.5.tar.gz", hash = "sha256:289919c2c072675edf922254a8826b79ee70f61a87a87014457b5250d28d29ae", size = 8606, upload-time = "2025-11-10T12:21:43.605Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/65/30190860ae18cf174bf500491c25e6075da6c08ad4a36f2bb52b9e02c505/mcpower_shared-0.1.4-py3-none-any.whl", hash = "sha256:3b0bcb831a37259bd1fd0ec1d38784089e3ea325e00428648a8c074cdcb8f837", size = 9299, upload-time = "2025-11-07T12:38:57.002Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/92/e2585a54d30dedeb2ee0d60f55ac91be5e1161dd63509fad03a28790134d/mcpower_shared-0.1.5-py3-none-any.whl", hash = "sha256:5ab3597c8cccc3e9ba5e2f63dd644237791a411d94c2131a1abcce6386a595d1", size = 9322, upload-time = "2025-11-10T12:21:42.371Z" },
 ]
 
 [[package]]
