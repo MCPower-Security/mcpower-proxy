@@ -9,6 +9,8 @@ tsconfig.json
 __mocks__/**
 jest.config.js
 webpack.config.js
+scripts/clean-build.js
+scripts/update-gitleaks-rules.mjs
 
 # Dependencies (bundled by webpack)
 node_modules/**
