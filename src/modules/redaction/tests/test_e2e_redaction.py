@@ -674,7 +674,7 @@ class TestE2ERedaction:
         payload = {
             "aws_access": "AKIA234567ABCDEFGHIJ",
             "aws_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-            "azure_secret": "abc1dQ~1234567890abcdefghijklmnopqrstuvwxyz12345",
+            "azure_secret": "abc1Q~1234567890abcdefghijklmnopqrstuvwxyz12345",
             "gcp_key": "AIzaSyDOCAbC123dEf456GhI789jKl012-MnO",
             "in_env": "AWS_ACCESS_KEY_ID=AKIA234567ABCDEFGHIJ"
         }

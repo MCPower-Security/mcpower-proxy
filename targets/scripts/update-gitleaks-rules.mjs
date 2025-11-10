@@ -177,9 +177,9 @@ function convertPCREtoJavaScript(pattern) {
     // 6. Remove other inline flags (combined replacement)
     processed = processed.replace(/\(\?[imsux-]+(?::([^)]+))?\)/g, "$1");
 
-    // 7. Convert PCRE-specific constructs to JS equivalents
-    // PCRE named groups: (?P<name>...) -> (?<name>...) (JS syntax)
-    processed = processed.replace(/\(\?P</g, "(?<");
+    // 7. Convert PCRE-specific constructs to Python/JS compatible equivalents
+    // Note: Python uses (?P<name>...) for named groups, which is PCRE syntax - keep it!
+    // We're generating Python code, so don't convert named groups
 
     // Atomic groups: (?>) -> non-capturing group (different semantics, but close)
     processed = processed.replace(/\(\?>/g, "(?:");
@@ -197,9 +197,11 @@ function convertPCREtoJavaScript(pattern) {
     // Restore escaped characters
     processed = processed.replace(new RegExp(ESCAPE_MARKER + '(.)', 'gu'), '\\$1');
 
-    // Validate result is valid JavaScript regex
+    // Validate result - but Python named groups (?P<name>...) won't work in JS RegExp
+    // So temporarily convert them to JS syntax for validation only
+    const validationPattern = processed.replace(/\(\?P</g, '(?<');
     try {
-        new RegExp(processed, globalCaseInsensitive ? 'i' : '');
+        new RegExp(validationPattern, globalCaseInsensitive ? 'i' : '');
     } catch (e) {
         throw new Error(`Conversion resulted in invalid regex: ${e.message}\nPattern: ${pattern}`);
     }
