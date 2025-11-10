@@ -4,7 +4,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, "..", "..", "..");
+const projectRoot = join(__dirname, "..", "..");
 const outputPath = join(projectRoot, "src", "modules", "redaction", "gitleaks_rules.py");
 
 // Download and process Gitleaks rules
@@ -233,8 +233,12 @@ async function updateGitleaksRules() {
         const manualRules = [
             {
                 id: "aws-secret-access-key",
+                // Improved pattern requiring mixed case, digits, and no repetition
+                // Matches 40 chars from [A-Za-z0-9/+=] with:
+                // - At least one uppercase, one lowercase, one digit
+                // - Not the same character repeated 40 times
                 pattern:
-                    "(?:[\\w.-]{0,50}?(?:aws|secret)(?:[ \\t\\w.-]{0,20})[\\s'\"]{0,3}(?:=|>|:{1,3}=|\\|\\||:|=>|\\?=|,)[\\x60'\"\\s=]{0,5})?([A-Za-z0-9+/]{40})(?:[\\x60'\"\\s;]|\\\\[nr]|$)",
+                    "(?:[\\w.-]{0,50}?(?:aws|secret)(?:[ \\t\\w.-]{0,20})[\\s'\"]{0,3}(?:=|>|:{1,3}=|\\|\\||:|=>|\\?=|,)[\\x60'\"\\s=]{0,5})?(\\b(?=[A-Za-z0-9/+=]{40}\\b)(?=[A-Za-z0-9/+=]*[A-Z])(?=[A-Za-z0-9/+=]*[a-z])(?=[A-Za-z0-9/+=]*\\d)(?!([A-Za-z0-9/+=])\\2{39})[A-Za-z0-9/+=]{40}\\b)(?:[\\x60'\"\\s;]|\\\\[nr]|$)",
                 flags: "re.IGNORECASE",
                 secretGroup: 1,
                 keywords: ["aws", "secret"],
