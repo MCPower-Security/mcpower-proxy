@@ -16,6 +16,9 @@ from ide_tools.common.hooks.shell_execution import handle_shell_execution
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from .constants import CURSOR_HOOKS, CURSOR_CONFIG
+from ..common.hooks.output import output_result
+
+MASK_AFTER_SHELL_EXEC = True
 
 
 def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_input: str):
@@ -79,9 +82,12 @@ def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_i
                 handle_shell_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
                                        hook_event_name, is_request=True))
         elif hook_event_name == "afterShellExecution":
-            asyncio.run(
-                handle_shell_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
-                                       hook_event_name, is_request=False))
+            if not MASK_AFTER_SHELL_EXEC:
+                asyncio.run(
+                    handle_shell_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                           hook_event_name, is_request=False))
+            else:
+                output_result(logger, CURSOR_CONFIG.output_format, "permission", True, "", "")
         elif hook_event_name == "beforeReadFile":
             asyncio.run(handle_read_file(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
                                          hook_event_name))
