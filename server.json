@@ -3,7 +3,7 @@
   "name": "io.github.ai-mcpower/mcpower-proxy",
   "title": "MCPower Security Proxy",
   "description": "Security proxy that wraps MCP servers with real-time monitoring and policy enforcement",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "homepage": "https://github.com/MCPower-Security/mcpower-proxy",
   "repository": {
     "url": "https://github.com/MCPower-Security/mcpower-proxy",
@@ -14,7 +14,7 @@
     {
       "registryType": "pypi",
       "identifier": "mcpower-proxy",
-      "version": "0.0.81",
+      "version": "0.0.82",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
