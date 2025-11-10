@@ -23,7 +23,6 @@ class ConfirmationRequest:
     event_id: str                 # Unique event identifier
     operation_type: str           # Type of MCP operation (tool, resource, etc.)
     server_name: str              # Proxied server name
-    timeout_seconds: int = 60     # Confirmation timeout
 
 
 @dataclass

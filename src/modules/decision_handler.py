@@ -85,8 +85,7 @@ class DecisionHandler:
                     severity=severity,
                     event_id=event_id,
                     operation_type=operation_type,
-                    server_name=server_name,
-                    timeout_seconds=60
+                    server_name=server_name
                 )
 
                 response = UserConfirmationDialog(
@@ -120,8 +119,7 @@ class DecisionHandler:
                     severity=severity,
                     event_id=event_id,
                     operation_type=operation_type,
-                    server_name=server_name,
-                    timeout_seconds=60
+                    server_name=server_name
                 )
 
                 # only show YES_ALWAYS if call_type exists
