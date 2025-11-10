@@ -2,6 +2,7 @@
 .kiro/**
 .mcpower/**
 .claude/**
+.claude
 cmake-build-*/
 *.iws
 out/
