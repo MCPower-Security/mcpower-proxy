@@ -78,7 +78,8 @@ async def handle_init(
             tools = [
                 ToolRef(
                     name=hook_info["name"],
-                    description=hook_info["description"],
+                    description=f"Description:\n{hook_info['description']}\n\n"
+                                f"inputSchema:\n{hook_info['parameters']}",
                     version=hook_info["version"]
                 )
                 for hook_info in hooks.values()
