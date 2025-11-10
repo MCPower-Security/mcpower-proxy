@@ -19,7 +19,7 @@ from .utils import create_validator, inspect_and_enforce
 
 def extract_and_redact_command_files(
         command: str,
-        cwd: Optional[str],
+        cwd: str,
         logger: MCPLogger
 ) -> Dict[str, str]:
     """
@@ -59,7 +59,7 @@ def extract_and_redact_command_files(
                         # Check file size
                         file_size = os.path.getsize(filepath)
                         logger.info(f"File {filename} size: {file_size} bytes")
-                        
+
                         # Check if file is binary by reading first 8KB
                         is_binary = False
                         try:
@@ -71,16 +71,16 @@ def extract_and_redact_command_files(
                         except Exception as e:
                             logger.warning(f"Failed to check if file {filename} is binary: {e}")
                             continue
-                        
+
                         if is_binary:
                             logger.warning(f"File {filename} is binary, skipping")
                             continue
-                        
+
                         # Read text file with 100K character limit
                         MAX_CHARS = 100_000
                         with open(filepath, 'r', encoding='utf-8') as f:
                             content = f.read(MAX_CHARS)
-                            
+
                             # Check if file was truncated
                             if len(content) == MAX_CHARS:
                                 # Check if there's more content
@@ -186,7 +186,8 @@ async def _handle_shell_operation(
     session_id = get_session_id()
 
     logger.info(
-        f"{tool_name} handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
+        f"{tool_name} handler started (client={config.client_name}, prompt_id={prompt_id}, "
+        f"event_id={event_id}, cwd={cwd})")
 
     try:
         try:
@@ -200,11 +201,6 @@ async def _handle_shell_operation(
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
-        # Override stdin's cwd with router's cwd parameter if provided
-        # This ensures we use the correct working directory even if stdin has empty/wrong cwd
-        if cwd and "cwd" in input_data:
-            input_data["cwd"] = cwd
-
         redacted_data = {}
         for k, v in input_data.items():
             if k in required_fields:
@@ -213,8 +209,9 @@ async def _handle_shell_operation(
         # Extract and redact input files for request inspection
         files_dict = {}
         if is_request and "command" in input_data:
-            command = input_data["command"]
-            files_dict = extract_and_redact_command_files(command, cwd, logger)
+            input_command = input_data["command"]
+            input_command_cws = input_data["cwd"]
+            files_dict = extract_and_redact_command_files(command=input_command, cwd=input_command_cws, logger=logger)
             if files_dict:
                 logger.info(f"Extracted and redacted {len(files_dict)} files from command")
 
