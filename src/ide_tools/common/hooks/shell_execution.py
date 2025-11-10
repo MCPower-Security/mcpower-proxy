@@ -56,15 +56,45 @@ def extract_and_redact_command_files(
                 # Read file content
                 if os.path.exists(filepath) and os.path.isfile(filepath):
                     try:
+                        # Check file size
+                        file_size = os.path.getsize(filepath)
+                        logger.info(f"File {filename} size: {file_size} bytes")
+                        
+                        # Check if file is binary by reading first 8KB
+                        is_binary = False
+                        try:
+                            with open(filepath, 'rb') as f:
+                                chunk = f.read(8192)
+                                # Check for null bytes (common in binary files)
+                                if b'\x00' in chunk:
+                                    is_binary = True
+                        except Exception as e:
+                            logger.warning(f"Failed to check if file {filename} is binary: {e}")
+                            continue
+                        
+                        if is_binary:
+                            logger.warning(f"File {filename} is binary, skipping")
+                            continue
+                        
+                        # Read text file with 100K character limit
+                        MAX_CHARS = 100_000
                         with open(filepath, 'r', encoding='utf-8') as f:
-                            content = f.read()
+                            content = f.read(MAX_CHARS)
+                            
+                            # Check if file was truncated
+                            if len(content) == MAX_CHARS:
+                                # Check if there's more content
+                                next_char = f.read(1)
+                                if next_char:
+                                    logger.warning(f"File {filename} truncated to {MAX_CHARS} characters")
+                                    content += f"\n... [file truncated at {MAX_CHARS} characters]"
 
                         # Redact sensitive content
                         redacted_content = redact(content)
 
                         # Add to dict (use original filename, not resolved path)
                         files_dict[filename] = redacted_content
-                        logger.info(f"Successfully read and redacted file: {filename}")
+                        logger.info(f"Successfully read and redacted file: {filename} ({len(content)} characters)")
 
                     except UnicodeDecodeError:
                         logger.warning(f"File {filename} is not a text file, skipping")
@@ -169,6 +199,11 @@ async def _handle_shell_operation(
 
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
+
+        # Override stdin's cwd with router's cwd parameter if provided
+        # This ensures we use the correct working directory even if stdin has empty/wrong cwd
+        if cwd and "cwd" in input_data:
+            input_data["cwd"] = cwd
 
         redacted_data = {}
         for k, v in input_data.items():

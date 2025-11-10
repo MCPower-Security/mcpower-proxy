@@ -59,7 +59,12 @@ def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_i
 
         prompt_id = conversation_id[:8]
         event_id = uuid.uuid4().hex[:8]
-        cwd = workspace_roots[0] if workspace_roots else None
+        
+        # Extract cwd from stdin if available (for hooks like beforeShellExecution),
+        # otherwise fall back to workspace_roots[0]
+        cwd = input_data.get("cwd")
+        if not cwd:
+            cwd = workspace_roots[0] if workspace_roots else None
 
         logger.info(
             f"Cursor router: routing to {hook_event_name} handler "
