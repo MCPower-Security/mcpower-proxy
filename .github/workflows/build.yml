@@ -91,6 +91,12 @@ jobs:
           
           echo "Bumped version to $v"
 
+      - name: Update Gitleaks rules
+        working-directory: targets/scripts
+        run: |
+          node update-gitleaks-rules.mjs
+          echo "Updated Gitleaks rules to latest version"
+
       - name: Upload version files
         uses: actions/upload-artifact@v4
         with:
@@ -103,6 +109,7 @@ jobs:
             src/wrapper/__version__.py
             pyproject.toml
             server.json
+            src/modules/redaction/gitleaks_rules.py
 
   package-extension:
     needs: [bump-version]
@@ -153,7 +160,7 @@ jobs:
           v=$(node -p "require('./package.json').version")
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json ../package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json
+          git add package.json ../package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../server.json ../../src/modules/redaction/gitleaks_rules.py
           git commit -m "chore: bump version to $v [skip ci]"
           git pull --rebase origin main
           git push
