@@ -159,7 +159,8 @@ function extractUserPrompt(entries: AuditEntry[]): string {
 }
 
 /**
- * Group entries by prompt_id
+ * Group entries by prompt_id, splitting on prompt_submission events
+ * and nesting orphaned tool call groups under matching prompt_submission groups
  * Returns an array of PromptGroup objects
  */
 export function groupByPromptId(entries: AuditEntry[]): import("./types").PromptGroup[] {
@@ -175,26 +176,129 @@ export function groupByPromptId(entries: AuditEntry[]): import("./types").Prompt
         }
     }
 
-    // Convert map to PromptGroup array
+    // Convert map to PromptGroup array, splitting on prompt_submission
     const promptGroups: import("./types").PromptGroup[] = [];
     for (const [prompt_id, groupEntries] of promptMap) {
-        // Sort entries within group by timestamp (oldest first for display)
+        // Sort entries within group by timestamp (oldest first)
         groupEntries.sort(
             (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
 
-        promptGroups.push({
-            prompt_id,
-            user_prompt: extractUserPrompt(groupEntries),
-            entries: groupEntries,
-            timestamp: groupEntries[0].timestamp,
-        });
+        // Split into sub-groups on prompt_submission events
+        let currentSubGroup: AuditEntry[] = [];
+        
+        for (const entry of groupEntries) {
+            if (entry.event_type === "prompt_submission" && currentSubGroup.length > 0) {
+                // Create a group for accumulated entries before this prompt_submission
+                promptGroups.push({
+                    prompt_id,
+                    user_prompt: extractUserPrompt(currentSubGroup),
+                    entries: currentSubGroup,
+                    timestamp: currentSubGroup[0].timestamp,
+                });
+                // Start new sub-group with this prompt_submission
+                currentSubGroup = [entry];
+            } else {
+                currentSubGroup.push(entry);
+            }
+        }
+        
+        // Add the final sub-group if it has entries
+        if (currentSubGroup.length > 0) {
+            promptGroups.push({
+                prompt_id,
+                user_prompt: extractUserPrompt(currentSubGroup),
+                entries: currentSubGroup,
+                timestamp: currentSubGroup[0].timestamp,
+            });
+        }
     }
 
     // Sort prompt groups by timestamp (newest first)
-    return promptGroups.sort(
+    promptGroups.sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+
+    // Nest orphaned tool call groups under matching prompt_submission groups
+    return nestOrphanedGroups(promptGroups);
+}
+
+/**
+ * Nest orphaned tool call groups (without prompt_submission) under matching prompt_submission groups
+ */
+function nestOrphanedGroups(groups: import("./types").PromptGroup[]): import("./types").PromptGroup[] {
+    // Separate groups with and without prompt_submission
+    const groupsWithSubmission: import("./types").PromptGroup[] = [];
+    const orphanedGroups: import("./types").PromptGroup[] = [];
+
+    for (const group of groups) {
+        const hasSubmission = group.entries.some(e => e.event_type === "prompt_submission");
+        if (hasSubmission) {
+            groupsWithSubmission.push(group);
+        } else {
+            orphanedGroups.push(group);
+        }
+    }
+
+    // For each orphaned group, find the closest matching prompt_submission group
+    for (const orphan of orphanedGroups) {
+        const orphanTimestamp = new Date(orphan.timestamp).getTime();
+        const orphanPrompt = orphan.user_prompt;
+
+        // Find the closest prompt_submission group that came before this orphan
+        let closestMatch: import("./types").PromptGroup | undefined;
+        let closestTimeDiff = Infinity;
+
+        for (const group of groupsWithSubmission) {
+            const groupTimestamp = new Date(group.timestamp).getTime();
+            
+            // Must come before the orphan
+            if (groupTimestamp >= orphanTimestamp) {
+                continue;
+            }
+
+            // Check for exact prompt match
+            const submissionEntry = group.entries.find(e => e.event_type === "prompt_submission");
+            if (submissionEntry) {
+                const submissionPrompt = submissionEntry.data?.params?.prompt;
+                
+                if (submissionPrompt === orphanPrompt) {
+                    const timeDiff = orphanTimestamp - groupTimestamp;
+                    if (timeDiff < closestTimeDiff) {
+                        closestTimeDiff = timeDiff;
+                        closestMatch = group;
+                    }
+                }
+            }
+        }
+
+        // Nest the orphan under the closest match
+        if (closestMatch) {
+            if (!closestMatch.nestedGroups) {
+                (closestMatch as any).nestedGroups = [];
+            }
+            closestMatch.nestedGroups!.push(orphan);
+        }
+    }
+
+    // Remove orphaned groups that were nested (keep only top-level groups)
+    const nestedPromptIds = new Set<string>();
+    for (const group of groupsWithSubmission) {
+        if (group.nestedGroups) {
+            for (const nested of group.nestedGroups) {
+                nestedPromptIds.add(nested.prompt_id + "-" + nested.timestamp);
+            }
+        }
+    }
+
+    return groups.filter(group => {
+        const hasSubmission = group.entries.some(e => e.event_type === "prompt_submission");
+        if (hasSubmission) {
+            return true; // Keep all groups with prompt_submission
+        }
+        // Keep orphaned groups that weren't nested
+        return !nestedPromptIds.has(group.prompt_id + "-" + group.timestamp);
+    });
 }
 
 /**

@@ -35,6 +35,7 @@ export interface PromptGroup {
     readonly user_prompt: string; // User prompt text (may be truncated for display)
     readonly entries: AuditEntry[]; // All entries with this prompt_id
     readonly timestamp: string; // Timestamp of first entry
+    readonly nestedGroups?: PromptGroup[]; // Nested prompt groups (e.g., tool calls with different prompt_id but matching user_prompt)
 }
 
 /**
@@ -54,6 +55,10 @@ export interface EventIdGroup {
 export const EVENT_TITLES: Record<string, string> = {
     // Core Events
     mcpower_start: "MCPower Started",
+
+    // Prompt Submission
+    prompt_submission: "Prompt Submission Review",
+    prompt_submission_forwarded: "Prompt Submission Approved",
 
     // Agent Flow
     agent_request: "Code Agent Request",

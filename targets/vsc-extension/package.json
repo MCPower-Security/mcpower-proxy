@@ -50,7 +50,7 @@
       "mcpower": [
         {
           "id": "mcpower.auditTrail",
-          "name": "MCP Monitor"
+          "name": "MCPower Monitor"
         }
       ]
     },
