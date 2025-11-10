@@ -8,6 +8,7 @@ from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
+from modules.utils.string import truncate_at
 from .output import output_result, output_error
 from .types import HookConfig
 from .utils import create_validator, extract_redaction_patterns, process_attachments_for_redaction, inspect_and_enforce
@@ -65,9 +66,10 @@ async def handle_prompt_submit(
             {
                 "server": config.server_name,
                 "tool": tool_name,
-                "params": {"prompt": f"{redacted_prompt[:20]}...", "attachments_count": len(attachments)}
+                "params": {"prompt": truncate_at(redacted_prompt, 100), "attachments_count": len(attachments)}
             },
-            event_id=event_id
+            event_id=event_id,
+            prompt_id=prompt_id
         )
 
         prompt_patterns = extract_redaction_patterns(redacted_prompt)
@@ -110,7 +112,8 @@ async def handle_prompt_submit(
                     "tool": tool_name,
                     "params": {"redactions_found": has_any_redactions}
                 },
-                event_id=event_id
+                event_id=event_id,
+                prompt_id=prompt_id
             )
 
             reasons = decision.get("reasons", [])

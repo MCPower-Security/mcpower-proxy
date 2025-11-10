@@ -29,6 +29,7 @@ from common import (
     assert_exit_code
 )
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_user_prompt_submit_safe_prompt():
@@ -76,7 +77,7 @@ def test_user_prompt_submit_with_context():
     # Stdout is captured as additionalContext
     print(f"✓ UserPromptSubmit succeeded")
     if result['stdout']:
-        print(f"  Stdout (added as context): {result['stdout'][:100]}...")
+        print(f"  Stdout (added as context): {truncate_at(result['stdout'], 100)}")
 
 
 def test_user_prompt_submit_blocked_prompt():

@@ -33,6 +33,7 @@ from common import (
 )
 from ide_tools.common.tests.asserts import assert_json_output
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_pre_tool_use_grep_allow():
@@ -105,7 +106,7 @@ def test_pre_tool_use_grep_deny():
     if decision in ['deny']:
         print(f"  ✓ Grep on file with secrets was denied")
         if 'permissionDecisionReason' in output:
-            print(f"  Reason: {output['permissionDecisionReason'][:100]}...")
+            print(f"  Reason: {truncate_at(output['permissionDecisionReason'], 100)}")
     elif decision in ['approve', 'allow']:
         print(f"  ⚠ Grep on file with secrets was allowed (security policy may vary)")
 

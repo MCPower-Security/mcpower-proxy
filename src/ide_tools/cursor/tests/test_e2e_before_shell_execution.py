@@ -18,6 +18,7 @@ from common import (
 )
 from ide_tools.common.tests.asserts import assert_json_output, assert_failure
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_before_shell_execution_valid():
@@ -234,7 +235,7 @@ def test_before_shell_execution_with_single_input_file():
                 f"Stderr: {result['stderr'][:500]}"
             )
         print(f"✓ Verified file extraction log in stderr: {expected_log}")
-        
+
         # Verify file read success log
         read_success_log = f"Successfully read and redacted file: {temp_filename}"
         if read_success_log not in result['stderr']:
@@ -316,7 +317,7 @@ def test_before_shell_execution_with_multiple_input_files():
             )
         print(f"✓ Verified file extraction log in stderr: Extracted 2 files")
         print(f"  Files: {temp_filename1}, {temp_filename2}")
-        
+
         # Verify both files were read successfully
         read_success_log1 = f"Successfully read and redacted file: {temp_filename1}"
         read_success_log2 = f"Successfully read and redacted file: {temp_filename2}"
@@ -389,7 +390,7 @@ def test_before_shell_execution_with_pipe_input_files():
                 f"Stderr: {result['stderr'][:500]}"
             )
         print(f"✓ Verified file extraction log in stderr: {expected_log}")
-        
+
         # Verify file read success log
         read_success_log = f"Successfully read and redacted file: {temp_filename}"
         if read_success_log not in result['stderr']:
@@ -445,7 +446,7 @@ def test_before_shell_execution_with_nonexistent_input_file():
             f"Stderr: {result['stderr'][:500]}"
         )
     print(f"✓ Verified file extraction attempted: 1 file")
-    
+
     # Verify warning for nonexistent file
     warning_log = "nonexistent_file_12345.txt does not exist or is not a file, skipping"
     if warning_log not in result['stderr']:
@@ -504,7 +505,7 @@ def test_before_shell_execution_with_absolute_path():
                 f"Stderr: {result['stderr'][:500]}"
             )
         print(f"✓ Verified file extraction log in stderr with absolute path")
-        
+
         # Verify file read success log with absolute path
         read_success_log = f"Successfully read and redacted file: {temp_file}"
         if read_success_log not in result['stderr']:
@@ -569,7 +570,7 @@ def test_before_shell_execution_with_grep_input():
                 f"Stderr: {result['stderr'][:500]}"
             )
         print(f"✓ Verified file extraction log in stderr: {expected_log}")
-        
+
         # Verify file read success log
         read_success_log = f"Successfully read and redacted file: {temp_filename}"
         if read_success_log not in result['stderr']:
@@ -629,7 +630,7 @@ def test_before_shell_execution_dangerous_command():
             if "user_message" in output:
                 print(f"  User message: {output['user_message']}")
             if "agent_message" in output:
-                print(f"  Agent message: {output['agent_message'][:100]}...")
+                print(f"  Agent message: {truncate_at(output['agent_message'], 100)}")
         elif permission == "allow":
             print(f"  ⚠ Warning: Dangerous command was allowed (security policy may need tuning)")
 

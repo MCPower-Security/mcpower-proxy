@@ -203,7 +203,8 @@ async def _handle_shell_operation(
         audit_logger.log_event(
             audit_event_type,
             get_audit_data(),
-            event_id=event_id
+            event_id=event_id,
+            prompt_id=prompt_id
         )
 
         # Build content_data with redacted fields and files
@@ -230,7 +231,8 @@ async def _handle_shell_operation(
             audit_logger.log_event(
                 audit_forwarded_event_type,
                 get_audit_data(),
-                event_id=event_id
+                event_id=event_id,
+                prompt_id=prompt_id
             )
 
             reasons = decision.get("reasons", [])
