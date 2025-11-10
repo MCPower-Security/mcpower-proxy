@@ -37,6 +37,14 @@ export class UvRunner {
     }
 
     getCommand(): UvCommand {
+        // If MCPOWER_LOCAL_PROXY_PATH is set, use the local proxy path
+        if (process.env["MCPOWER_LOCAL_PROXY_PATH"]) {
+            return {
+                executable: "uv",
+                args: ["run", "--directory", process.env["MCPOWER_LOCAL_PROXY_PATH"], "mcpower-proxy"],
+            };
+        }
+
         if (!this.uvxCommand) {
             throw new Error("uvx command not available; initialize() first");
         }
