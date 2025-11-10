@@ -36,6 +36,7 @@ async def handle_init(
         logger: MCPLogger,
         audit_logger: AuditTrailLogger,
         event_id: str,
+        prompt_id: str,
         cwd: Optional[str],
         server_name: str,
         client_name: str,
@@ -48,6 +49,7 @@ async def handle_init(
         logger: Logger instance
         audit_logger: Audit logger instance
         event_id: Event identifier
+        prompt_id: Prompt identifier
         cwd: Current working directory
         server_name: IDE-specific server name (e.g. "cursor_tools_mcp")
         client_name: IDE-specific client name (e.g. "cursor", "claude-code")
@@ -57,17 +59,20 @@ async def handle_init(
     """
     session_id = get_session_id()
 
-    logger.info(f"Init handler started (client={client_name}, event_id={event_id}, cwd={cwd})")
+    logger.info(f"Init handler started (client={client_name}, event_id={event_id}, prompt_id={prompt_id}, cwd={cwd})")
 
     try:
         app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
-        audit_logger.log_event("mcpower_start", {
-            "wrapper_version": __version__,
-            "wrapped_server_name": server_name,
-            "client": client_name
-        })
+        audit_logger.log_event(
+            "mcpower_start",
+            {
+                "wrapper_version": __version__,
+                "wrapped_server_name": server_name,
+                "client": client_name
+            }
+        )
 
         try:
             tools = [

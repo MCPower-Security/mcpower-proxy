@@ -24,6 +24,7 @@ from common import (
     assert_exit_code
 )
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_session_start_valid_input():
@@ -47,7 +48,7 @@ def test_session_start_valid_input():
     # Stdout should be captured as context (may be empty or contain output)
     print(f"✓ SessionStart succeeded")
     if result['stdout']:
-        print(f"  Stdout (captured as context): {result['stdout'][:100]}...")
+        print(f"  Stdout (captured as context): {truncate_at(result['stdout'], 100)}")
 
 
 def test_session_start_missing_session_id():

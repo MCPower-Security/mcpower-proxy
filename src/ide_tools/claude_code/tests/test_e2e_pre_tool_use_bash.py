@@ -32,6 +32,7 @@ from common import (
 )
 from ide_tools.common.tests.asserts import assert_json_output
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_pre_tool_use_bash_safe_command():
@@ -102,7 +103,7 @@ def test_pre_tool_use_bash_dangerous_command():
     if decision in ['deny']:
         print(f"  ✓ Dangerous command was denied")
         if 'permissionDecisionReason' in output:
-            print(f"  Reason: {output['permissionDecisionReason'][:100]}...")
+            print(f"  Reason: {truncate_at(output['permissionDecisionReason'], 100)}")
     elif decision in ['approve', 'allow']:
         print(f"  ⚠ Dangerous command was allowed (security policy may need tuning)")
 
@@ -139,7 +140,7 @@ def test_pre_tool_use_bash_network_command():
     if decision in ['deny']:
         print(f"  ✓ Data exfiltration command was denied")
         if 'permissionDecisionReason' in output:
-            print(f"  Reason: {output['permissionDecisionReason'][:100]}...")
+            print(f"  Reason: {truncate_at(output['permissionDecisionReason'], 100)}")
     elif decision in ['approve', 'allow']:
         print(f"  ⚠ Data exfiltration command was allowed (security policy may vary)")
 

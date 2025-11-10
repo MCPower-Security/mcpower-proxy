@@ -141,20 +141,46 @@ export class AuditTrailProvider implements vscode.TreeDataProvider<AuditTrailIte
     }
 
     private getToolCallGroups(promptGroup: PromptGroup): AuditTrailItem[] {
-        // Group entries within this prompt by event_id
+        const items: AuditTrailItem[] = [];
+
+        // Add event_id groups for this prompt's entries
         const eventIdGroups = groupByEventId(promptGroup.entries);
-        // Reverse to show oldest first (chronological order within prompt)
-        return eventIdGroups
-            .reverse()
-            .map(
-                eventIdGroup =>
-                    new AuditTrailItem(
-                        "event_id_group",
-                        undefined,
-                        undefined,
-                        eventIdGroup
-                    )
+        for (const eventIdGroup of eventIdGroups) {
+            items.push(
+                new AuditTrailItem(
+                    "event_id_group",
+                    undefined,
+                    undefined,
+                    eventIdGroup
+                )
             );
+        }
+
+        // Spread nested prompt groups' event_id groups directly into this level
+        if (promptGroup.nestedGroups) {
+            for (const nestedGroup of promptGroup.nestedGroups) {
+                const nestedEventIdGroups = groupByEventId(nestedGroup.entries);
+                for (const nestedEventIdGroup of nestedEventIdGroups) {
+                    items.push(
+                        new AuditTrailItem(
+                            "event_id_group",
+                            undefined,
+                            undefined,
+                            nestedEventIdGroup
+                        )
+                    );
+                }
+            }
+        }
+
+        // Sort all items by timestamp (oldest first - chronological order)
+        items.sort((a, b) => {
+            const timestampA = a.eventIdGroup?.timestamp || "";
+            const timestampB = b.eventIdGroup?.timestamp || "";
+            return timestampA.localeCompare(timestampB);
+        });
+
+        return items;
     }
 
     private getEventsForGroup(eventIdGroup: EventIdGroup): AuditTrailItem[] {

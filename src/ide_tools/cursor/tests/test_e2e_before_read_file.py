@@ -19,6 +19,7 @@ from common import (
 )
 from ide_tools.common.tests.asserts import assert_json_output, assert_failure
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_before_read_file_no_sensitive_content():
@@ -243,7 +244,7 @@ API_TOKEN = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"
             if "user_message" in output:
                 print(f"  User message: {output['user_message']}")
             if "agent_message" in output:
-                print(f"  Agent message: {output['agent_message'][:100]}...")
+                print(f"  Agent message: {truncate_at(output['agent_message'], 100)}")
         elif permission == "allow":
             print(f"  ⚠ Warning: Content with secrets was allowed (security policy may need tuning)")
 

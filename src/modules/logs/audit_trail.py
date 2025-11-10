@@ -53,6 +53,7 @@ class AuditTrailLogger:
             self,
             event_type: str,
             data: Dict[str, Any],
+            *,
             event_id: Optional[str] = None,
             prompt_id: Optional[str] = None,
             user_prompt: Optional[str] = None,
@@ -88,13 +89,13 @@ class AuditTrailLogger:
             if prompt_id:
                 event["prompt_id"] = prompt_id
 
-            # Include user_prompt text if provided (only needed once per prompt_id)
-            if user_prompt:
-                event["user_prompt"] = user_prompt
-
             # Include event_id if provided (for pairing request/response)
             if event_id:
                 event["event_id"] = event_id
+
+            # Include user_prompt text if provided (only needed once per prompt_id)
+            if user_prompt:
+                event["user_prompt"] = user_prompt
 
             # If app_uid not set yet, queue the log
             if self.app_uid is None:

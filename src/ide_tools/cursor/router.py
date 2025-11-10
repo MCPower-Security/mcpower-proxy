@@ -68,6 +68,7 @@ def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_i
                 logger=logger,
                 audit_logger=audit_logger,
                 event_id=event_id,
+                prompt_id=prompt_id,
                 cwd=cwd,
                 server_name=CURSOR_CONFIG.server_name,
                 client_name="cursor",

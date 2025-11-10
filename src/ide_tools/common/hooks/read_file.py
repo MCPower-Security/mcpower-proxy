@@ -65,7 +65,8 @@ async def handle_read_file(
                 "tool": tool_name,
                 "params": {"file_path": file_path, "attachments_count": len(attachments)}
             },
-            event_id=event_id
+            event_id=event_id,
+            prompt_id=prompt_id
         )
 
         # Check content length - skip API if too large
@@ -84,7 +85,8 @@ async def handle_read_file(
                         "content_too_large": True
                     }
                 },
-                event_id=event_id
+                event_id=event_id,
+                prompt_id=prompt_id
             )
 
             output_result(logger, config.output_format, "permission", True)
@@ -145,7 +147,8 @@ async def handle_read_file(
                         "content_length": len(provided_content),
                         "attachments_with_redactions": len(files_with_redactions)}
                 },
-                event_id=event_id
+                event_id=event_id,
+                prompt_id=prompt_id
             )
 
             reasons = decision.get("reasons", [])

@@ -15,6 +15,7 @@ from common import (
 )
 from ide_tools.common.tests.asserts import assert_json_output, assert_failure
 from ide_tools.common.tests.runner import run_handler
+from modules.utils.string import truncate_at
 
 
 def test_after_shell_execution_valid():
@@ -207,7 +208,7 @@ stripe_key: sk_live_51H7yxyz1234567890abcdefghijklmnop
             if "user_message" in output:
                 print(f"  User message: {output['user_message']}")
             if "agent_message" in output:
-                print(f"  Agent message: {output['agent_message'][:100]}...")
+                print(f"  Agent message: {truncate_at(output['agent_message'], 100)}")
         elif permission == "allow":
             print(f"  ⚠ Warning: Output with secrets was allowed (security policy may need tuning)")
 

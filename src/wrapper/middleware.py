@@ -28,6 +28,7 @@ from modules.utils.copy import safe_copy
 from modules.utils.ids import generate_event_id, get_session_id, read_app_uid, get_project_mcpower_dir
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
+from modules.utils.string import truncate_at
 from wrapper.schema import merge_input_schema_with_existing
 
 
@@ -173,7 +174,7 @@ class SecurityMiddleware(Middleware):
     async def secure_elicitation_handler(self, message, response_type, params, context):
         # FIXME: elicitation message, params, and context should be redacted before logging
         self.logger.info(f"secure_elicitation_handler: "
-                         f"message={str(message)[:100]}..., response_type={response_type},"
+                         f"message={truncate_at(str(message), 100)}, response_type={response_type},"
                          f"params={params}, context={context}")
 
         mock_context = MockContext(
@@ -203,7 +204,7 @@ class SecurityMiddleware(Middleware):
 
     async def secure_log_handler(self, log_message):
         # FIXME: log_message should be redacted before logging,
-        self.logger.info(f"secure_log_handler: {str(log_message)[:100]}...")
+        self.logger.info(f"secure_log_handler: {truncate_at(str(log_message), 100)}")
         # FIXME: log_message should be reviewed with policy before forwarding
 
         # Handle case where log_message.data is a string instead of dict

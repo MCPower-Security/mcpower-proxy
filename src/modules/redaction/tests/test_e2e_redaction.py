@@ -13,6 +13,7 @@ Verifies that:
 import json
 
 from modules.redaction import redact
+from modules.utils.string import truncate_at
 
 
 class TestE2ERedaction:
@@ -458,7 +459,7 @@ class TestE2ERedaction:
             json.loads(json_string)
         except (json.JSONDecodeError, TypeError) as e:
             raise AssertionError(
-                f"Extreme edge case broke JSON serializability: {e}\nPayload: {str(redacted_payload)[:500]}...")
+                f"Extreme edge case broke JSON serializability: {e}\nPayload: {truncate_at(str(redacted_payload), 500)}")
 
         # Verify all sensitive data was found and redacted
         json_like = redacted_payload["json_like_content"]
@@ -621,8 +622,8 @@ class TestE2ERedaction:
                     })
                     print(f"🔥 {attack_name}: SUCCESSFULLY BROKE REDACTION!")
                     print(f"   Error: {e}")
-                    print(f"   Original: {original_json[:100]}...")
-                    print(f"   Redacted: {str(redacted_payload)[:100]}...")
+                    print(f"   Original: {truncate_at(original_json, 100)}")
+                    print(f"   Redacted: {truncate_at(str(redacted_payload), 100)}")
 
             except Exception as e:
                 print(f"❌ {attack_name}: Attack setup failed: {e}")
@@ -632,8 +633,8 @@ class TestE2ERedaction:
             attack_details = "\n".join([
                 f"Attack: {attack['attack_name']}\n"
                 f"Error: {attack['error']}\n"
-                f"Original: {attack['original_json'][:200]}...\n"
-                f"Redacted: {attack['redacted_payload'][:200]}...\n"
+                f"Original: {truncate_at(attack['original_json'], 200)}\n"
+                f"Redacted: {truncate_at(attack['redacted_payload'], 200)}\n"
                 for attack in successful_attacks
             ])
             raise AssertionError(
