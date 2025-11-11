@@ -10,6 +10,7 @@ import sys
 import uuid
 
 from ide_tools.common.hooks.init import handle_init
+from ide_tools.common.hooks.mcp_execution import handle_mcp_execution
 from ide_tools.common.hooks.prompt_submit import handle_prompt_submit
 from ide_tools.common.hooks.read_file import handle_read_file
 from ide_tools.common.hooks.shell_execution import handle_shell_execution
@@ -94,6 +95,10 @@ def route_cursor_hook(logger: MCPLogger, audit_logger: AuditTrailLogger, stdin_i
         elif hook_event_name == "beforeSubmitPrompt":
             asyncio.run(
                 handle_prompt_submit(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
+                                     hook_event_name))
+        elif hook_event_name == "beforeMCPExecution":
+            asyncio.run(
+                handle_mcp_execution(logger, audit_logger, stdin_input, prompt_id, event_id, cwd, CURSOR_CONFIG,
                                      hook_event_name))
         else:
             logger.error(f"Unknown hook_event_name: {hook_event_name}")
