@@ -407,29 +407,29 @@ async function updateGitleaksRules() {
 
         pythonLines.push("]");
         pythonLines.push("");
-        pythonLines.push("KEYWORD_INDEX: Dict[str, List[int]] = {}");
-        pythonLines.push("for idx, (_, _, _, keywords) in enumerate(COMPILED_RULES):");
-        pythonLines.push("    for kw in keywords:");
-        pythonLines.push("        KEYWORD_INDEX.setdefault(kw, []).append(idx)");
+
+        // Add pattern classification for single-line vs multiline optimization
+        pythonLines.push("# Classify patterns as single-line or multiline for performance optimization");
+        pythonLines.push("MULTILINE_PATTERN_INDICES = []");
+        pythonLines.push("SINGLELINE_PATTERN_INDICES = []");
         pythonLines.push("");
-        pythonLines.push(
-            'ALWAYS_RUN_IDS = {"jwt", "generic-api-key", "aws-access-token", "aws-secret-access-key", "simple-secret"}'
-        );
+        pythonLines.push("for idx, (rule_id, pattern, _, _) in enumerate(COMPILED_RULES):");
+        pythonLines.push("    pattern_str = pattern.pattern");
+        pythonLines.push("    # Patterns that explicitly match across lines need full-text processing");
+        pythonLines.push("    # Check for common multiline indicators:");
+        pythonLines.push("    # - [\\s\\S] or variations like [\\s\\S-] (matches any character including newlines)");
+        pythonLines.push("    # - [\\r\\n] (explicitly matches newlines)");
+        pythonLines.push("    # - DOTALL flag patterns that use . to match newlines");
+        pythonLines.push("    is_multiline = (");
+        pythonLines.push("        r'\\s\\S' in pattern_str or  # [\\s\\S] or [\\s\\S-] etc.");
+        pythonLines.push("        r'[\\r\\n]' in pattern_str or");
+        pythonLines.push("        r'[\\n\\r]' in pattern_str");
+        pythonLines.push("    )");
         pythonLines.push("");
-        pythonLines.push("def candidate_rule_indices(text_lower: str) -> List[int]:");
-        pythonLines.push("    hits: List[int] = []");
-        pythonLines.push("    seen = set()");
-        pythonLines.push("    for kw, indices in KEYWORD_INDEX.items():");
-        pythonLines.push("        if kw and kw in text_lower:");
-        pythonLines.push("            for i in indices:");
-        pythonLines.push("                if i not in seen:");
-        pythonLines.push("                    hits.append(i)");
-        pythonLines.push("                    seen.add(i)");
-        pythonLines.push("    for i, (rid, _, _, _) in enumerate(COMPILED_RULES):");
-        pythonLines.push("        if rid in ALWAYS_RUN_IDS and i not in seen:");
-        pythonLines.push("            hits.append(i)");
-        pythonLines.push("            seen.add(i)");
-        pythonLines.push("    return hits");
+        pythonLines.push("    if is_multiline:");
+        pythonLines.push("        MULTILINE_PATTERN_INDICES.append(idx)");
+        pythonLines.push("    else:");
+        pythonLines.push("        SINGLELINE_PATTERN_INDICES.append(idx)");
         pythonLines.push("");
 
         writeFileSync(outputPath, pythonLines.join("\n") + "\n", "utf8");

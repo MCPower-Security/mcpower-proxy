@@ -159,37 +159,69 @@ class RedactionEngine:
 
     @staticmethod
     def _detect_secrets(text: str) -> List[RedactionSpan]:
-        """Detect secrets using Gitleaks-based patterns."""
+        """
+        Detect secrets using Gitleaks-based patterns.
+
+        Performance optimization: Most patterns are single-line and processed line-by-line.
+        Only a few patterns are multiline and processed on full text.
+        """
         spans = []
 
         # Use compiled rules (based on Gitleaks patterns) for secrets detection
         from . import gitleaks_rules as GL
-        # Scan line-by-line for performance and to reduce pathological matches
+
+        # Process single-line patterns line-by-line for performance and to reduce pathological matches
         offset = 0
         for line in text.split('\n'):
             line_lower = line.lower()
-            candidate_indices = GL.candidate_rule_indices(line_lower)
-            if candidate_indices and line:
-                for idx in candidate_indices:
-                    _, regex, secret_group, _ = GL.COMPILED_RULES[idx]
-                    for match in regex.finditer(line):
-                        # Use the specified group, or fall back to group 0 if it doesn't exist
-                        try:
-                            if secret_group and match.lastindex and secret_group <= match.lastindex:
-                                s, e = match.span(secret_group)
-                            else:
-                                s, e = match.span(0)
-                        except (IndexError, AttributeError):
-                            s, e = match.span(0)
 
-                        if s < e:
-                            spans.append(RedactionSpan(
-                                start=offset + s,
-                                end=offset + e,
-                                replacement=SECRETS_PLACEHOLDER,
-                                source='secrets'
-                            ))
-            offset += len(line) + 1  # +1 for the split '\n'
+            for idx in GL.SINGLELINE_PATTERN_INDICES:
+                _, regex, secret_group, _ = GL.COMPILED_RULES[idx]
+
+                for match in regex.finditer(line):
+                    # Use the specified group, or fall back to group 0 if it doesn't exist
+                    try:
+                        if secret_group and match.lastindex and secret_group <= match.lastindex:
+                            s, e = match.span(secret_group)
+                        else:
+                            s, e = match.span(0)
+                    except (IndexError, AttributeError):
+                        s, e = match.span(0)
+
+                    if s < e:
+                        spans.append(RedactionSpan(
+                            start=offset + s,
+                            end=offset + e,
+                            replacement=SECRETS_PLACEHOLDER,
+                            source='secrets'
+                        ))
+
+            # Move offset to next line (including newline character)
+            offset += len(line) + 1
+
+        # Process multiline patterns on full text
+        # These patterns use [\s\S] or [\r\n] and need to match across lines
+        for idx in GL.MULTILINE_PATTERN_INDICES:
+            _, regex, secret_group, _ = GL.COMPILED_RULES[idx]
+
+            for match in regex.finditer(text):
+                try:
+                    if secret_group and match.lastindex and secret_group <= match.lastindex:
+                        s, e = match.span(secret_group)
+                    else:
+                        s, e = match.span(0)
+                except (IndexError, AttributeError):
+                    s, e = match.span(0)
+
+                if s < e:
+                    # Check for duplicates (in case multiline pattern caught something single-line did)
+                    if not any(span.start == s and span.end == e for span in spans):
+                        spans.append(RedactionSpan(
+                            start=s,
+                            end=e,
+                            replacement=SECRETS_PLACEHOLDER,
+                            source='secrets'
+                        ))
 
         return spans
 
