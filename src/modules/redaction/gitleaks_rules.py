@@ -1340,25 +1340,25 @@ COMPILED_RULES: List[Tuple[str, re.Pattern, int, List[str]]] = [
     ),
 ]
 
-KEYWORD_INDEX: Dict[str, List[int]] = {}
-for idx, (_, _, _, keywords) in enumerate(COMPILED_RULES):
-    for kw in keywords:
-        KEYWORD_INDEX.setdefault(kw, []).append(idx)
+# Classify patterns as single-line or multiline for performance optimization
+MULTILINE_PATTERN_INDICES = []
+SINGLELINE_PATTERN_INDICES = []
 
-ALWAYS_RUN_IDS = {"jwt", "generic-api-key", "aws-access-token", "aws-secret-access-key", "simple-secret"}
+for idx, (rule_id, pattern, _, _) in enumerate(COMPILED_RULES):
+    pattern_str = pattern.pattern
+    # Patterns that explicitly match across lines need full-text processing
+    # Check for common multiline indicators:
+    # - [\s\S] or variations like [\s\S-] (matches any character including newlines)
+    # - [\r\n] (explicitly matches newlines)
+    # - DOTALL flag patterns that use . to match newlines
+    is_multiline = (
+        r'\s\S' in pattern_str or  # [\s\S] or [\s\S-] etc.
+        r'[\r\n]' in pattern_str or
+        r'[\n\r]' in pattern_str
+    )
 
-def candidate_rule_indices(text_lower: str) -> List[int]:
-    hits: List[int] = []
-    seen = set()
-    for kw, indices in KEYWORD_INDEX.items():
-        if kw and kw in text_lower:
-            for i in indices:
-                if i not in seen:
-                    hits.append(i)
-                    seen.add(i)
-    for i, (rid, _, _, _) in enumerate(COMPILED_RULES):
-        if rid in ALWAYS_RUN_IDS and i not in seen:
-            hits.append(i)
-            seen.add(i)
-    return hits
+    if is_multiline:
+        MULTILINE_PATTERN_INDICES.append(idx)
+    else:
+        SINGLELINE_PATTERN_INDICES.append(idx)
 
