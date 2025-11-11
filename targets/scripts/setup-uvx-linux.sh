@@ -65,7 +65,7 @@ main() {
 
     # Cache dependencies if version provided
     if [[ $# -gt 0 ]]; then
-        cache_mcpower_proxy "$1" "$2"
+        cache_mcpower_proxy "$1" "${2:-}"
     fi
 
     log "uvx ready"
