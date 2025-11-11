@@ -73,16 +73,5 @@ CURSOR_HOOKS = {
                       '"description":"Attachment type"},"filePath":{"type":"string","description":"Absolute path to '
                       'the attached file or rule"}},"required":["type","filePath"],"additionalProperties":false}}},'
                       '"required":["prompt"],"additionalProperties":false}'
-    },
-    "beforeMCPExecution": {
-        "name": "beforeMCPExecution",
-        "description": "Triggered before an MCP tool is executed by the agent. "
-                       "Allows inspection and potential blocking of MCP tool calls.",
-        "version": "1.0.0",
-        "parameters": '{"type":"object","properties":{"tool_name":{"type":"string","description":"Name of the MCP tool '
-                      'being called"},"tool_input":{"type":"string","description":"JSON string of tool parameters"},'
-                      '"url":{"type":"string","description":"MCP server URL (for URL-based servers)"},"command":{'
-                      '"type":"string","description":"MCP server command (for command-based servers)"}},"required":['
-                      '"tool_name","tool_input"],"additionalProperties":false}'
     }
 }
