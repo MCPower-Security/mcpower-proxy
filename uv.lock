@@ -548,7 +548,7 @@ wheels = [
 
 [[package]]
 name = "mcpower-proxy"
-version = "0.0.83"
+version = "0.0.85"
 source = { editable = "." }
 dependencies = [
     { name = "bashlex" },
