@@ -16,6 +16,7 @@ from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.json import safe_json_dumps
 from wrapper.__version__ import __version__
+from modules.utils.platform import get_client_os
 
 
 def create_validator(
@@ -218,7 +219,9 @@ async def inspect_and_enforce(
         },
         client=client_name,
         client_version=__version__,
-        selection_hash=""
+        selection_hash="",
+        app_id=app_uid,
+        client_os=get_client_os()
     )
 
     async with SecurityPolicyClient(
