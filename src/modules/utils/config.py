@@ -13,7 +13,9 @@ def load_default_config() -> Dict[str, str]:
     try:
         config_data = {
             "API_URL": "https://api.mcpower.tech",
-            "DEBUG": "0"
+            "DEBUG": "0",
+            "ALLOW_BLOCK_OVERRIDE": "1",
+            "MIN_BLOCK_SEVERITY": "low"
         }
         return config_data
     except Exception as e:
@@ -180,14 +182,66 @@ def get_audit_trail_path() -> str:
     return str(ConfigManager.get_user_config_dir() / 'audit_trail.log')
 
 
-def is_debug_mode() -> bool:
-    """Get debug mode setting"""
-    key = 'DEBUG'
+def _get_bool_config(key: str) -> bool:
+    """Parse boolean config value"""
     value = str(config.get(key, default_config.get(key)))
     return value.lower() in ('true', '1', 'yes', 'on')
+
+
+def is_debug_mode() -> bool:
+    """Get debug mode setting"""
+    return _get_bool_config('DEBUG')
 
 
 def get_user_id(logger: MCPLogger) -> str:
     """Get or create user ID from ~/.mcpower/uid (never fails)"""
     from modules.utils.ids import get_or_create_user_id
     return get_or_create_user_id(logger)
+
+
+def get_allow_block_override() -> bool:
+    """Get ALLOW_BLOCK_OVERRIDE setting"""
+    return _get_bool_config('ALLOW_BLOCK_OVERRIDE')
+
+
+def get_min_block_severity() -> str:
+    """Get MIN_BLOCK_SEVERITY setting"""
+    key = 'MIN_BLOCK_SEVERITY'
+    return config.get(key, default_config.get(key)).lower()
+
+
+def compare_severity(actual: str, minimum: str) -> bool:
+    """
+    Compare if actual severity meets or exceeds minimum severity threshold.
+    
+    Args:
+        actual: The actual severity level (low, medium, high, critical, unknown)
+        minimum: The minimum required severity level (low, medium, high, critical)
+        
+    Returns:
+        True if actual >= minimum, False otherwise
+        
+    Note:
+        - Severity order: low < medium < high < critical
+        - 'unknown' is treated as 'high' (fail-safe)
+    """
+    severity_order = {
+        'low': 0,
+        'medium': 1,
+        'high': 2,
+        'critical': 3
+    }
+    
+    # Normalize to lowercase
+    actual_normalized = actual.lower()
+    minimum_normalized = minimum.lower()
+    
+    # Treat 'unknown' as 'high' (fail-safe)
+    if actual_normalized == 'unknown':
+        actual_normalized = 'high'
+    
+    # Get severity levels, default to 'high' if invalid
+    actual_level = severity_order.get(actual_normalized, 2)
+    minimum_level = severity_order.get(minimum_normalized, 0)
+    
+    return actual_level >= minimum_level

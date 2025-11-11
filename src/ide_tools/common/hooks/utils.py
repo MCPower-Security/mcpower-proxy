@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Callable, Optional
 from mcpower_shared.mcp_types import create_policy_request, create_policy_response, AgentContext, EnvironmentContext, \
     ServerRef, ToolRef
 from modules.apis.security_policy import SecurityPolicyClient
-from modules.decision_handler import DecisionHandler
+from modules.decision.decision_handler import DecisionHandler
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
