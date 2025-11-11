@@ -13,6 +13,7 @@ from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
 from modules.utils.json import safe_json_dumps
+from modules.utils.platform import get_client_os
 from wrapper.__version__ import __version__
 
 
@@ -94,7 +95,9 @@ async def handle_init(
                     },
                     client=client_name,
                     client_version=__version__,
-                    selection_hash=""
+                    selection_hash="",
+                    client_os=get_client_os(),
+                    app_id=app_uid
                 ),
                 server=ServerRef(
                     name=server_name,

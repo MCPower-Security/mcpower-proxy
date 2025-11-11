@@ -420,7 +420,9 @@ class SecurityMiddleware(Middleware):
                 },
                 client=self.wrapper_server_name,
                 client_version=self.wrapper_server_version,
-                selection_hash=""  # Could be enhanced later
+                selection_hash="",  # Could be enhanced later
+                client_os=get_client_os(),
+                app_id=self.app_id,
             )
 
             server_ref = ServerRef(
