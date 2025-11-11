@@ -42,4 +42,15 @@ MCPower is designed for simplicity and minimal friction:
 2. **It’s Free:** No account is required. The beta version is Free to use.
 3. **Start monitoring instantly:** Once installed, your agent and MCP communications are automatically protected.
 
+## **Advanced Configuration**
+
+### **Run Your Own Local Proxy**
+
+For development, you can run MCPower from a local checkout instead of using the published version:
+
+1. Clone the repository: `git clone https://github.com/MCPower-Security/mcpower-proxy`
+2. Set the environment variable and build the extension: `MCPOWER_LOCAL_PROXY_PATH=/path/to/mcpower-proxy npm run package:vsc-extension`
+
+The extension will use your local proxy version, allowing you to modify policies, add custom rules, or test changes before contributing back to the project.
+
 **MCPower is security that understands the language of AI. Install it today and let your team build, fast and safe.**
