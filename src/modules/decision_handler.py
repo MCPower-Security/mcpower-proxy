@@ -16,7 +16,9 @@ from modules.ui.confirmation import UserConfirmationDialog, UserConfirmationErro
 
 class DecisionEnforcementError(Exception):
     """Error raised when a security decision blocks an operation"""
-    pass
+    def __init__(self, message: str, reasons: Optional[list] = None):
+        super().__init__(message)
+        self.reasons = reasons or []
 
 
 class DecisionHandler:
@@ -71,7 +73,7 @@ class DecisionHandler:
             return
 
         elif decision_type == "block":
-            policy_reasons = decision.get("reasons", ["Policy violation"])
+            policy_reasons = decision.get("reasons") or ["Policy violation"]
             severity = decision.get("severity", "unknown")
             call_type = decision.get("call_type")
 
@@ -103,7 +105,10 @@ class DecisionHandler:
                 # User chose to block or dialog failed
                 await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
                 error_msg = error_message_prefix or "Security Violation"
-                raise DecisionEnforcementError(f"{error_msg}. User blocked the operation")
+                raise DecisionEnforcementError(
+                    f"{error_msg}. Reasons: {'; '.join(policy_reasons)}",
+                    reasons=policy_reasons
+                )
 
         elif decision_type == "required_explicit_user_confirmation":
             policy_reasons = decision.get("reasons", ["Security policy requires confirmation"])
@@ -142,8 +147,12 @@ class DecisionHandler:
             except UserConfirmationError as e:
                 # User denied confirmation or dialog failed
                 await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
-                error_msg = error_message_prefix or "Security Violation"
-                raise DecisionEnforcementError(f"{error_msg}. User blocked the operation")
+                raise DecisionEnforcementError(
+                    f"{error_message_prefix or 'Operation flagged by security policy'}. "
+                    f"User blocked the operation. "
+                    f"Reasons: {('; '.join(policy_reasons))}",
+                    reasons=policy_reasons
+                )
 
         elif decision_type == "need_more_info":
             stage_title = 'CLIENT REQUEST' if is_request else 'TOOL RESPONSE'
@@ -187,7 +196,7 @@ class DecisionHandler:
             error_parts.append("2. Retry the tool call")
 
             actionable_message = "\n".join(error_parts)
-            raise DecisionEnforcementError(actionable_message)
+            raise DecisionEnforcementError(actionable_message, reasons=reasons)
 
     async def _record_user_confirmation(
             self,
