@@ -270,6 +270,10 @@ export class CursorHooksMonitor {
                 path: consolidatedScriptPath,
                 name: consolidatedScriptName,
             },
+            beforeMCPExecution: {
+                path: consolidatedScriptPath,
+                name: consolidatedScriptName,
+            },
         };
     };
 

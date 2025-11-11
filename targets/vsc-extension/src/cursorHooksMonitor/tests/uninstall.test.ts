@@ -49,6 +49,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
                 afterShellExecution: [{ command: '"/path with spaces/scripts/cursor/hooks/mcpower-cursor-hook.sh"' }],
                 beforeReadFile: [{ command: "/fake/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
                 beforeSubmitPrompt: [{ command: "/fake/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
+                beforeMCPExecution: [{ command: "/fake/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
             },
         };
 
@@ -61,6 +62,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         expect(beforeConfig.hooks.afterShellExecution).toHaveLength(1);
         expect(beforeConfig.hooks.beforeReadFile).toHaveLength(1);
         expect(beforeConfig.hooks.beforeSubmitPrompt).toHaveLength(1);
+        expect(beforeConfig.hooks.beforeMCPExecution).toHaveLength(1);
 
         // Test: Call unregisterHook (without extensionPath, simulating uninstall)
         const monitor = new CursorHooksMonitor(hooksFile);
@@ -74,6 +76,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         expect(afterConfig.hooks.afterShellExecution).toBeUndefined();
         expect(afterConfig.hooks.beforeReadFile).toBeUndefined();
         expect(afterConfig.hooks.beforeSubmitPrompt).toBeUndefined();
+        expect(afterConfig.hooks.beforeMCPExecution).toBeUndefined();
 
         // Other extension's hook should remain
         expect(afterConfig.hooks.beforeShellExecution).toBeDefined();
