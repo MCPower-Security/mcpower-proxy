@@ -16,9 +16,7 @@ from modules.ui.confirmation import UserConfirmationDialog, UserConfirmationErro
 
 class DecisionEnforcementError(Exception):
     """Error raised when a security decision blocks an operation"""
-    def __init__(self, message: str, reasons: Optional[list] = None):
-        super().__init__(message)
-        self.reasons = reasons or []
+    pass
 
 
 class DecisionHandler:
@@ -106,8 +104,7 @@ class DecisionHandler:
                 await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
                 error_msg = error_message_prefix or "Security Violation"
                 raise DecisionEnforcementError(
-                    f"{error_msg}. Reasons: {'; '.join(policy_reasons)}",
-                    reasons=policy_reasons
+                    f"{error_msg}. Reasons: {'; '.join(policy_reasons)}"
                 )
 
         elif decision_type == "required_explicit_user_confirmation":
@@ -150,8 +147,7 @@ class DecisionHandler:
                 raise DecisionEnforcementError(
                     f"{error_message_prefix or 'Operation flagged by security policy'}. "
                     f"User blocked the operation. "
-                    f"Reasons: {('; '.join(policy_reasons))}",
-                    reasons=policy_reasons
+                    f"Reasons: {'; '.join(policy_reasons)}"
                 )
 
         elif decision_type == "need_more_info":
@@ -196,7 +192,7 @@ class DecisionHandler:
             error_parts.append("2. Retry the tool call")
 
             actionable_message = "\n".join(error_parts)
-            raise DecisionEnforcementError(actionable_message, reasons=reasons)
+            raise DecisionEnforcementError(actionable_message)
 
     async def _record_user_confirmation(
             self,
