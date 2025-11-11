@@ -12,6 +12,7 @@ from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.ui.classes import ConfirmationRequest, DialogOptions, UserDecision
 from modules.ui.confirmation import UserConfirmationDialog, UserConfirmationError
+from modules.utils.config import get_allow_block_override, get_min_block_severity, compare_severity
 
 
 class DecisionEnforcementError(Exception):
@@ -35,6 +36,22 @@ class DecisionHandler:
         self.audit_logger = audit_logger
         self.session_id = session_id
         self.app_id = app_id
+
+    async def _enforce_block(
+            self,
+            event_id: str,
+            is_request: bool,
+            prompt_id: str,
+            call_type: Optional[str],
+            policy_reasons: list[str],
+            error_message_prefix: Optional[str]
+    ) -> None:
+        """Record block decision and raise enforcement error"""
+        await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
+        error_msg = error_message_prefix or "Security Violation"
+        raise DecisionEnforcementError(
+            f"{error_msg}. Reasons: {'; '.join(policy_reasons)}"
+        )
 
     async def enforce_decision(
             self,
@@ -75,6 +92,21 @@ class DecisionHandler:
             severity = decision.get("severity", "unknown")
             call_type = decision.get("call_type")
 
+            # Check if severity meets minimum blocking threshold
+            min_severity = get_min_block_severity()
+            if not compare_severity(severity, min_severity):
+                self.logger.info(f"Block decision with severity '{severity}' is below minimum threshold '{min_severity}', "
+                                 f"auto-allowing operation for tool '{tool_name}' (event: {event_id})")
+                await self._record_user_confirmation(event_id, is_request, UserDecision.ALLOW, prompt_id, call_type)
+                return
+
+            # Check if block override is allowed
+            allow_override = get_allow_block_override()
+            if not allow_override:
+                # Block is not overridable, propagate error immediately
+                self.logger.info(f"Block override disabled, blocking operation for tool '{tool_name}' (event: {event_id})")
+                await self._enforce_block(event_id, is_request, prompt_id, call_type, policy_reasons, error_message_prefix)
+
             try:
                 # Show a blocking dialog and wait for user decision
                 confirmation_request = ConfirmationRequest(
@@ -101,11 +133,7 @@ class DecisionHandler:
 
             except UserConfirmationError as e:
                 # User chose to block or dialog failed
-                await self._record_user_confirmation(event_id, is_request, UserDecision.BLOCK, prompt_id, call_type)
-                error_msg = error_message_prefix or "Security Violation"
-                raise DecisionEnforcementError(
-                    f"{error_msg}. Reasons: {'; '.join(policy_reasons)}"
-                )
+                await self._enforce_block(event_id, is_request, prompt_id, call_type, policy_reasons, error_message_prefix)
 
         elif decision_type == "required_explicit_user_confirmation":
             policy_reasons = decision.get("reasons", ["Security policy requires confirmation"])
