@@ -1,6 +1,7 @@
 """
 Utilities for generating event IDs, session IDs, app UIDs, and timing helpers
 """
+import hashlib
 import os
 import sys
 import time
@@ -134,6 +135,20 @@ def _get_or_create_uuid(uid_path: Path, logger, id_type: str) -> str:
     raise RuntimeError(f"Failed to get or create {id_type} after {max_attempts} attempts")
 
 
+def _hash_project_path(project_path: str) -> str:
+    """
+    Generate SHA256 hash of project path for predictable, collision-free directory naming.
+    
+    Args:
+        project_path: Project/workspace path to hash
+        
+    Returns:
+        Hex digest of SHA256 hash
+    """
+    normalized_path = str(Path(project_path).resolve())
+    return hashlib.sha256(normalized_path.encode('utf-8')).hexdigest()
+
+
 def get_home_mcpower_dir() -> Path:
     """
     Get the global MCPower directory path in user's home directory
@@ -146,24 +161,27 @@ def get_home_mcpower_dir() -> Path:
 
 def get_project_mcpower_dir(project_path: Optional[str] = None) -> str:
     """
-    Get the MCPower directory path, with fallback to global ~/.mcpower
+    Get the MCPower projects directory path under ~/.mcpower/.projects/
 
     Args:
-        project_path: Optional project/workspace path. If None or invalid, falls back to ~/.mcpower
+        project_path: Optional project/workspace path. If None or invalid, uses _global
 
     Returns:
-        Path to use for MCPower data (either project/.mcpower or ~/.mcpower)
+        Path to use for MCPower data: ~/.mcpower/.projects/{hash} or ~/.mcpower/.projects/_global
     """
+    base_dir = get_home_mcpower_dir() / ".projects"
+    
     if project_path:
         try:
             path = Path(project_path)
             if path.exists() and path.is_dir():
-                return str(path)
+                project_hash = _hash_project_path(str(path))
+                return str(base_dir / project_hash)
         except Exception:
             pass
 
-    # Fallback to global ~/.mcpower
-    return str(get_home_mcpower_dir())
+    # Fallback to global
+    return str(base_dir / "_global")
 
 
 def get_or_create_user_id(logger) -> str:
@@ -183,7 +201,7 @@ def get_or_create_user_id(logger) -> str:
 
 def read_app_uid(logger, project_folder_path: str) -> str:
     """
-    Get or create app UID from project folder's .mcpower/app_uid file
+    Get or create app UID from ~/.mcpower/.projects/{hash}/app_uid or ~/.mcpower/.projects/_global/app_uid
     Race-safe: multiple concurrent processes will converge on single ID
 
     Args:
@@ -194,12 +212,6 @@ def read_app_uid(logger, project_folder_path: str) -> str:
         App UID string
     """
     project_path = Path(project_folder_path)
-
-    # Check if path already contains .mcpower (forced/default case)
-    if ".mcpower" in project_path.parts:
-        uid_path = project_path / "app_uid"
-    else:
-        # Project-specific case
-        uid_path = project_path / ".mcpower" / "app_uid"
-
+    uid_path = project_path / "app_uid"
+    
     return _get_or_create_uuid(uid_path, logger, "app UID")
