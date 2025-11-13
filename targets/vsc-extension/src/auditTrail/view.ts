@@ -2,10 +2,10 @@
 
 import * as vscode from "vscode";
 import { promises as fs } from "fs";
-import { join } from "path";
 import { AuditTrailProvider } from "./provider";
 import { AuditTrailItem } from "./item";
 import log from "../log";
+import { getProjectAppUidPath } from "@mcpower/common-ts/utils";
 
 export class AuditTrailView {
     private treeView: vscode.TreeView<AuditTrailItem> | undefined;
@@ -90,7 +90,7 @@ export class AuditTrailView {
             return null;
         }
 
-        const appUidPath = join(workspaceFolder.uri.fsPath, ".mcpower", "app_uid");
+        const appUidPath = getProjectAppUidPath(workspaceFolder.uri.fsPath);
 
         try {
             const content = await fs.readFile(appUidPath, "utf8");

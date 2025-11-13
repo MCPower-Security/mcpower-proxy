@@ -2,6 +2,7 @@ import * as JSONC from "jsonc-parser";
 import fs from "fs";
 import path, { normalize, resolve } from "path";
 import os from "os";
+import crypto from "crypto";
 
 /**
  * Check if file exists
@@ -353,6 +354,52 @@ export async function getApiUrl(): Promise<string | null> {
     } catch {
         return null;
     }
+}
+
+/**
+ * Generate SHA256 hash of project path for predictable, collision-free directory naming
+ */
+export function hashProjectPath(projectPath: string): string {
+    // Use realpathSync to resolve symlinks, matching Python's Path.resolve() behavior
+    let normalizedPath: string;
+    try {
+        normalizedPath = fs.realpathSync(projectPath);
+    } catch {
+        // If path doesn't exist, fall back to path.resolve (just normalize)
+        normalizedPath = path.resolve(projectPath);
+    }
+    return crypto.createHash("sha256").update(normalizedPath).digest("hex");
+}
+
+/**
+ * Get MCPower projects directory path under ~/.mcpower/.projects/
+ * @param projectPath Optional project/workspace path. If null or invalid, uses _global
+ * @returns Path to use for MCPower data: ~/.mcpower/.projects/{hash} or ~/.mcpower/.projects/_global
+ */
+export function getProjectMcpowerDir(projectPath: string | null): string {
+    const baseDir = path.join(os.homedir(), ".mcpower", ".projects");
+    
+    if (projectPath) {
+        try {
+            if (fs.existsSync(projectPath) && fs.statSync(projectPath).isDirectory()) {
+                const projectHash = hashProjectPath(projectPath);
+                return path.join(baseDir, projectHash);
+            }
+        } catch {
+            // Fall through to global fallback
+        }
+    }
+    
+    return path.join(baseDir, "_global");
+}
+
+/**
+ * Get full path to app_uid file for a project
+ * @param projectPath Optional project/workspace path. If null or invalid, uses _global
+ * @returns Full path to app_uid file
+ */
+export function getProjectAppUidPath(projectPath: string | null): string {
+    return path.join(getProjectMcpowerDir(projectPath), "app_uid");
 }
 
 /**
