@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.MCPower-Security/mcpower-proxy",
   "title": "MCPower Security Proxy",
-  "description": "Security proxy that wraps MCP servers with real-time monitoring and policy enforcement",
+  "description": "Security proxy that automatically wraps MCP servers with real-time monitoring and policy enforcement",
   "version": "0.0.89",
   "homepage": "https://github.com/MCPower-Security/mcpower-proxy",
   "repository": {
