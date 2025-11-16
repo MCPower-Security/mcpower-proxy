@@ -38,7 +38,8 @@ def extract_and_redact_command_files(
 
     try:
         # Parse command to extract input files
-        _, input_files = parse_shell_command(command, initial_cwd=cwd)
+        result = parse_shell_command(command, initial_cwd=cwd)
+        input_files = result["input_files"]
 
         logger.info(f"Extracted {len(input_files)} input files from command: {input_files}")
 
