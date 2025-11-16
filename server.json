@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.Defenter-AI/defenter-proxy",
   "title": "Defenter Proxy",
-  "description": "Security proxy that automatically wraps MCP servers with real-time monitoring and policy enforcement",
+  "description": "Real-time semantic security for AI coding agents and MCP tools",
   "version": "0.0.93",
   "homepage": "https://github.com/Defenter-AI/defenter-proxy",
   "repository": {
