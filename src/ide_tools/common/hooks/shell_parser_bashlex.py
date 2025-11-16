@@ -1,36 +1,451 @@
 #!/usr/bin/env python3
 """
 Shell command parser using bashlex library.
-Parses shell commands to extract sub-commands and file references using proper bash parsing.
+Parses shell commands to extract sub-commands, file references, and package execution commands
+using proper bash parsing.
 """
 
-import bashlex
 import os
-from typing import List, Tuple, Set, Optional, Dict
+from typing import List, Set, Optional, Dict
+
+import bashlex
+
+# Comprehensive mapping of package execution tools to their ecosystems
+# Format: (tool_command, ecosystem)
+PACKAGE_TOOL_MAPPINGS = [
+    # Node.js ecosystem
+    ("npm install", "node"),
+    ("npm install -g", "node"),
+    ("npm i", "node"),
+    ("npm exec", "node"),
+    ("pnpm install", "node"),
+    ("pnpm i", "node"),
+    ("yarn global add", "node"),
+    ("yarn add", "node"),
+    ("npx", "node"),
+    ("bunx", "node"),
+    ("pnpx", "node"),
+    ("yarn dlx", "node"),
+    ("bower install", "node"),
+    ("jspm install", "node"),
+    ("component install", "node"),
+    ("volo add", "node"),
+    ("ender build", "node"),
+    ("volta run", "node"),
+    
+    # Python ecosystem
+    ("python3 -m pip install", "python"),
+    ("python -m pip install", "python"),
+    ("uv pip install", "python"),
+    ("uv add", "python"),
+    ("pip3 install", "python"),
+    ("pip install", "python"),
+    ("poetry add", "python"),
+    ("poetry run", "python"),
+    ("uvx", "python"),
+    ("pipx run", "python"),
+    ("pipx install", "python"),
+    ("pip-run", "python"),
+    ("pypi-run", "python"),
+    ("conda install", "python"),
+    ("mamba install", "python"),
+    ("pixi run", "python"),
+    ("micromamba install", "python"),
+    ("pyenv install", "python"),
+    
+    # Deno
+    ("deno run", "deno"),
+    ("deno install", "deno"),
+    
+    # Rust
+    ("cargo add", "rust"),
+    ("cargo install", "rust"),
+    ("cargo run", "rust"),
+    ("cargo-binstall", "rust"),
+    ("cargo quickinstall", "rust"),
+    ("rustup run", "rust"),
+    
+    # Go
+    ("go install", "go"),
+    ("go run", "go"),
+    
+    # Ruby
+    ("bundle add", "ruby"),
+    ("bundle exec", "ruby"),
+    ("gem install", "ruby"),
+    ("rbenv install", "ruby"),
+    
+    # Java/JVM
+    ("coursier launch", "java"),
+    ("cs launch", "java"),
+    ("mvn exec:java", "java"),
+    ("gradle run", "java"),
+    ("ant run", "java"),
+    ("jbang", "java"),
+    ("jgo", "java"),
+    
+    # Scala
+    ("sbt run", "scala"),
+    ("mill run", "scala"),
+    ("ammonite", "scala"),
+    
+    # Clojure
+    ("lein run", "clojure"),
+    ("clj -Sdeps", "clojure"),
+    ("babashka", "clojure"),
+    ("clj", "clojure"),
+    ("bb", "clojure"),
+    
+    # Nix
+    ("nix-shell -p", "nix"),
+    ("nix run", "nix"),
+    ("nix shell", "nix"),
+    
+    # Guix (GNU's functional package manager)
+    ("guix shell", "guix"),
+    
+    # Docker/Containers
+    ("docker run", "docker"),
+    ("podman run", "docker"),
+    ("kubectl run", "docker"),
+    
+    # Haskell
+    ("stack run", "haskell"),
+    ("cabal run", "haskell"),
+    ("ghcup install", "haskell"),
+    
+    # OCaml
+    ("opam install", "ocaml"),
+    ("esy", "ocaml"),
+    
+    # Elixir
+    ("mix run", "elixir"),
+    
+    # Dart
+    ("dart pub global activate", "dart"),
+    ("flutter pub run", "dart"),
+    ("pub global activate", "dart"),
+    
+    # PHP
+    ("composer global require", "php"),
+    ("composer global", "php"),
+    ("phive install", "php"),
+    
+    # Perl
+    ("cpanm", "perl"),
+    ("cpm install", "perl"),
+    ("ppm install", "perl"),
+    
+    # Lua
+    ("luarocks install", "lua"),
+    
+    # Swift
+    ("mint run", "swift"),
+    ("marathon run", "swift"),
+    ("carthage update", "swift"),
+    
+    # WebAssembly
+    ("wasmer run", "wasm"),
+    ("wapm install", "wasm"),
+    
+    # C/C++
+    ("conan install", "cpp"),
+    ("vcpkg install", "cpp"),
+    ("clib install", "cpp"),
+    ("buckaroo install", "cpp"),
+    
+    # Linux containers/sandboxing
+    ("flatpak run", "linux"),
+    ("snap run", "linux"),
+    
+    # System package managers
+    ("chocolatey install", "system"),
+    ("apt-get install", "system"),
+    ("brew install", "system"),
+    ("apt install", "system"),
+    ("yum install", "system"),
+    ("dnf install", "system"),
+    ("pacman -S", "system"),
+    ("scoop install", "system"),
+    ("winget install", "system"),
+    ("choco install", "system"),
+    ("apk add", "system"),
+    ("pkg install", "system"),
+    ("emerge", "system"),
+    ("zypper install", "system"),
+    ("xbps-install", "system"),
+    ("pkgin install", "system"),
+    ("opkg install", "system"),
+    
+    # Version managers
+    ("asdf install", "version"),
+    ("volta install", "version"),
+    ("fnm use", "version"),
+    ("juliaup add", "version"),
+    
+    # HPC
+    ("spack install", "hpc"),
+    ("easybuild", "hpc"),
+    
+    # Build systems
+    ("bazel run", "build"),
+    ("buck2 run", "build"),
+    ("earthly", "build"),
+    ("pants run", "build"),
+    
+    # Other
+    ("raco pkg install", "racket"),
+    ("tlmgr install", "tex"),
+    ("roswell install", "lisp"),
+    ("nimble install", "nim"),
+    ("shards install", "crystal"),
+    ("elm install", "elm"),
+    ("zig fetch", "zig"),
+    ("quicklisp", "lisp"),
+]
+
+# Sort by number of words (descending) to match longer patterns first
+PACKAGE_TOOL_MAPPINGS.sort(key=lambda x: len(x[0].split()), reverse=True)
 
 
-def parse_shell_command(command: str, initial_cwd: Optional[str] = None) -> Tuple[List[str], List[str]]:
+def _is_package_like(token: str) -> bool:
     """
-    Parse a shell command using bashlex and extract sub-commands and input files.
+    Check if a token looks like a package name.
+    
+    Package indicators:
+    - Contains @ (scoped or versioned): @babel/core, package@1.2.0
+    - Contains / (scoped or path): @types/node, github:user/repo
+    - Contains : (URL or Docker image): python:3.11-slim, git+https://...
+    - Contains # (Nix packages): nixpkgs#cowsay
+    - Contains + (build targets): +build, +test
+    - Contains [ ] (pip extras): apache-airflow[postgres]
+    - Alphanumeric with - or _ : express, my-package
+    
+    But NOT:
+    - File paths: ./script.sh, ../package (but allow // for Bazel)
+    - Common non-package commands
+    - Shell constructs
+    """
+    # Exclude shell constructs
+    if token in ('&&', '||', '|', '>', '<', '>>', '<<'):
+        return False
+    
+    # Exclude flags
+    if token.startswith('-'):
+        return False
+    
+    # Exclude relative file paths (., .., ./, ../)
+    if token in ('.', '..') or token.startswith('./') or token.startswith('../'):
+        return False
+    
+    # Handle paths starting with /
+    if token.startswith('/'):
+        # Allow // for Bazel targets (e.g., //my:target)
+        if token.startswith('//'):
+            return True
+        # Reject absolute paths like /usr/bin, /etc/config
+        return False
+    
+    # Allow file:// URLs for npm/pip
+    if token.startswith('file://'):
+        return True
+    
+    # Common commands that are never packages when standalone
+    common_commands = {
+        'test', 'start', 'dev', 'prod', 'serve', 'watch',
+        'lint', 'format', 'check', 'clean', 'deploy'
+    }
+    if token.lower() in common_commands:
+        return False
+    
+    # Pure version numbers aren't packages (e.g., "2.0.0")
+    if token.replace('.', '').replace('-', '').isdigit():
+        return False
+    
+    # Looks like a package if it contains package-like patterns
+    if any(c in token for c in ['@', '/', ':', '-', '_', '.', '#', '+', '[', ']']):
+        return True
+    
+    # Or if it's a simple name (alphanumeric, possibly with - or _)
+    return token.replace('-', '').replace('_', '').isalnum()
+
+
+def _extract_packages_from_tokens(tokens: List[str], start_idx: int, tool_pattern: str) -> List[str]:
+    """
+    Extract potentially multiple packages starting from start_idx.
+    
+    Args:
+        tokens: Command tokens
+        start_idx: Index to start extracting from
+        tool_pattern: The tool pattern being matched (for special handling)
+    
+    Returns:
+        List of package names
+    """
+    packages = []
+    i = start_idx
+    
+    # Special handling for specific tools
+    is_docker = 'docker' in tool_pattern or 'podman' in tool_pattern or 'kubectl' in tool_pattern
+    is_install = 'install' in tool_pattern or 'add' in tool_pattern
+    is_version_manager = any(x in tool_pattern for x in ['pyenv', 'rbenv', 'fnm', 'juliaup', 'asdf', 'volta'])
+    is_pip_like = 'pip' in tool_pattern or 'npm' in tool_pattern or 'yarn' in tool_pattern
+    
+    # Flags that take arguments (non-package arguments)
+    flags_with_args = {
+        '-o', '--output', '-f', '--file', '-p', '--port', 
+        '-d', '--dir', '--directory', '-n', '--name',
+        '--version', '-v', '-e'  # -e can mean various things
+    }
+    
+    # Flags where the argument IS the package
+    package_flags = {'--package'}
+    
+    # Flags that mean "skip package extraction" (only for pip/npm/yarn)
+    skip_package_flags_pip = {'-e', '--editable', '-r', '--requirement', '--requirements'}
+    
+    while i < len(tokens):
+        token = tokens[i]
+        
+        # Skip flags and their potential arguments
+        if token.startswith('-'):
+            # Check if this flag takes an argument
+            base_flag = token.split('=')[0]  # Handle --flag=value format
+            
+            i += 1
+            
+            # Special case: flags that mean we should skip their argument (pip/npm only)
+            # But continue processing for other packages (e.g., pip install -r req.txt requests)
+            if is_pip_like and base_flag in skip_package_flags_pip:
+                # Skip the file/path argument
+                if i < len(tokens) and not tokens[i].startswith('-'):
+                    i += 1
+                continue  # Continue to look for more packages after the file
+            
+            # Special case: --package flag's argument IS the package
+            if base_flag in package_flags and i < len(tokens):
+                packages.append(tokens[i])
+                i += 1
+                continue
+            
+            # If flag takes argument and next token doesn't start with -, skip it
+            if base_flag in flags_with_args and i < len(tokens) and not tokens[i].startswith('-'):
+                i += 1
+            continue
+        
+        # For version managers, even version numbers are valid "packages"
+        if is_version_manager:
+            packages.append(token)
+            i += 1
+            break
+        
+        # Check if this looks like a package name
+        if _is_package_like(token):
+            packages.append(token)
+            i += 1
+            
+            # For Docker/container tools, typically only one image
+            if is_docker:
+                break
+            
+            # Continue collecting packages for install/add commands
+            if is_install:
+                continue
+            
+            # For run/exec tools, first package is usually it
+            break
+        else:
+            # Hit a non-package argument (like a script name or command)
+            break
+    
+    return packages
+
+
+def _extract_packages_from_commands(sub_commands: List[str]) -> Dict[str, List[str]]:
+    """
+    Extract package names from shell commands that use package execution tools.
+    
+    Args:
+        sub_commands: List of individual command strings
+    
+    Returns:
+        Dictionary mapping ecosystem names to lists of package names
+        Example: {"node": ["prettier", "eslint", "@babel/core"], "python": ["ruff"]}
+    """
+    packages: Dict[str, List[str]] = {}
+    
+    for command in sub_commands:
+        # Use bashlex.split() to handle quoted strings properly
+        try:
+            tokens = list(bashlex.split(command))
+        except (ValueError, bashlex.errors.ParsingError):
+            # If bashlex fails (unclosed quotes, etc.), fall back to simple split
+            tokens = command.split()
+            
+        if not tokens:
+            continue
+        
+        for tool_pattern, ecosystem in PACKAGE_TOOL_MAPPINGS:
+            tool_tokens = tool_pattern.split()
+            num_words = len(tool_tokens)
+            
+            if len(tokens) >= num_words:
+                matches = True
+                for i, tool_token in enumerate(tool_tokens):
+                    # Handle special cases like flags in patterns
+                    if tool_token.startswith('-'):
+                        if tokens[i] != tool_token:
+                            matches = False
+                            break
+                    elif tokens[i].lower() != tool_token.lower():
+                        matches = False
+                        break
+                
+                if matches:
+                    found_packages = _extract_packages_from_tokens(tokens, num_words, tool_pattern)
+                    
+                    if found_packages:
+                        if ecosystem not in packages:
+                            packages[ecosystem] = []
+                        
+                        for pkg in found_packages:
+                            if pkg not in packages[ecosystem]:
+                                packages[ecosystem].append(pkg)
+                    
+                    # Found a match, no need to check other patterns for this command
+                    break
+    
+    return packages
+
+
+def parse_shell_command(command: str, initial_cwd: Optional[str] = None) -> Dict[str, any]:
+    """
+    Parse a shell command using bashlex and extract sub-commands, input files, and packages.
     
     Args:
         command: A shell command string (supports pipes, redirections, etc.)
         initial_cwd: Initial working directory (defaults to current directory)
     
     Returns:
-        A tuple of (sub_commands, input_files) where:
+        A dictionary with the following keys:
         - sub_commands: List of individual commands when split by pipes
         - input_files: List of files that are used as inputs (excludes output-only files)
+        - packages: Dictionary mapping ecosystem names to lists of package names
     
     Examples:
-        >>> parse_shell_command("python a.py | tee b.log")
-        (['python a.py', 'tee b.log'], ['a.py', 'b.log'])
+        >>> result = parse_shell_command("python a.py | tee b.log")
+        >>> result["sub_commands"]
+        ['python a.py', 'tee b.log']
+        >>> result["input_files"]
+        ['a.py', 'b.log']
         
-        >>> parse_shell_command("cat a.txt > /tmp/b.txt")
-        (['cat a.txt > /tmp/b.txt'], ['a.txt'])
+        >>> result = parse_shell_command("uvx ruff check && npx prettier --write .")
+        >>> result["packages"]
+        {'python': ['ruff'], 'node': ['prettier']}
         
-        >>> parse_shell_command("grep foo file.txt | sort | uniq > output.txt")
-        (['grep foo file.txt', 'sort', 'uniq > output.txt'], ['file.txt'])
+        >>> result = parse_shell_command("docker run python:3.11 -c 'import sys'")
+        >>> result["packages"]
+        {'docker': ['python:3.11']}
     """
     try:
         # Parse the command into an AST
@@ -38,7 +453,11 @@ def parse_shell_command(command: str, initial_cwd: Optional[str] = None) -> Tupl
     except Exception as e:
         # If parsing fails, fall back to simple split
         print(f"Warning: bashlex parsing failed: {e}")
-        return ([command], [])
+        return {
+            "sub_commands": [command],
+            "input_files": [],
+            "packages": {}
+        }
     
     # Extract sub-commands and files
     sub_commands = []
@@ -57,7 +476,14 @@ def parse_shell_command(command: str, initial_cwd: Optional[str] = None) -> Tupl
     # Remove output-only files from the result
     input_files = sorted(list(all_files - output_files))
     
-    return sub_commands, input_files
+    # Extract packages from sub-commands
+    packages = _extract_packages_from_commands(sub_commands)
+    
+    return {
+        "sub_commands": sub_commands,
+        "input_files": input_files,
+        "packages": packages
+    }
 
 
 def _extract_from_ast(
@@ -371,6 +797,7 @@ def _looks_like_file(word: str, cmd_name: Optional[str] = None) -> bool:
 if __name__ == "__main__":
     # Test cases
     test_cases = [
+        "npx awesome-encoder && uvx fastmcp && pip install -r requirements.txt lib1 lib2",
         "cd /Users/user/src/project/server && python test.py",
         "python a.py | tee b.log",
         "cat a.txt > /tmp/b.txt",
@@ -385,10 +812,11 @@ if __name__ == "__main__":
     print("Shell Command Parser (bashlex) - Test Cases\n" + "="*60)
     for cmd in test_cases:
         try:
-            sub_cmds, files = parse_shell_command(cmd)
+            result = parse_shell_command(cmd)
             print(f"\nCommand: {cmd}")
-            print(f"Sub-commands: {sub_cmds}")
-            print(f"Input files: {files}")
+            print(f"Sub-commands: {result['sub_commands']}")
+            print(f"Input files: {result['input_files']}")
+            print(f"Packages: {result['packages']}")
         except Exception as e:
             print(f"\nCommand: {cmd}")
             print(f"Error: {e}")
