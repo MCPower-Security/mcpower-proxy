@@ -174,7 +174,7 @@ def test_before_read_file_invalid_json():
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env={**os.environ, "MCPOWER_DEBUG": "1"},
+        env={**os.environ, "DEFENTER_DEBUG": "1"},
     )
 
     try:

@@ -1,1 +1,1 @@
-"""Tests for MCPower utils module"""
+"""Tests for Defenter utils module"""

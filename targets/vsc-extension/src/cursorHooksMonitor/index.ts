@@ -5,8 +5,8 @@ import { spawn } from "child_process";
 import log from "../log";
 import { UvRunner } from "../uvRunner";
 import { HooksConfig } from "./types";
-import { fileExists, mapOS, samePath, updateJsoncFile } from "@mcpower/common-ts/utils";
-import { FileWatcher } from "@mcpower/common-ts/watcher";
+import { fileExists, mapOS, samePath, updateJsoncFile } from "@defenter/common-ts/utils";
+import { FileWatcher } from "@defenter/common-ts/watcher";
 
 /**
  * Cursor hooks monitor
@@ -247,7 +247,7 @@ export class CursorHooksMonitor {
     private getScriptsMap = async (): Promise<
         Record<string, { path: string; name: string }>
     > => {
-        const consolidatedScriptName = `mcpower-cursor-hook.${mapOS() === "windows" ? "bat" : "sh"}`;
+        const consolidatedScriptName = `defenter-cursor-hook.${mapOS() === "windows" ? "bat" : "sh"}`;
         const consolidatedScriptPath =
             await this.getHookScriptPath(consolidatedScriptName);
 

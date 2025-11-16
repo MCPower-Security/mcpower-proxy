@@ -10,14 +10,14 @@ import { AuditEntry, EVENT_TITLES } from "./types";
 export function generateEventTitle(eventType: string, data: any): string {
     const baseTitle = EVENT_TITLES[eventType] || eventType;
 
-    // Customize title for mcpower_start
-    if (eventType === "mcpower_start") {
-        // Server name is mandatory in mcpower_start data
+    // Customize title for defenter_start
+    if (eventType === "defenter_start") {
+        // Server name is mandatory in defenter_start data
         let serverName = data.wrapped_server_name;
-        if (serverName === "mcpower_cursor") {
+        if (serverName === "defenter_cursor") {
             serverName = "Cursor Hooks";
         }
-        return `MCPower Started for ${serverName}`;
+        return `Defenter Started for ${serverName}`;
     }
 
     // Customize title for inspect_agent_request_result
@@ -330,7 +330,7 @@ export function groupByEventId(entries: AuditEntry[]): import("./types").EventId
         const toolName = extractToolName(firstEntry);
 
         let serverName = extractServerName(firstEntry);
-        if (serverName === "mcpower_cursor") {
+        if (serverName === "defenter_cursor") {
             serverName = "Cursor Hooks";
         }
 
@@ -342,7 +342,7 @@ export function groupByEventId(entries: AuditEntry[]): import("./types").EventId
             // Server name is mandatory in init_tools payload
             const initServerName = firstEntry.data.payload.server.name;
             switch (initServerName) {
-                case "mcpower_cursor":
+                case "defenter_cursor":
                     title = "Cursor Hooks Initialization";
                     break;
                 default:

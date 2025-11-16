@@ -38,7 +38,7 @@ ensure_uvx() {
     fi
 }
 
-cache_mcpower_proxy() {
+cache_defenter_proxy() {
     local version="$1"
     local clean_cache="$2"
 
@@ -49,13 +49,13 @@ cache_mcpower_proxy() {
 
     local refresh_flag=""
     if [[ "$clean_cache" == "--clean-cache" ]]; then
-        log "Pre-warming mcpower-proxy==$version from PyPI (forcing refresh)..."
+        log "Pre-warming defenter-proxy==$version from PyPI (forcing refresh)..."
         refresh_flag="--refresh"
     else
-        log "Pre-warming mcpower-proxy==$version from PyPI..."
+        log "Pre-warming defenter-proxy==$version from PyPI..."
     fi
 
-    uvx $refresh_flag mcpower-proxy=="$version" --help >/dev/null 2>&1 || true
+    uvx $refresh_flag defenter-proxy=="$version" --help >/dev/null 2>&1 || true
 }
 
 main() {
@@ -65,7 +65,7 @@ main() {
 
     # Cache dependencies if version provided
     if [[ $# -gt 0 ]]; then
-        cache_mcpower_proxy "$1" "${2:-}"
+        cache_defenter_proxy "$1" "${2:-}"
     fi
 
     log "uvx ready"

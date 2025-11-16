@@ -22,7 +22,7 @@ async def run_main_py_test():
         "uvx",
         "--from",
         str(repo_root),
-        "mcpower-proxy",
+        "defenter-proxy",
     ]
     await run_test(command, "main.py")
 

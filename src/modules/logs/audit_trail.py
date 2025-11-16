@@ -64,7 +64,7 @@ class AuditTrailLogger:
         Log a single audit event
         
         Args:
-            event_type: Type of audit event (e.g., 'mcpower_start', 'agent_request')
+            event_type: Type of audit event (e.g., 'defenter_start', 'agent_request')
             data: Event-specific data dictionary (will be automatically redacted)
             event_id: Optional event correlation ID (for pairing request/response)
             prompt_id: Optional user prompt correlation ID (for grouping tool calls by prompt)

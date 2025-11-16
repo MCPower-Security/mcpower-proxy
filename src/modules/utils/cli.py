@@ -1,5 +1,5 @@
 """
-CLI utilities for MCPower Proxy
+CLI utilities for Defenter Proxy
 """
 import argparse
 
@@ -27,7 +27,7 @@ Examples:
   %(prog)s --ide-tool --ide cursor --context beforeShellExecution
 
 Reference Links:
-  • MCPower Proxy: https://github.com/ai-mcpower/mcpower-proxy
+  • Defenter Proxy: https://github.com/Defenter-AI/defenter-proxy
   • MCP Official: https://modelcontextprotocol.io
         """
     )

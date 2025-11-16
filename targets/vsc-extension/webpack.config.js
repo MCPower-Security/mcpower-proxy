@@ -5,7 +5,7 @@ const { DefinePlugin } = require("webpack");
 
 function getSafeEnvs() {
     const safeKeys = new Set(["CI", "NODE_ENV", "WEBPACK_MODE"]);
-    const safePrefixes = ["MCPOWER_"];
+    const safePrefixes = ["DEFENTER_"];
 
     return Object.entries(process.env).reduce((res, [key, value]) => {
         if (safeKeys.has(key) || safePrefixes.some(prefix => key.startsWith(prefix))) {
@@ -86,16 +86,16 @@ module.exports = {
                 },
             ],
         }),
-        ...(process.env["MCPOWER_LOCAL_PROXY_PATH"] ? [
+        ...(process.env["DEFENTER_LOCAL_PROXY_PATH"] ? [
             new CopyWebpackPlugin({
                     patterns: [
                         {
                             from: path.resolve(__dirname, "./scripts/cursor/hooks"),
                             to: path.resolve(__dirname, "./scripts/cursor/hooks"),
                             transform(content, absolutePath ) {
-                                console.log(`Transforming ${absolutePath} with ${process.env["MCPOWER_LOCAL_PROXY_PATH"]}`);
+                                console.log(`Transforming ${absolutePath} with ${process.env["DEFENTER_LOCAL_PROXY_PATH"]}`);
                                 let text = content.toString();
-                                text = text.replace(/uvx mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/g, `uv run --directory ${process.env["MCPOWER_LOCAL_PROXY_PATH"]} mcpower-proxy`);
+                                text = text.replace(/uvx defenter-proxy==[0-9]*\.[0-9]*\.[0-9]*/g, `uv run --directory ${process.env["DEFENTER_LOCAL_PROXY_PATH"]} defenter-proxy`);
                                 return Buffer.from(text);
                             }
                         },

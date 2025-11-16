@@ -14,7 +14,7 @@ def run_handler(
     Run a Claude Code handler and return the result.
 
     Args:
-        command: Command and args to execute (e.g., ["uvx", "--from", ".", "mcpower-proxy", ...])
+        command: Command and args to execute (e.g., ["uvx", "--from", ".", "defenter-proxy", ...])
         stdin_input: Optional dict to send as JSON to stdin
         timeout: Timeout in seconds
 
@@ -43,7 +43,7 @@ def run_handler(
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env={**os.environ, "MCPOWER_DEBUG": "1"},
+        env={**os.environ, "DEFENTER_DEBUG": "1"},
     )
 
     # Start stderr capture thread

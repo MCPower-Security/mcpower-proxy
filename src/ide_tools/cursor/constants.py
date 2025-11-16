@@ -24,7 +24,7 @@ CURSOR_CONFIG = HookConfig(
         error_exit_code=1,
         formatter=cursor_output_formatter
     ),
-    server_name="mcpower_cursor",
+    server_name="defenter_cursor",
     client_name="cursor",
     max_content_length=100000
 )

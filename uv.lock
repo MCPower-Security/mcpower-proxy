@@ -547,7 +547,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mcpower-proxy"
+name = "defenter-proxy"
 version = "0.0.91"
 source = { editable = "." }
 dependencies = [

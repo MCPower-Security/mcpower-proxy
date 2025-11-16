@@ -1,12 +1,12 @@
 /**
  * Audit Trail File Watcher
- * Monitors ~/.mcpower/audit_trail.log for changes
+ * Monitors ~/.defenter/audit_trail.log for changes
  */
 
 import { promises as fs } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import { FileWatcher } from "@mcpower/common-ts/watcher";
+import { FileWatcher } from "@defenter/common-ts/watcher";
 import { AuditEntry } from "./types";
 import { parseAuditTrail } from "./utils";
 import log from "../log";
@@ -18,7 +18,7 @@ export class AuditTrailWatcher {
     private onChangeCallback: ((entries: AuditEntry[]) => void) | undefined;
 
     constructor() {
-        this.auditFilePath = join(homedir(), ".mcpower", "audit_trail.log");
+        this.auditFilePath = join(homedir(), ".defenter", "audit_trail.log");
         this.fileWatcher = new FileWatcher({
             onFileProcess: async () => this.handleFileChange(),
             logger: log,

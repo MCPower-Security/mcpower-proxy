@@ -20,13 +20,13 @@ try {
 }
 
 /**
- * Centralized logging module for MCPower Security extension
+ * Centralized logging module for Defenter extension
  * Uses VSCode's LogOutputChannel in extension context, console in scripting context
  */
 class Logger {
     private static instance: Logger;
     private outputChannel: any;
-    private readonly channelName = "MCPower";
+    private readonly channelName = "Defenter";
 
     private constructor() {
         this.outputChannel = vscode.window.createOutputChannel(this.channelName, {

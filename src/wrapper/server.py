@@ -44,8 +44,8 @@ def create_wrapper_server(wrapper_server_name: str,
         audit_logger=audit_logger
     )
 
-    # Log MCPower startup to audit trail
-    audit_logger.log_event("mcpower_start", {
+    # Log Defenter startup to audit trail
+    audit_logger.log_event("defenter_start", {
         "wrapper_version": __version__,
         "wrapped_server_name": security_middleware.wrapped_server_name,
         "wrapped_server_configs": wrapped_server_configs

@@ -37,7 +37,7 @@ function Ensure-Uvx {
     }
 }
 
-function Cache-McpowerProxy {
+function Cache-DefenterProxy {
     param($Version, $CleanCache)
 
     if (-not $Version) {
@@ -47,14 +47,14 @@ function Cache-McpowerProxy {
 
     $refreshFlag = @()
     if ($CleanCache -eq "-CleanCache") {
-        Write-Log "Pre-warming mcpower-proxy==$Version from PyPI (forcing refresh)..."
+        Write-Log "Pre-warming defenter-proxy==$Version from PyPI (forcing refresh)..."
         $refreshFlag = @("--refresh")
     } else {
-        Write-Log "Pre-warming mcpower-proxy==$Version from PyPI..."
+        Write-Log "Pre-warming defenter-proxy==$Version from PyPI..."
     }
 
     try {
-        $args = $refreshFlag + @("mcpower-proxy==$Version", "--help")
+        $args = $refreshFlag + @("defenter-proxy==$Version", "--help")
         & uvx $args 2>&1 | Out-Null
     } catch {
         # Ignore errors during cache warming
@@ -68,7 +68,7 @@ Ensure-Uvx
 # Cache dependencies if version provided
 if ($args.Count -gt 0) {
     $cleanCacheFlag = if ($args.Count -gt 1) { $args[1] } else { $null }
-    Cache-McpowerProxy $args[0] $cleanCacheFlag
+    Cache-DefenterProxy $args[0] $cleanCacheFlag
 }
 
 Write-Log "uvx ready"

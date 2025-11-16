@@ -70,7 +70,7 @@ class MCPLogger:
             self.file_handle = open(log_path, 'a', encoding='utf-8')
 
         # Setup standard logger for non-MCP messages
-        self.logger = logging.getLogger('mcpower')
+        self.logger = logging.getLogger('defenter')
         self.logger.setLevel(level)
 
         # Create console handler with UTF-8 support

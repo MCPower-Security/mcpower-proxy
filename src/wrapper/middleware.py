@@ -25,7 +25,7 @@ from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
 from modules.utils.copy import safe_copy
-from modules.utils.ids import generate_event_id, get_session_id, read_app_uid, get_project_mcpower_dir
+from modules.utils.ids import generate_event_id, get_session_id, read_app_uid, get_project_defenter_dir
 from modules.utils.json import safe_json_dumps, to_dict
 from modules.utils.mcp_configs import extract_wrapped_server_info
 from modules.utils.platform import get_client_os
@@ -98,7 +98,7 @@ class SecurityMiddleware(Middleware):
         if context.method != "initialize":
             # Check workspace roots and re-initialize app_uid if workspace changed
             workspace_roots = await self._extract_workspace_roots(context)
-            current_workspace_root = get_project_mcpower_dir(workspace_roots[0] if workspace_roots else None)
+            current_workspace_root = get_project_defenter_dir(workspace_roots[0] if workspace_roots else None)
             if current_workspace_root != self._last_workspace_root:
                 self.logger.debug(
                     f"Workspace root changed from {self._last_workspace_root} to {current_workspace_root}")

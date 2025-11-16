@@ -37,7 +37,7 @@ def show_explicit_user_confirmation_dialog(request: ConfirmationRequest, options
 
         # Use generic dialog with Block/Allow buttons
         result_index = xdialog.generic_dialog(
-            title="MCPower Security Confirmation Required",
+            title="Defenter Confirmation Required",
             message=message,
             buttons=buttons,
             default_button=buttons.index("Allow"),  # Default to "Allow"
@@ -84,7 +84,7 @@ def show_blocking_dialog(request: ConfirmationRequest, logger: MCPLogger) -> int
 
         # Use generic dialog with error icon and Block as default
         result_index = xdialog.generic_dialog(
-            title="MCPower Security Request Blocked",
+            title="Defenter Request Blocked",
             message=message,
             buttons=buttons,
             default_button=0,  # Default to "Block" button (first button)

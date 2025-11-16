@@ -1,6 +1,6 @@
 """
 Centralized configuration loader with caching
-Reads from ~/.mcpower/config file
+Reads from ~/.defenter/config file
 """
 from pathlib import Path
 from typing import Dict, Optional
@@ -12,7 +12,7 @@ def load_default_config() -> Dict[str, str]:
     """Load default configuration from embedded constants"""
     try:
         config_data = {
-            "API_URL": "https://api.mcpower.tech",
+            "API_URL": "https://api.defenter.ai",
             "DEBUG": "0",
             "ALLOW_BLOCK_OVERRIDE": "1",
             "MIN_BLOCK_SEVERITY": "low"
@@ -47,7 +47,7 @@ class ConfigManager:
 
     @staticmethod
     def _load_config() -> Dict[str, str]:
-        """Load config from ~/.mcpower/config file"""
+        """Load config from ~/.defenter/config file"""
         config_path = ConfigManager.get_config_path()
 
         # Create default config if it doesn't exist
@@ -74,7 +74,7 @@ class ConfigManager:
         config_path.parent.mkdir(exist_ok=True)
 
         # Convert to key=value format
-        config_lines = ['# MCPower Configuration']
+        config_lines = ['# Defenter Configuration']
         for key, value in default_config.items():
             config_lines.append(f'{key}={value}')
 
@@ -82,8 +82,8 @@ class ConfigManager:
 
     @staticmethod
     def get_user_config_dir() -> Path:
-        """Get user config directory (~/.mcpower)"""
-        return Path.home() / '.mcpower'
+        """Get user config directory (~/.defenter)"""
+        return Path.home() / '.defenter'
 
     def get(self, key: str, default: str = None) -> str:
         """Get config value with optional default"""
@@ -92,7 +92,7 @@ class ConfigManager:
     def reload(self, logger: MCPLogger):
         """Force reload config from file"""
         self._config = None
-        logger.debug("Config reloaded from ~/.mcpower/config")
+        logger.debug("Config reloaded from ~/.defenter/config")
 
     def start_monitoring(self, logger: MCPLogger):
         """Start file system monitoring using watchdog (event-driven)"""
@@ -125,7 +125,7 @@ class ConfigManager:
 
             self._observer.schedule(event_handler, watch_dir, recursive=False)
             self._observer.start()
-            logger.debug("Started monitoring ~/.mcpower/config (event-driven)")
+            logger.debug("Started monitoring ~/.defenter/config (event-driven)")
 
         except ImportError:
             logger.warning("watchdog not available, install with: pip install watchdog")
@@ -140,7 +140,7 @@ class ConfigManager:
             self._observer.stop()
             self._observer.join()
             self._observer = None
-            logger.debug("Stopped monitoring ~/.mcpower/config")
+            logger.debug("Stopped monitoring ~/.defenter/config")
 
 
 # Singleton instance
@@ -194,7 +194,7 @@ def is_debug_mode() -> bool:
 
 
 def get_user_id(logger: MCPLogger) -> str:
-    """Get or create user ID from ~/.mcpower/uid (never fails)"""
+    """Get or create user ID from ~/.defenter/uid (never fails)"""
     from modules.utils.ids import get_or_create_user_id
     return get_or_create_user_id(logger)
 

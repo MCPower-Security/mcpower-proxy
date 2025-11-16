@@ -7,7 +7,7 @@ from typing import Optional
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
-from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
+from modules.utils.ids import get_session_id, read_app_uid, get_project_defenter_dir
 from .output import output_result, output_error
 from .types import HookConfig
 from .utils import create_validator, process_attachments_for_redaction, inspect_and_enforce
@@ -40,7 +40,7 @@ async def handle_read_file(
     logger.info(
         f"Read file handler started (client={config.client_name}, prompt_id={prompt_id}, event_id={event_id}, cwd={cwd})")
 
-    app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
+    app_uid = read_app_uid(logger, get_project_defenter_dir(cwd))
     audit_logger.set_app_uid(app_uid)
 
     try:

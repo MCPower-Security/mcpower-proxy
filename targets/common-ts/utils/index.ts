@@ -318,12 +318,12 @@ export async function updateJsoncFile(
 }
 
 /**
- * Read user UID from ~/.mcpower/uid
+ * Read user UID from ~/.defenter/uid
  * Returns null if file doesn't exist
  */
 export async function getUserUid(): Promise<string | null> {
     try {
-        const uidPath = path.join(os.homedir(), ".mcpower", "uid");
+        const uidPath = path.join(os.homedir(), ".defenter", "uid");
         const content = await fs.promises.readFile(uidPath, "utf8");
         return content.trim();
     } catch {
@@ -332,12 +332,12 @@ export async function getUserUid(): Promise<string | null> {
 }
 
 /**
- * Read API URL from ~/.mcpower/config
+ * Read API URL from ~/.defenter/config
  * Returns null if file doesn't exist or API_URL not found
  */
 export async function getApiUrl(): Promise<string | null> {
     try {
-        const configPath = path.join(os.homedir(), ".mcpower", "config");
+        const configPath = path.join(os.homedir(), ".defenter", "config");
         const content = await fs.promises.readFile(configPath, "utf8");
 
         for (const line of content.split("\n")) {
@@ -372,12 +372,12 @@ export function hashProjectPath(projectPath: string): string {
 }
 
 /**
- * Get MCPower projects directory path under ~/.mcpower/.projects/
+ * Get Defenter projects directory path under ~/.defenter/.projects/
  * @param projectPath Optional project/workspace path. If null or invalid, uses _global
- * @returns Path to use for MCPower data: ~/.mcpower/.projects/{hash} or ~/.mcpower/.projects/_global
+ * @returns Path to use for Defenter data: ~/.defenter/.projects/{hash} or ~/.defenter/.projects/_global
  */
-export function getProjectMcpowerDir(projectPath: string | null): string {
-    const baseDir = path.join(os.homedir(), ".mcpower", ".projects");
+export function getProjectDefenterDir(projectPath: string | null): string {
+    const baseDir = path.join(os.homedir(), ".defenter", ".projects");
     
     if (projectPath) {
         try {
@@ -399,7 +399,7 @@ export function getProjectMcpowerDir(projectPath: string | null): string {
  * @returns Full path to app_uid file
  */
 export function getProjectAppUidPath(projectPath: string | null): string {
-    return path.join(getProjectMcpowerDir(projectPath), "app_uid");
+    return path.join(getProjectDefenterDir(projectPath), "app_uid");
 }
 
 /**

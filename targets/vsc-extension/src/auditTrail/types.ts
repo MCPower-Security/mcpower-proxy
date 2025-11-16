@@ -1,5 +1,5 @@
 /**
- * TypeScript interfaces for MCPower Audit Trail
+ * TypeScript interfaces for Defenter Audit Trail
  */
 
 /**
@@ -54,7 +54,7 @@ export interface EventIdGroup {
  */
 export const EVENT_TITLES: Record<string, string> = {
     // Core Events
-    mcpower_start: "MCPower Started",
+    defenter_start: "Defenter Started",
 
     // Prompt Submission
     prompt_submission: "Prompt Submission Review",

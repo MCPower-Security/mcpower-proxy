@@ -1,13 +1,13 @@
-# MCPower Proxy Server
+# Defenter Proxy Server
 
 Transparent MCP wrapper with security middleware for real-time policy enforcement and visual monitoring.
 
 ## 🚀 How to use
 
-The simplest way to use MCPower is to install the VS Code/Cursor extension:
+The simplest way to use Defenter is to install the VS Code/Cursor extension:
 
-- **VS Code Marketplace**: [Install MCPower](https://marketplace.visualstudio.com/items?itemName=mcpower.mcpower)
-- **Open VSX (Cursor & others)**: [Install MCPower](https://open-vsx.org/extension/mcpower/mcpower)
+- **VS Code Marketplace**: [Install Defenter](https://marketplace.visualstudio.com/items?itemName=defenter.defenter)
+- **Open VSX (Cursor & others)**: [Install Defenter](https://open-vsx.org/extension/defenter/defenter)
 
 The extension automatically installs and protects all your MCP servers - no manual configuration needed!
 
@@ -15,7 +15,7 @@ The extension automatically installs and protects all your MCP servers - no manu
 
 ## Architecture
 
-MCPower Proxy Server is built as a transparent 1:1 MCP wrapper that intercepts all communication between AI clients and
+Defenter Proxy Server is built as a transparent 1:1 MCP wrapper that intercepts all communication between AI clients and
 MCP servers. The architecture includes:
 
 - **Transparent Proxy Layer**: 1:1 wrapper that directly intercepts and wraps MCP servers
@@ -34,13 +34,13 @@ MCP servers. The architecture includes:
 ### modules/redaction/
 
 - Client-side redaction engine (Gitleaks + PII regex patterns)
-- Redacts secrets/PII from intercepted data BEFORE sending to MCPower cloud
+- Redacts secrets/PII from intercepted data BEFORE sending to Defenter cloud
 - Fully offline, deterministic, idempotent
 - Key files: `redactor.py`, `gitleaks_rules.py`, `pii_rules.py`
 
 ### modules/apis/
 
-- `security_policy.py`: HTTP client for MCPower cloud policy API
+- `security_policy.py`: HTTP client for Defenter cloud policy API
 
 ### modules/logs/
 
@@ -65,9 +65,9 @@ MCP servers. The architecture includes:
 ```mermaid
 sequenceDiagram
     participant AI as AI Client
-    participant Proxy as MCPower Proxy
+    participant Proxy as Defenter Proxy
     participant Redact as Redaction Engine
-    participant Cloud as MCPower Cloud
+    participant Cloud as Defenter Cloud
     participant Dialog as User Dialog
     participant MCP as Wrapped MCP Server
 
@@ -135,7 +135,7 @@ sequenceDiagram
 1. **Initialize**: Proxy wraps target MCP server config
 2. **Request Interception**: Security middleware intercepts operation
 3. **Local Redaction**: Redact PII/secrets from request data
-4. **Policy Check**: Send redacted payload to MCPower cloud for analysis
+4. **Policy Check**: Send redacted payload to Defenter cloud for analysis
 5. **User Confirmation**: If needed, show dialog for user decision
 6. **Forward Request**: If allowed, forward to wrapped MCP server
 7. **Response Interception**: Repeat redaction + policy check for response
@@ -144,12 +144,12 @@ sequenceDiagram
 ## CLI Usage
 
 ```bash
-mcpower-proxy --name <wrapper-name> --wrapped-config <mcp-config-json>
+defenter-proxy --name <wrapper-name> --wrapped-config <mcp-config-json>
 ```
 
 **Configuration:**
 
-- Config file location: `~/.mcpower/config.json`
+- Config file location: `~/.defenter/config.json`
 
 ## Development
 
@@ -160,7 +160,7 @@ mcpower-proxy --name <wrapper-name> --wrapped-config <mcp-config-json>
 
 ## Security Model
 
-- Secrets and PII are redacted client-side before any data is sent to MCPower cloud for policy analysis
+- Secrets and PII are redacted client-side before any data is sent to Defenter cloud for policy analysis
 - Visual monitoring of AI<->MCP communication
 - Cloud policy engine analyzes redacted payloads only
 - User has final control via confirmation dialogs

@@ -5,7 +5,7 @@ import { promises as fs } from "fs";
 import { AuditTrailProvider } from "./provider";
 import { AuditTrailItem } from "./item";
 import log from "../log";
-import { getProjectAppUidPath } from "@mcpower/common-ts/utils";
+import { getProjectAppUidPath } from "@defenter/common-ts/utils";
 
 export class AuditTrailView {
     private treeView: vscode.TreeView<AuditTrailItem> | undefined;
@@ -16,7 +16,7 @@ export class AuditTrailView {
     }
 
     async initialize(): Promise<void> {
-        this.treeView = vscode.window.createTreeView("mcpower.auditTrail", {
+        this.treeView = vscode.window.createTreeView("defenter.auditTrail", {
             treeDataProvider: this.provider,
             showCollapseAll: false,
         });
@@ -36,12 +36,12 @@ export class AuditTrailView {
     private registerCommands(): void {
         this.context.subscriptions.push(
             vscode.commands.registerCommand(
-                "mcpower.copyAuditEntry",
+                "defenter.copyAuditEntry",
                 (item: AuditTrailItem) =>
                     this.copyToClipboard(item.getJsonLine(), "Audit entry copied")
             ),
             vscode.commands.registerCommand(
-                "mcpower.copyAuditField",
+                "defenter.copyAuditField",
                 (item: AuditTrailItem) => this.copyFieldValue(item)
             )
         );

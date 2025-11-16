@@ -6,9 +6,9 @@ import { UvRunner } from "../uvRunner";
 import { detectIDEFromScriptPath } from "../utils";
 import * as JSONC from "jsonc-parser";
 import log from "../log";
-import { fileExists, isRemoteUrl, parseJsonc, writeFile } from "@mcpower/common-ts/utils";
-import { FileWatcher } from "@mcpower/common-ts/watcher";
-import { MCPConfig, MCPServerConfig } from "@mcpower/common-ts/types";
+import { fileExists, isRemoteUrl, parseJsonc, writeFile } from "@defenter/common-ts/utils";
+import { FileWatcher } from "@defenter/common-ts/watcher";
+import { MCPConfig, MCPServerConfig } from "@defenter/common-ts/types";
 
 export class ConfigurationMonitor {
     private uvRunner: UvRunner | undefined;
@@ -46,7 +46,7 @@ export class ConfigurationMonitor {
         if (!this.currentIDE) {
             throw new Error("Cannot determine IDE - registry operations not safe");
         }
-        return join(homedir(), ".mcpower", ".wrapped_mcps", this.currentIDE);
+        return join(homedir(), ".defenter", ".wrapped_mcps", this.currentIDE);
     };
 
     /**
@@ -623,7 +623,7 @@ export class ConfigurationMonitor {
             return;
         }
 
-        // Wrap MCP servers with MCPower proxy using JSONC tree manipulation
+        // Wrap MCP servers with Defenter proxy using JSONC tree manipulation
         const hasChanges = await this.wrapConfigurationInFile(configPath);
         if (!hasChanges) {
             log.debug(`✅ All servers already wrapped in: ${configPath}`);
@@ -671,7 +671,7 @@ export class ConfigurationMonitor {
     }
 
     /**
-     * Check if a server configuration is already wrapped by our MCPower proxy
+     * Check if a server configuration is already wrapped by our Defenter proxy
      * Uses presence of wrapped config args as sufficient indicator
      */
     private isAlreadyWrapped(serverConfig: MCPServerConfig): boolean {
@@ -695,7 +695,7 @@ export class ConfigurationMonitor {
         }
 
         const uvCommand = this.uvRunner.getCommand();
-        const expectedFirstArg = uvCommand.args[0]; // mcpower-proxy==X.Y.Z
+        const expectedFirstArg = uvCommand.args[0]; // defenter-proxy==X.Y.Z
 
         const result = await this.processConfigurationWithJsoncTree(
             configPath,

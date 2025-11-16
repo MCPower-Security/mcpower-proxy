@@ -5,8 +5,8 @@ import * as os from "os";
 import { spawn } from "child_process";
 import log from "./log";
 import { getCurrentExtensionVersion } from "./utils";
-import { UvCommand } from "@mcpower/common-ts/types";
-import { fileExists, mapOS } from "@mcpower/common-ts/utils";
+import { UvCommand } from "@defenter/common-ts/types";
+import { fileExists, mapOS } from "@defenter/common-ts/utils";
 
 export class UvRunner {
     private context: vscode.ExtensionContext;
@@ -37,11 +37,11 @@ export class UvRunner {
     }
 
     getCommand(): UvCommand {
-        // If MCPOWER_LOCAL_PROXY_PATH is set, use the local proxy path
-        if (process.env["MCPOWER_LOCAL_PROXY_PATH"]) {
+        // If DEFENTER_LOCAL_PROXY_PATH is set, use the local proxy path
+        if (process.env["DEFENTER_LOCAL_PROXY_PATH"]) {
             return {
                 executable: "uv",
-                args: ["run", "--directory", process.env["MCPOWER_LOCAL_PROXY_PATH"], "mcpower-proxy"],
+                args: ["run", "--directory", process.env["DEFENTER_LOCAL_PROXY_PATH"], "defenter-proxy"],
             };
         }
 
@@ -49,7 +49,7 @@ export class UvRunner {
             throw new Error("uvx command not available; initialize() first");
         }
 
-        const args = [`mcpower-proxy==${this.version}`];
+        const args = [`defenter-proxy==${this.version}`];
 
         return { executable: this.uvxCommand, args };
     }
