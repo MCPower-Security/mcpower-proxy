@@ -6,8 +6,8 @@ Transparent MCP wrapper with security middleware for real-time policy enforcemen
 
 The simplest way to use Defenter is to install the VS Code/Cursor extension:
 
-- **VS Code Marketplace**: [Install Defenter](https://marketplace.visualstudio.com/items?itemName=defenter.defenter)
-- **Open VSX (Cursor & others)**: [Install Defenter](https://open-vsx.org/extension/defenter/defenter)
+- **VS Code Marketplace**: [Install Defenter](https://marketplace.visualstudio.com/items?itemName=defenter.defenter-vsc)
+- **Open VSX (Cursor & others)**: [Install Defenter](https://open-vsx.org/extension/defenter/defenter-vsc)
 
 The extension automatically installs and protects all your MCP servers - no manual configuration needed!
 
