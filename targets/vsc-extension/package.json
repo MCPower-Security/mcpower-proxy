@@ -1,5 +1,5 @@
 {
-  "name": "defenter",
+  "name": "defenter-vsc",
   "displayName": "Defenter",
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
   "version": "0.0.92",
