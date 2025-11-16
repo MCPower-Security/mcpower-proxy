@@ -5,7 +5,7 @@ Handles both request (before) and response (after) inspection for shell commands
 """
 
 import os
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
@@ -21,7 +21,7 @@ def extract_and_redact_command_files(
         command: str,
         cwd: str,
         logger: MCPLogger
-) -> Dict[str, str]:
+) -> Tuple[Dict[str, str], Dict[str, str]]:
     """
     Extract input files from a shell command and return their redacted contents.
 
@@ -35,11 +35,13 @@ def extract_and_redact_command_files(
         Format: {filename: redacted_content}
     """
     files_dict = {}
+    packages = {}
 
     try:
         # Parse command to extract input files
         result = parse_shell_command(command, initial_cwd=cwd)
         input_files = result["input_files"]
+        packages = result["packages"]
 
         logger.info(f"Extracted {len(input_files)} input files from command: {input_files}")
 
@@ -110,7 +112,7 @@ def extract_and_redact_command_files(
     except Exception as e:
         logger.warning(f"Failed to parse command for file extraction: {e}")
 
-    return files_dict
+    return files_dict, packages
 
 
 async def handle_shell_execution(
@@ -209,12 +211,17 @@ async def _handle_shell_operation(
 
         # Extract and redact input files for request inspection
         files_dict = {}
+        packages = {}
         if is_request and "command" in input_data:
             input_command = input_data["command"]
             input_command_cws = input_data["cwd"]
-            files_dict = extract_and_redact_command_files(command=input_command, cwd=input_command_cws, logger=logger)
+            files_dict, packages = extract_and_redact_command_files(command=input_command,
+                                                                    cwd=input_command_cws,
+                                                                    logger=logger)
             if files_dict:
                 logger.info(f"Extracted and redacted {len(files_dict)} files from command")
+            if packages:
+                logger.info(f"Extracted packages from command: {packages}")
 
         def get_audit_data():
             # Use different structure for request vs response events
@@ -224,7 +231,8 @@ async def _handle_shell_operation(
                     "server": config.server_name,
                     "tool": tool_name,
                     "params": redacted_data,
-                    "files": list(files_dict.keys()) if files_dict else None
+                    "files": list(files_dict.keys()) if files_dict else None,
+                    "packages": packages
                 }
             else:
                 return {
@@ -244,6 +252,8 @@ async def _handle_shell_operation(
         content_data = redacted_data.copy()
         if files_dict:
             content_data["files"] = files_dict
+        if packages:
+            content_data["packages"] = packages
 
         try:
             decision = await inspect_and_enforce(
