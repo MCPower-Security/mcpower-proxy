@@ -1,9 +1,9 @@
 """
-Windows Custom Dialog Module for MCPower
+Windows Custom Dialog Module for Defenter
 A module to display Windows dialogs with 4 custom buttons:
 No, No (Always), Yes, Yes (Always)
 
-This module is specifically designed for MCPower's
+This module is specifically designed for Defenter's
 user confirmation dialogs on Windows platforms.
 """
 

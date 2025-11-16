@@ -83,15 +83,15 @@ jobs:
           sed -i "s/__version__ = \".*\"/__version__ = \"$v\"/" ../../src/wrapper/__version__.py
           sed -i "s/version = \".*\"/version = \"$v\"/" ../../pyproject.toml
           
-          # Update uv.lock mcpower-proxy version
-          sed -i '/^name = "mcpower-proxy"$/{ n; s/^version = ".*"$/version = "'"$v"'"/; }' ../../uv.lock
+          # Update uv.lock defenter-proxy version
+          sed -i '/^name = "defenter-proxy"$/{ n; s/^version = ".*"$/version = "'"$v"'"/; }' ../../uv.lock
           
           # Update server.json version (both top-level and package version)
           sed -i "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"$v\"/g" ../../server.json
           
           # Update IDE Tools hook scripts with new version
-          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/mcpower-cursor-hook.sh
-          sed -i "s/mcpower-proxy==[0-9]*\.[0-9]*\.[0-9]*/mcpower-proxy==$v/" scripts/cursor/hooks/mcpower-cursor-hook.bat
+          sed -i "s/defenter-proxy==[0-9]*\.[0-9]*\.[0-9]*/defenter-proxy==$v/" scripts/cursor/hooks/defenter-cursor-hook.sh
+          sed -i "s/defenter-proxy==[0-9]*\.[0-9]*\.[0-9]*/defenter-proxy==$v/" scripts/cursor/hooks/defenter-cursor-hook.bat
           
           echo "Bumped version to $v"
 
@@ -108,8 +108,8 @@ jobs:
           path: |
             targets/vsc-extension/package.json
             targets/package-lock.json
-            targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.sh
-            targets/vsc-extension/scripts/cursor/hooks/mcpower-cursor-hook.bat
+            targets/vsc-extension/scripts/cursor/hooks/defenter-cursor-hook.sh
+            targets/vsc-extension/scripts/cursor/hooks/defenter-cursor-hook.bat
             src/wrapper/__version__.py
             pyproject.toml
             uv.lock
@@ -155,7 +155,7 @@ jobs:
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mcpower-extension
+          name: defenter-extension
           path: targets/vsc-extension/*.vsix
 
       - name: Commit version bump
@@ -165,7 +165,7 @@ jobs:
           v=$(node -p "require('./package.json').version")
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json ../package-lock.json scripts/cursor/hooks/mcpower-cursor-hook.sh scripts/cursor/hooks/mcpower-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../uv.lock ../../server.json ../../src/modules/redaction/gitleaks_rules.py
+          git add package.json ../package-lock.json scripts/cursor/hooks/defenter-cursor-hook.sh scripts/cursor/hooks/defenter-cursor-hook.bat ../../src/wrapper/__version__.py ../../pyproject.toml ../../uv.lock ../../server.json ../../src/modules/redaction/gitleaks_rules.py
           git commit -m "chore: bump version to $v [skip ci]"
           git pull --rebase origin main
           git push
@@ -189,14 +189,14 @@ jobs:
       - name: Download extension artifact
         uses: actions/download-artifact@v4
         with:
-          name: mcpower-extension
+          name: defenter-extension
           path: release/
 
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ needs.package-extension.outputs.new_version }}
-          name: MCPower v${{ needs.package-extension.outputs.new_version }}
+          name: Defenter v${{ needs.package-extension.outputs.new_version }}
           generateReleaseNotes: true
           artifacts: "release/*.vsix"
           token: ${{ secrets.GITHUB_TOKEN }}

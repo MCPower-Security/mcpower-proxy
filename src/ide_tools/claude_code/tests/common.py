@@ -49,7 +49,7 @@ def get_command():
         "uvx",
         "--from",
         str(repo_root),
-        "mcpower-proxy",
+        "defenter-proxy",
         "--ide-tool",
         "--ide", "claude-code",
     ]

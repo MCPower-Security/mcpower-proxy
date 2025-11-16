@@ -168,7 +168,7 @@ class SecurityPolicyClient:
 
             headers = {
                 "Content-Type": "application/json",
-                "User-Agent": f"MCPower-{__version__}",
+                "User-Agent": f"Defenter-{__version__}",
                 "X-User-UID": self.user_id,
                 "X-App-UID": self.app_id
             }
@@ -308,7 +308,7 @@ class SecurityPolicyClient:
                                   f"Session: {self.session_id}, Endpoint: {endpoint}")
             else:
                 message = (
-                    "MCPower quota exhausted.\n\n"
+                    "Defenter quota exhausted.\n\n"
                     "Subsequent requests will not be screened.\n\n"
                     "Please contact support if you need additional quota.\n\n"
                 )

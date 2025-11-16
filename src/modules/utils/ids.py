@@ -149,27 +149,27 @@ def _hash_project_path(project_path: str) -> str:
     return hashlib.sha256(normalized_path.encode('utf-8')).hexdigest()
 
 
-def get_home_mcpower_dir() -> Path:
+def get_home_defenter_dir() -> Path:
     """
-    Get the global MCPower directory path in user's home directory
+    Get the global Defenter directory path in user's home directory
     
     Returns:
-        Path to ~/.mcpower directory
+        Path to ~/.defenter directory
     """
-    return Path.home() / ".mcpower"
+    return Path.home() / ".defenter"
 
 
-def get_project_mcpower_dir(project_path: Optional[str] = None) -> str:
+def get_project_defenter_dir(project_path: Optional[str] = None) -> str:
     """
-    Get the MCPower projects directory path under ~/.mcpower/.projects/
+    Get the Defenter projects directory path under ~/.defenter/.projects/
 
     Args:
         project_path: Optional project/workspace path. If None or invalid, uses _global
 
     Returns:
-        Path to use for MCPower data: ~/.mcpower/.projects/{hash} or ~/.mcpower/.projects/_global
+        Path to use for Defenter data: ~/.defenter/.projects/{hash} or ~/.defenter/.projects/_global
     """
-    base_dir = get_home_mcpower_dir() / ".projects"
+    base_dir = get_home_defenter_dir() / ".projects"
     
     if project_path:
         try:
@@ -186,7 +186,7 @@ def get_project_mcpower_dir(project_path: Optional[str] = None) -> str:
 
 def get_or_create_user_id(logger) -> str:
     """
-    Get or create machine-wide user ID from ~/.mcpower/uid
+    Get or create machine-wide user ID from ~/.defenter/uid
     Race-safe: multiple concurrent processes will converge on single ID
     
     Args:
@@ -195,13 +195,13 @@ def get_or_create_user_id(logger) -> str:
     Returns:
         User ID string
     """
-    uid_path = get_home_mcpower_dir() / "uid"
+    uid_path = get_home_defenter_dir() / "uid"
     return _get_or_create_uuid(uid_path, logger, "user ID")
 
 
 def read_app_uid(logger, project_folder_path: str) -> str:
     """
-    Get or create app UID from ~/.mcpower/.projects/{hash}/app_uid or ~/.mcpower/.projects/_global/app_uid
+    Get or create app UID from ~/.defenter/.projects/{hash}/app_uid or ~/.defenter/.projects/_global/app_uid
     Race-safe: multiple concurrent processes will converge on single ID
 
     Args:

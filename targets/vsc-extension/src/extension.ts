@@ -20,7 +20,7 @@ const showPersistentAction = async (
     actionText: string,
     onAction: () => void
 ): Promise<void> => {
-    const commandId = `mcpower.tempAction_${Date.now()}`;
+    const commandId = `defenter.tempAction_${Date.now()}`;
 
     const disposable = vscode.commands.registerCommand(commandId, () => {
         disposable.dispose();
@@ -111,11 +111,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (isFirstActivation || isUpdate) {
             // Warm up the new version
-            log.info(`Warming up mcpower-proxy==${currentVersion}...`);
+            log.info(`Warming up defenter-proxy==${currentVersion}...`);
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: `🛠️ ${isFirstActivation ? "Installing" : "Updating"} MCPower, please wait...`,
+                    title: `🛠️ ${isFirstActivation ? "Installing" : "Updating"} Defenter, please wait...`,
                     cancellable: false,
                 },
                 // initialize will take some time,
@@ -132,7 +132,7 @@ export async function activate(context: vscode.ExtensionContext) {
             // Show the appropriate message
             if (isFirstActivation) {
                 await showPersistentAction(
-                    "✅ MCPower Security Installed",
+                    "✅ Defenter Installed",
                     "Activate",
                     () => {
                         setTimeout(() => {
@@ -143,7 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
                     }
                 );
             } else {
-                await showPersistentAction("✅ MCPower updated", "Apply changes", () => {
+                await showPersistentAction("✅ Defenter updated", "Apply changes", () => {
                     setTimeout(() => {
                         vscode.commands.executeCommand("workbench.action.reloadWindow");
                     }, 100);
@@ -152,11 +152,11 @@ export async function activate(context: vscode.ExtensionContext) {
         } else {
             // No update needed, just initialize normally
             await performInitialization({ context, uvRunner });
-            vscode.window.showInformationMessage(`✅ MCPower Security activated`);
+            vscode.window.showInformationMessage(`✅ Defenter activated`);
         }
     } catch (error) {
-        log.error("Failed to activate MCPower Security", error);
-        vscode.window.showErrorMessage(`Failed to activate MCPower Security: ${error}`);
+        log.error("Failed to activate Defenter", error);
+        vscode.window.showErrorMessage(`Failed to activate Defenter: ${error}`);
     }
 }
 

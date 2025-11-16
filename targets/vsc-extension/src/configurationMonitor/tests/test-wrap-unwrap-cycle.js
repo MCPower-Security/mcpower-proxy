@@ -36,7 +36,7 @@ async function cleanup(tmpDir) {
  */
 async function testWrapUnwrapCycle() {
     setupVscodeMock();
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcpower-wrap-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "defenter-wrap-test-"));
     const testConfigPath = path.join(tmpDir, "test-config.json");
 
     // Register cleanup on process exit (handles crashes)
@@ -99,7 +99,7 @@ async function testWrapUnwrapCycle() {
         monitor.uvRunner = {
             getCommand: () => ({
                 executable: "uvx",
-                args: ["--from", "/mock/path/to/proxy-bundled", "mcpower-proxy"],
+                args: ["--from", "/mock/path/to/proxy-bundled", "defenter-proxy"],
             }),
         };
 
@@ -216,7 +216,7 @@ async function testWrapUnwrapCycle() {
  */
 async function testUrlConfigWithMcpRemote() {
     setupVscodeMock();
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mcpower-url-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "defenter-url-test-"));
     const testConfigPath = path.join(tmpDir, "test-url-config.json");
 
     // Register cleanup
@@ -268,7 +268,7 @@ async function testUrlConfigWithMcpRemote() {
         monitor.uvRunner = {
             getCommand: () => ({
                 executable: "uvx",
-                args: ["--from", "/mock/path/to/proxy-bundled", "mcpower-proxy"],
+                args: ["--from", "/mock/path/to/proxy-bundled", "defenter-proxy"],
             }),
         };
 
@@ -290,8 +290,8 @@ async function testUrlConfigWithMcpRemote() {
         if (notionServer.command !== "uvx") {
             throw new Error(`Expected command 'uvx', got '${notionServer.command}'`);
         }
-        if (!notionServer.args.includes("mcpower-proxy")) {
-            throw new Error("Missing mcpower-proxy in args");
+        if (!notionServer.args.includes("defenter-proxy")) {
+            throw new Error("Missing defenter-proxy in args");
         }
         if (!notionServer.args.includes("--wrapped-config")) {
             throw new Error("Missing --wrapped-config in args");

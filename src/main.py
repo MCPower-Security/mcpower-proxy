@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MCPower Proxy - Main Entry Point
+Defenter Proxy - Main Entry Point
 
 A transparent 1:1 MCP Wrapper that sits between an AI client and a Wrapped MCP,
 intercepting 100% of MCP traffic and enforcing security policies.
@@ -58,7 +58,7 @@ def main():
     config.start_monitoring(logger)
 
     logger.info(
-        f"Starting MCPower Proxy:\n{{'args': {args}, 'log_file': {log_file}, 'log_level': {log_level}, 'debug_mode': {debug_mode}}}")
+        f"Starting Defenter Proxy:\n{{'args': {args}, 'log_file': {log_file}, 'log_level': {log_level}, 'debug_mode': {debug_mode}}}")
 
     try:
         # Parse JSON/JSONC config
@@ -100,7 +100,7 @@ def main():
         )
 
         # Run server on STDIO
-        logger.info("MCPower server starting on STDIO...")
+        logger.info("Defenter server starting on STDIO...")
         server.run(show_banner=False)
     except KeyboardInterrupt:
         logger.warning("Interrupted by user")

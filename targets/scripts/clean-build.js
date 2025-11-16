@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Clean Build Script for MCPower Security
+ * Clean Build Script for Defenter
  * Removes all build-generated and cache files across the entire project
  */
 
@@ -64,11 +64,11 @@ class BuildCleaner {
             path.join(this.srcRoot, ".venv"),
             path.join(this.srcRoot, "__pycache__"),
             path.join(this.srcRoot, ".pytest_cache"),
-            path.join(this.srcRoot, "mcpower_proxy.egg-info"),
+            path.join(this.srcRoot, "defenter_proxy.egg-info"),
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyc")),
             ...this.globSync(path.join(this.srcRoot, "**", "*.pyo")),
             ...this.globSync(path.join(this.srcRoot, "**", "__pycache__")),
-            ...this.globSync(path.join(this.srcRoot, "**", "mcpower_proxy.egg-info")),
+            ...this.globSync(path.join(this.srcRoot, "**", "defenter_proxy.egg-info")),
         ];
 
         for (const filePath of srcPaths) {

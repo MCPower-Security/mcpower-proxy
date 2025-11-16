@@ -19,7 +19,7 @@ module.exports = {
             show: () => {},
             hide: () => {},
             dispose: () => {},
-            name: "MCPower Security",
+            name: "Defenter",
         }),
     },
     workspace: {

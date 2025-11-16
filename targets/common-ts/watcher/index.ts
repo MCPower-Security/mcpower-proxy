@@ -298,7 +298,7 @@ export class FileWatcher {
                         "❌ Max reconnection attempts reached. File watching disabled."
                     );
                     this.callbacks.onShowError?.(
-                        "MCPower Security: File watching failed. Please reload the window or restart."
+                        "Defenter: File watching failed. Please reload the window or restart."
                     );
                 }
             });
@@ -314,7 +314,7 @@ export class FileWatcher {
         } catch (error) {
             this.callbacks.logger.error("Failed to setup Config files watcher:", error);
             this.callbacks.onShowError?.(
-                "MCPower Security: File watching failed to start. Manual reload may be required for config changes."
+                "Defenter: File watching failed to start. Manual reload may be required for config changes."
             );
             throw error;
         }

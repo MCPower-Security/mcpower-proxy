@@ -1,12 +1,12 @@
 [project]
-name = "mcpower-proxy"
+name = "defenter-proxy"
 version = "0.0.91"
-description = "MCPower Security proxy"
+description = "Defenter proxy"
 readme = "README.md"
 requires-python = "~=3.11.0"
 keywords = ["mcp", "security", "proxy", "monitoring", "audit", "redaction", "policy-enforcement"]
 authors = [
-  { name = "MCPower Security", email = "support@mcpower.tech" }
+  { name = "Defenter", email = "support@defenter.ai" }
 ]
 dependencies = [
   "fastmcp==2.13.0.2",
@@ -24,7 +24,7 @@ dependencies = [
 file = "src/LICENSE"
 
 [project.scripts]
-mcpower-proxy = "main:cli_main"
+defenter-proxy = "main:cli_main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

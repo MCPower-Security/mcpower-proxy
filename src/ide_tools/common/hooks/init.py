@@ -11,7 +11,7 @@ from mcpower_shared.mcp_types import InitRequest, EnvironmentContext, ServerRef,
 from modules.apis.security_policy import SecurityPolicyClient
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
-from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
+from modules.utils.ids import get_session_id, read_app_uid, get_project_defenter_dir
 from modules.utils.json import safe_json_dumps
 from modules.utils.platform import get_client_os
 from wrapper.__version__ import __version__
@@ -63,11 +63,11 @@ async def handle_init(
     logger.info(f"Init handler started (client={client_name}, event_id={event_id}, prompt_id={prompt_id}, cwd={cwd})")
 
     try:
-        app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
+        app_uid = read_app_uid(logger, get_project_defenter_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
         audit_logger.log_event(
-            "mcpower_start",
+            "defenter_start",
             {
                 "wrapper_version": __version__,
                 "wrapped_server_name": server_name,

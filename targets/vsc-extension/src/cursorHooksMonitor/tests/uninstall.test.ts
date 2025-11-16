@@ -10,7 +10,7 @@ import { CursorHooksMonitor } from "../index";
  * Tests the critical uninstall scenario where:
  * - CursorHooksMonitor is created without extensionPath (undefined)
  * - unregisterHook() must work despite extensionPath being undefined
- * - Only MCPower hooks (matching mcpower-cursor-hook.{sh|bat}) are removed
+ * - Only Defenter hooks (matching defenter-cursor-hook.{sh|bat}) are removed
  * - Other extensions' hooks are preserved
  * - File structure (version, etc.) is maintained
  */
@@ -34,7 +34,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         }
     });
 
-    it("should remove all MCPower hooks from hooks.json during uninstall", async () => {
+    it("should remove all Defenter hooks from hooks.json during uninstall", async () => {
         // Setup: Use test hooks file
         const hooksFile = testHooksFile;
 
@@ -43,12 +43,12 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/fake/extension/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/fake/extension/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/extension/some-other-hook.sh" },
                 ],
-                afterShellExecution: [{ command: '"/path with spaces/scripts/cursor/hooks/mcpower-cursor-hook.sh"' }],
-                beforeReadFile: [{ command: "/fake/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
-                beforeSubmitPrompt: [{ command: "/fake/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
+                afterShellExecution: [{ command: '"/path with spaces/scripts/cursor/hooks/defenter-cursor-hook.sh"' }],
+                beforeReadFile: [{ command: "/fake/path/scripts/cursor/hooks/defenter-cursor-hook.sh" }],
+                beforeSubmitPrompt: [{ command: "/fake/path/scripts/cursor/hooks/defenter-cursor-hook.sh" }],
             },
         };
 
@@ -66,11 +66,11 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         const monitor = new CursorHooksMonitor(hooksFile);
         await monitor.unregisterHook();
 
-        // Verify: MCPower hooks should be removed, others preserved
+        // Verify: Defenter hooks should be removed, others preserved
         const afterContent = await fs.readFile(hooksFile, "utf-8");
         const afterConfig = JSON.parse(afterContent);
 
-        // MCPower hooks should be removed
+        // Defenter hooks should be removed
         expect(afterConfig.hooks.afterShellExecution).toBeUndefined();
         expect(afterConfig.hooks.beforeReadFile).toBeUndefined();
         expect(afterConfig.hooks.beforeSubmitPrompt).toBeUndefined();
@@ -90,7 +90,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         await expect(monitor.unregisterHook()).resolves.not.toThrow();
     });
 
-    it("should handle hooks.json with no MCPower hooks", async () => {
+    it("should handle hooks.json with no Defenter hooks", async () => {
         const hooksFile = testHooksFile;
 
         const testHooksConfig = {
@@ -123,10 +123,10 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
                   hooks: {
                       beforeShellExecution: [
                           // Windows path variations
-                          { command: "C:\\\\Users\\\\user\\\\scripts\\\\cursor\\\\hooks\\\\mcpower-cursor-hook.bat" },
+                          { command: "C:\\\\Users\\\\user\\\\scripts\\\\cursor\\\\hooks\\\\defenter-cursor-hook.bat" },
                           {
                               command:
-                                  '"C:\\\\Program Files\\\\MCPower\\\\scripts\\\\cursor\\\\hooks\\\\mcpower-cursor-hook.bat"',
+                                  '"C:\\\\Program Files\\\\Defenter\\\\scripts\\\\cursor\\\\hooks\\\\defenter-cursor-hook.bat"',
                           },
                           { command: "/other/different-hook.sh" },
                       ],
@@ -139,9 +139,9 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
                           // Unix path variations
                           {
                               command:
-                                  "/home/user/.vscode/extensions/mcpower/scripts/cursor/hooks/mcpower-cursor-hook.sh",
+                                  "/home/user/.vscode/extensions/defenter/scripts/cursor/hooks/defenter-cursor-hook.sh",
                           },
-                          { command: '"/Users/user name/extensions/scripts/cursor/hooks/mcpower-cursor-hook.sh"' },
+                          { command: '"/Users/user name/extensions/scripts/cursor/hooks/defenter-cursor-hook.sh"' },
                           { command: "/other/different-hook.sh" },
                       ],
                   },
@@ -152,7 +152,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         const monitor = new CursorHooksMonitor(hooksFile);
         await monitor.unregisterHook();
 
-        // All MCPower hooks (matching current OS) should be removed regardless of path format
+        // All Defenter hooks (matching current OS) should be removed regardless of path format
         const afterContent = await fs.readFile(hooksFile, "utf-8");
         const afterConfig = JSON.parse(afterContent);
 
@@ -181,17 +181,17 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         expect(afterConfig.hooks).toEqual({});
     });
 
-    it("should handle multiple MCPower hooks in same hook type", async () => {
+    it("should handle multiple Defenter hooks in same hook type", async () => {
         const hooksFile = testHooksFile;
 
         const testHooksConfig = {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/path1/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
-                    { command: "/path2/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path1/scripts/cursor/hooks/defenter-cursor-hook.sh" },
+                    { command: "/path2/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/hook.sh" },
-                    { command: "/path3/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path3/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                 ],
             },
         };
@@ -201,7 +201,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         const monitor = new CursorHooksMonitor(hooksFile);
         await monitor.unregisterHook();
 
-        // All MCPower hooks removed, other hook preserved
+        // All Defenter hooks removed, other hook preserved
         const afterContent = await fs.readFile(hooksFile, "utf-8");
         const afterConfig = JSON.parse(afterContent);
         expect(afterConfig.hooks.beforeShellExecution).toHaveLength(1);
@@ -240,7 +240,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         const testHooksConfig = {
             version: 1,
             hooks: {
-                beforeShellExecution: [{ command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
+                beforeShellExecution: [{ command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" }],
             },
         };
 
@@ -264,8 +264,8 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/unix/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
-                    { command: "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\mcpower-cursor-hook.bat" },
+                    { command: "/unix/scripts/cursor/hooks/defenter-cursor-hook.sh" },
+                    { command: "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\defenter-cursor-hook.bat" },
                     { command: "/other/different-hook.sh" },
                 ],
             },
@@ -293,15 +293,15 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
 
         if (isWindows) {
             // On Windows: .bat removed, .sh remains
-            expect(remainingCommands).toContain("/unix/scripts/cursor/hooks/mcpower-cursor-hook.sh");
+            expect(remainingCommands).toContain("/unix/scripts/cursor/hooks/defenter-cursor-hook.sh");
             expect(remainingCommands).not.toContain(
-                "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\mcpower-cursor-hook.bat"
+                "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\defenter-cursor-hook.bat"
             );
         } else {
             // On Unix: .sh removed, .bat remains
-            expect(remainingCommands).not.toContain("/unix/scripts/cursor/hooks/mcpower-cursor-hook.sh");
+            expect(remainingCommands).not.toContain("/unix/scripts/cursor/hooks/defenter-cursor-hook.sh");
             expect(remainingCommands).toContain(
-                "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\mcpower-cursor-hook.bat"
+                "C:\\\\Windows\\\\scripts\\\\cursor\\\\hooks\\\\defenter-cursor-hook.bat"
             );
         }
     });
@@ -313,19 +313,19 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/hook1.sh" },
                 ],
                 afterShellExecution: [
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/hook2.sh" },
                 ],
                 beforeReadFile: [
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/hook3.sh" },
                 ],
                 beforeSubmitPrompt: [
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/hook4.sh" },
                 ],
             },
@@ -336,7 +336,7 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         const monitor = new CursorHooksMonitor(hooksFile);
         await monitor.unregisterHook();
 
-        // MCPower hooks removed from all types, others preserved
+        // Defenter hooks removed from all types, others preserved
         const afterContent = await fs.readFile(hooksFile, "utf-8");
         const afterConfig = JSON.parse(afterContent);
 
@@ -360,10 +360,10 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/path/scripts/cursor/hooks/cursor-hook.sh" },
-                    { command: "/path/scripts/cursor/hooks/my-mcpower-cursor-hook.sh" },
-                    { command: "/path/scripts/cursor/hooks/mcpower-cursor-hook-backup.sh" },
+                    { command: "/path/scripts/cursor/hooks/my-defenter-cursor-hook.sh" },
+                    { command: "/path/scripts/cursor/hooks/defenter-cursor-hook-backup.sh" },
                 ],
             },
         };
@@ -380,9 +380,9 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
 
         const remainingCommands = afterConfig.hooks.beforeShellExecution.map((h: any) => h.command);
         expect(remainingCommands).toContain("/path/scripts/cursor/hooks/cursor-hook.sh");
-        expect(remainingCommands).toContain("/path/scripts/cursor/hooks/my-mcpower-cursor-hook.sh");
-        expect(remainingCommands).toContain("/path/scripts/cursor/hooks/mcpower-cursor-hook-backup.sh");
-        expect(remainingCommands).not.toContain("/path/scripts/cursor/hooks/mcpower-cursor-hook.sh");
+        expect(remainingCommands).toContain("/path/scripts/cursor/hooks/my-defenter-cursor-hook.sh");
+        expect(remainingCommands).toContain("/path/scripts/cursor/hooks/defenter-cursor-hook-backup.sh");
+        expect(remainingCommands).not.toContain("/path/scripts/cursor/hooks/defenter-cursor-hook.sh");
     });
 
     it("should handle file read/write errors gracefully", async () => {
@@ -403,14 +403,14 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
             version: 1,
             hooks: {
                 beforeShellExecution: [
-                    { command: "/path/to/mcpower-0.0.1/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/to/defenter-0.0.1/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                     { command: "/other/extension/some-hook.sh" },
                 ],
                 afterShellExecution: [
-                    { command: "/path/to/mcpower-0.0.1/scripts/cursor/hooks/mcpower-cursor-hook.sh" },
+                    { command: "/path/to/defenter-0.0.1/scripts/cursor/hooks/defenter-cursor-hook.sh" },
                 ],
-                beforeReadFile: [{ command: "/path/to/mcpower-0.0.1/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
-                beforeSubmitPrompt: [{ command: "/path/to/mcpower-0.0.1/scripts/cursor/hooks/mcpower-cursor-hook.sh" }],
+                beforeReadFile: [{ command: "/path/to/defenter-0.0.1/scripts/cursor/hooks/defenter-cursor-hook.sh" }],
+                beforeSubmitPrompt: [{ command: "/path/to/defenter-0.0.1/scripts/cursor/hooks/defenter-cursor-hook.sh" }],
             },
         };
 
@@ -425,8 +425,8 @@ describe("CursorHooksMonitor - E2E Uninstall Flow", () => {
         // Simulate upgrade to new version (0.0.2)
         const monitor = new CursorHooksMonitor(hooksFile);
         // Set extensionPath to new version path
-        (monitor as any).extensionPath = "/path/to/mcpower-0.0.2";
-        const newScriptPath = "/path/to/mcpower-0.0.2/scripts/cursor/hooks/mcpower-cursor-hook.sh";
+        (monitor as any).extensionPath = "/path/to/defenter-0.0.2";
+        const newScriptPath = "/path/to/defenter-0.0.2/scripts/cursor/hooks/defenter-cursor-hook.sh";
 
         // Call registerHooks which should cleanup old version and register new one
         await monitor.registerHooks();

@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
-  "name": "io.github.MCPower-Security/mcpower-proxy",
-  "title": "MCPower Security Proxy",
+  "name": "io.github.Defenter-AI/defenter-proxy",
+  "title": "Defenter Proxy",
   "description": "Security proxy that automatically wraps MCP servers with real-time monitoring and policy enforcement",
   "version": "0.0.91",
-  "homepage": "https://github.com/MCPower-Security/mcpower-proxy",
+  "homepage": "https://github.com/Defenter-AI/defenter-proxy",
   "repository": {
-    "url": "https://github.com/MCPower-Security/mcpower-proxy",
+    "url": "https://github.com/Defenter-AI/defenter-proxy",
     "source": "github"
   },
   "license": "Apache-2.0",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "mcpower-proxy",
+      "identifier": "defenter-proxy",
       "version": "0.0.91",
       "runtimeHint": "uvx",
       "transport": {
@@ -21,7 +21,7 @@
       }
     }
   ],
-  "instructions": "## Easiest: Install VS Code/Cursor Extension\n\nFor automatic setup with IDE integration, install the MCPower extension:\nhttps://www.mcpower.tech/\n\nThe extension automatically wraps all your MCP servers and provides real-time monitoring.\n\n## Manual: Wrap Individual Servers\n\nTo manually wrap MCP servers, update your configuration:\n\n```json\n{\n  \"mcpServers\": {\n    \"secure-filesystem\": {\n      \"command\": \"uvx\",\n      \"args\": [\n        \"mcpower-proxy\",\n        \"--wrapped-config\", \"{\\\"command\\\": \\\"npx\\\", \\\"args\\\": [\\\"@modelcontextprotocol/server-filesystem\\\", \\\"/path/to/dir\\\"]}\",\n        \"--name\", \"SecureFS\"\n      ]\n    }\n  }\n}\n```\n\nThe proxy will:\n- Intercept all MCP communication\n- Redact secrets/PII locally before cloud analysis\n- Enforce security policies\n- Provide MCP monitoring",
+  "instructions": "## Easiest: Install VS Code/Cursor Extension\n\nFor automatic setup with IDE integration, install the Defenter extension:\nhttps://www.defenter.ai/\n\nThe extension automatically wraps all your MCP servers and provides real-time monitoring.\n\n## Manual: Wrap Individual Servers\n\nTo manually wrap MCP servers, update your configuration:\n\n```json\n{\n  \"mcpServers\": {\n    \"secure-filesystem\": {\n      \"command\": \"uvx\",\n      \"args\": [\n        \"defenter-proxy\",\n        \"--wrapped-config\", \"{\\\"command\\\": \\\"npx\\\", \\\"args\\\": [\\\"@modelcontextprotocol/server-filesystem\\\", \\\"/path/to/dir\\\"]}\",\n        \"--name\", \"SecureFS\"\n      ]\n    }\n  }\n}\n```\n\nThe proxy will:\n- Intercept all MCP communication\n- Redact secrets/PII locally before cloud analysis\n- Enforce security policies\n- Provide MCP monitoring",
   "categories": ["security", "monitoring"],
   "tags": ["security", "proxy", "monitoring", "audit", "redaction", "policy-enforcement"]
 }

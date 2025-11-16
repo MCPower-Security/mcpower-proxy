@@ -5,12 +5,12 @@ import { detectIDEFromScriptPath } from "./utils";
 import { reportLifecycleEvent } from "./api";
 
 /**
- * Uninstall hook script for MCPower Security
+ * Uninstall hook script for Defenter
  * This script runs when the extension is completely uninstalled from VS Code
  * It unwraps all MCP configurations and unregisters IDE Tools hooks by this specific IDE instance
  */
 async function main() {
-    console.log("Starting MCPower Security uninstall cleanup...");
+    console.log("Starting Defenter uninstall cleanup...");
 
     try {
         await reportLifecycleEvent("uninstall");
@@ -97,7 +97,7 @@ async function main() {
             // ignore folder removal error; non-critical
         }
 
-        console.log("\nMCPower Security uninstall cleanup finished!");
+        console.log("\nDefenter uninstall cleanup finished!");
     } catch (error) {
         console.error("❌ Uninstall cleanup failed:", error);
         process.exit(1);

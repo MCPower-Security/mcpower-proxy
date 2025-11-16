@@ -341,7 +341,7 @@ async def test_blocking_dialog_e2e_flow():
     print(f"   → Security middleware will intercept the request")
     print(f"   → Backend will return 'block' decision")
     print(f"   → GUI BLOCKING dialog will appear with red error styling")
-    print(f"   → Title: 'MCPower Security Request Blocked'")
+    print(f"   → Title: 'Defenter Request Blocked'")
     print(f"   → Buttons: [Block], [Allow Anyway]")
     print(f"   → Please choose your option to see the flow")
 
@@ -351,7 +351,7 @@ async def test_blocking_dialog_e2e_flow():
             try:
                 print(f"\n🔒 GUI BLOCKING DIALOG APPEARING...")
                 print(f"   Expected dialog:")
-                print(f"   Title: MCPower Security Request Blocked")
+                print(f"   Title: Defenter Request Blocked")
                 print(f"   Server: postman_mcp, Tool: createWorkspace")
                 print(f"   Policy Alert (High):")
                 print(f"   {backend_decision['reasons'][0]}")
@@ -543,7 +543,7 @@ async def test_confirmation_with_call_type_e2e_flow():
     print(f"   → Security middleware will intercept the request")
     print(f"   → Backend will return 'required_explicit_user_confirmation' WITH call_type")
     print(f"   → GUI confirmation dialog will appear with 3 BUTTONS")
-    print(f"   → Title: 'MCPower Security Confirmation Required'")
+    print(f"   → Title: 'Defenter Confirmation Required'")
     print(f"   → Buttons: [Block], [Allow], [Always Allow] (because call_type='write')")
     print(f"   → Please choose your option to see the flow")
 
@@ -553,7 +553,7 @@ async def test_confirmation_with_call_type_e2e_flow():
             try:
                 print(f"\n🔒 GUI CONFIRMATION DIALOG WITH CALL_TYPE APPEARING...")
                 print(f"   Expected dialog:")
-                print(f"   Title: MCPower Security Confirmation Required")
+                print(f"   Title: Defenter Confirmation Required")
                 print(f"   Server: file_server, Tool: writeFile")
                 print(f"   Policy Alert (Medium):")
                 print(f"   {backend_decision['reasons'][0]}")
@@ -615,7 +615,7 @@ async def test_confirmation_with_call_type_e2e_flow():
 
 
 if __name__ == "__main__":
-    print("MCPOWER PROXY - COMPLETE END-TO-END TEST")
+    print("DEFENTER PROXY - COMPLETE END-TO-END TEST")
     print("This demonstrates the full flow with real GUI confirmation.")
     print()
 
@@ -640,7 +640,7 @@ if __name__ == "__main__":
     print("✅ Response security validation")
     print("✅ STDIO output generation")
     print()
-    print("🎉 The MCPower Proxy with ALL THREE dialog types is fully functional!")
+    print("🎉 The Defenter Proxy with ALL THREE dialog types is fully functional!")
     print()
     print("Dialog Summary:")
     print("1️⃣  Standard Confirmation (2 buttons): [Block], [Allow]")

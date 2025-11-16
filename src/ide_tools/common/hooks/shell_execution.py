@@ -10,7 +10,7 @@ from typing import Optional, Dict, List, Tuple
 from modules.logs.audit_trail import AuditTrailLogger
 from modules.logs.logger import MCPLogger
 from modules.redaction import redact
-from modules.utils.ids import get_session_id, read_app_uid, get_project_mcpower_dir
+from modules.utils.ids import get_session_id, read_app_uid, get_project_defenter_dir
 from .output import output_result, output_error
 from .shell_parser_bashlex import parse_shell_command
 from .types import HookConfig
@@ -201,7 +201,7 @@ async def _handle_shell_operation(
             output_error(logger, config.output_format, "permission", str(e))
             return
 
-        app_uid = read_app_uid(logger, get_project_mcpower_dir(cwd))
+        app_uid = read_app_uid(logger, get_project_defenter_dir(cwd))
         audit_logger.set_app_uid(app_uid)
 
         redacted_data = {}

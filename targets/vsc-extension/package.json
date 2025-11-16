@@ -1,9 +1,9 @@
 {
-  "name": "mcpower",
-  "displayName": "MCPower Security",
+  "name": "defenter",
+  "displayName": "Defenter",
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
   "version": "0.0.91",
-  "publisher": "mcpower",
+  "publisher": "defenter",
   "license": "Apache-2.0",
   "icon": "resources/ext-icon-dark.png",
   "engines": {
@@ -11,12 +11,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MCPower-Security/mcpower-proxy"
+    "url": "https://github.com/Defenter-AI/defenter-proxy"
   },
   "bugs": {
-    "url": "https://github.com/MCPower-Security/mcpower-proxy/issues"
+    "url": "https://github.com/Defenter-AI/defenter-proxy/issues"
   },
-  "homepage": "https://mcpower.tech",
+  "homepage": "https://defenter.ai",
   "categories": [
     "Linters",
     "Machine Learning",
@@ -40,28 +40,28 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "mcpower",
-          "title": "MCPower",
+          "id": "defenter",
+          "title": "Defenter",
           "icon": "resources/activitybar-icon.svg"
         }
       ]
     },
     "views": {
-      "mcpower": [
+      "defenter": [
         {
-          "id": "mcpower.auditTrail",
-          "name": "MCPower Monitor"
+          "id": "defenter.auditTrail",
+          "name": "Defenter Monitor"
         }
       ]
     },
     "commands": [
       {
-        "command": "mcpower.copyAuditEntry",
+        "command": "defenter.copyAuditEntry",
         "title": "Copy Entry to Clipboard",
         "icon": "$(copy)"
       },
       {
-        "command": "mcpower.copyAuditField",
+        "command": "defenter.copyAuditField",
         "title": "Copy Field to Clipboard",
         "icon": "$(copy)"
       }
@@ -69,13 +69,13 @@
     "menus": {
       "view/item/context": [
         {
-          "command": "mcpower.copyAuditEntry",
-          "when": "view == mcpower.auditTrail && viewItem == root",
+          "command": "defenter.copyAuditEntry",
+          "when": "view == defenter.auditTrail && viewItem == root",
           "group": "inline"
         },
         {
-          "command": "mcpower.copyAuditField",
-          "when": "view == mcpower.auditTrail && (viewItem == field || viewItem == field_expandable)",
+          "command": "defenter.copyAuditField",
+          "when": "view == defenter.auditTrail && (viewItem == field || viewItem == field_expandable)",
           "group": "inline"
         }
       ]
@@ -97,6 +97,6 @@
     "@vscode/vsce": "^3.6.2"
   },
   "dependencies": {
-    "@mcpower/common-ts": "file:../common-ts"
+    "@defenter/common-ts": "file:../common-ts"
   }
 }

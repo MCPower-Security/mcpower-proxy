@@ -1,1 +1,1 @@
-"""Tests for MCPower Proxy"""
+"""Tests for Defenter Proxy"""

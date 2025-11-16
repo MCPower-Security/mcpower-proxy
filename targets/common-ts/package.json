@@ -1,8 +1,8 @@
 {
-  "name": "@mcpower/common-ts",
+  "name": "@defenter/common-ts",
   "version": "1.0.0",
   "private": true,
-  "description": "Shared utilities and types for MCPower targets",
+  "description": "Shared utilities and types for Defenter targets",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
