@@ -1,6 +1,6 @@
 [project]
 name = "defenter-proxy"
-version = "0.0.91"
+version = "0.0.92"
 description = "Defenter proxy"
 readme = "README.md"
 requires-python = "~=3.11.0"

@@ -1,3 +1,3 @@
 @echo off
-uvx defenter-proxy==0.0.91 --ide-tool --ide cursor
+uvx defenter-proxy==0.0.92 --ide-tool --ide cursor
 

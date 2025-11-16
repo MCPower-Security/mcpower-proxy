@@ -3,7 +3,7 @@
   "name": "io.github.Defenter-AI/defenter-proxy",
   "title": "Defenter Proxy",
   "description": "Security proxy that automatically wraps MCP servers with real-time monitoring and policy enforcement",
-  "version": "0.0.91",
+  "version": "0.0.92",
   "homepage": "https://github.com/Defenter-AI/defenter-proxy",
   "repository": {
     "url": "https://github.com/Defenter-AI/defenter-proxy",
@@ -14,7 +14,7 @@
     {
       "registryType": "pypi",
       "identifier": "defenter-proxy",
-      "version": "0.0.91",
+      "version": "0.0.92",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

@@ -2,7 +2,7 @@
   "name": "defenter",
   "displayName": "Defenter",
   "description": "Automatically wraps MCP servers with security policies for enhanced protection",
-  "version": "0.0.91",
+  "version": "0.0.92",
   "publisher": "defenter",
   "license": "Apache-2.0",
   "icon": "resources/ext-icon-dark.png",
