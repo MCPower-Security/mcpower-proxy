@@ -174,7 +174,7 @@ def get_api_url() -> str:
 
 def get_log_path() -> str:
     """Get default log file path """
-    return str(ConfigManager.get_user_config_dir() / 'mcp-wrapper.log')
+    return str(ConfigManager.get_user_config_dir() / 'defenter.log')
 
 
 def get_audit_trail_path() -> str:
