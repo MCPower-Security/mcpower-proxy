@@ -2,7 +2,7 @@
   "name": "defenter-vsc",
   "displayName": "Defenter",
   "description": "Real-time semantic security for AI coding agents and MCP tools",
-  "version": "0.0.95",
+  "version": "0.0.96",
   "publisher": "defenter",
   "license": "Apache-2.0",
   "icon": "resources/ext-icon-dark.png",
