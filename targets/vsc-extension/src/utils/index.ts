@@ -27,6 +27,14 @@ export function detectIDEFromScriptPath(): string | undefined {
             patterns: ["/.cursor/extensions/", "\\.cursor\\extensions\\", "/cursor.app/"],
         },
         {
+            name: "antigravity",
+            patterns: [
+                "/.antigravity/extensions/",
+                "\\.antigravity\\extensions\\",
+                "/antigravity.app/",
+            ],
+        },
+        {
             name: "windsurf",
             patterns: [
                 "/.windsurf/extensions/",

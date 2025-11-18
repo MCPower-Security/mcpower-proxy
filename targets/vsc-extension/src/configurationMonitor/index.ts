@@ -209,6 +209,7 @@ export class ConfigurationMonitor {
 
         return {
             kiro: createPaths("kiro", [join(".kiro", "settings")]),
+            antigravity: createPaths("antigravity", appSupportPaths("Antigravity")),
             cursor: createPaths("cursor", appSupportPaths("Cursor")),
             windsurf: createPaths("windsurf", appSupportPaths("Windsurf")),
             claude: createPaths("claude", [
@@ -331,6 +332,7 @@ export class ConfigurationMonitor {
 
                 const clientPaths: Record<string, string[]> = {
                     kiro: [getClientWorkspacePath("kiro", "settings")],
+                    antigravity: [getClientWorkspacePath("vscode")],
                     cursor: [getClientWorkspacePath("cursor")],
                     windsurf: [getClientWorkspacePath("windsurf")],
                     claude: [getClientWorkspacePath("claude")],
@@ -381,6 +383,7 @@ export class ConfigurationMonitor {
         // Define client patterns for DRY detection
         const clientPatterns = [
             { name: "cursor", patterns: ["cursor"] },
+            { name: "antigravity", patterns: ["antigravity"] },
             { name: "windsurf", patterns: ["windsurf"] },
             { name: "claude", patterns: ["claude"] },
             { name: "kiro", patterns: ["kiro"] },
